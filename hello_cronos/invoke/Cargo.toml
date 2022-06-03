@@ -1,0 +1,11 @@
+[package]
+name = "invoke"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+hello-cronos = { path = "../programs/hello_cronos", features = ["no-entrypoint"], version = "0.1.0" }
+cronos-scheduler = "0.2.0-alpha5"
+anchor-lang = "0.24.2"
+solana-client-helpers = "1.1.0"
+solana-sdk = "1.9.28"
