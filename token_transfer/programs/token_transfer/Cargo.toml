@@ -1,0 +1,25 @@
+[package]
+name = "token_transfer"
+version = "0.1.0"
+description = "Created with Anchor"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "token_transfer"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+[profile.release]
+overflow-checks = true
+
+[dependencies]
+anchor-lang = "0.24.2"
+anchor-spl = "0.24.2"
+spl-token = {version = "3.3.0", features = ["no-entrypoint"]}
+cronos-scheduler = { version = "0.2.0-alpha5", features = ["cpi"] }
