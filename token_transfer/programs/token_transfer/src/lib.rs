@@ -1,4 +1,3 @@
-pub mod errors;
 pub mod id;
 pub mod pda;
 pub mod state;
@@ -15,19 +14,23 @@ pub mod token_transfer {
     use super::*;
 
     /**
-     * deposit_amount: u64 - initial deposit from sender
+     * amount: u64 - deposit from sender
      * transfer_rate: u64 - rate at which deposit is sent to receiver from escrow
      */
 
-    pub fn initialize<'info>(
-        ctx: Context<'_, '_, '_, 'info, Initialize<'info>>,
-        deposit_amount: u64,
+    pub fn create_payment<'info>(
+        ctx: Context<'_, '_, '_, 'info, CreatePayment<'info>>,
+        amount: u64,
         transfer_rate: u64,
     ) -> Result<()> {
-        initialize::handler(ctx, deposit_amount, transfer_rate)
+        create_payment::handler(ctx, amount, transfer_rate)
     }
 
-    pub fn transfer(ctx: Context<Transfer>) -> Result<()> {
-        transfer::handler(ctx)
+    pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Result<()> {
+        initialize::handler(ctx)
+    }
+
+    pub fn disburse_payment(ctx: Context<'_, '_, '_, '_, DisbursePayment<'_>>) -> Result<()> {
+        disburse_payment::handler(ctx)
     }
 }
