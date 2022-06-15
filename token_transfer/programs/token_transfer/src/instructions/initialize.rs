@@ -8,11 +8,7 @@ use {
 pub struct Initialize<'info> {
     #[account(
         init,
-        seeds = [
-            SEED_AUTHORITY, 
-            payer.to_account_info().key().as_ref(), 
-            recipient.key().as_ref()
-        ],
+        seeds = [SEED_AUTHORITY],
         bump,
         payer = payer,
         space = 8 + size_of::<Authority>(),
@@ -38,7 +34,6 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Res
     let payer = &mut ctx.accounts.payer;
     let system_program = &ctx.accounts.system_program;
     let scheduler_program = &ctx.accounts.scheduler_program;
-    let recipient = &ctx.accounts.recipient;
 
     // Get remaining accounts
     let manager = ctx.remaining_accounts.get(0).unwrap();
@@ -56,7 +51,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Res
             payer: payer.to_account_info(),
             system_program: system_program.to_account_info(),
         },
-        &[&[SEED_AUTHORITY, payer.key().as_ref(), recipient.key().as_ref(), &[bump]]],
+        &[&[SEED_AUTHORITY, &[bump]]],
     ))?;
 
     Ok(())
