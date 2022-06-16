@@ -13,9 +13,10 @@ pub const SEED_ESCROW: &[u8] = b"escrow";
 #[account]
 #[derive(Debug)]
 pub struct Escrow {
-    pub payer: Pubkey,
-    pub sender_token_account: Pubkey,
     pub amount: u64,
+    pub mint: Pubkey,
+    pub recipient: Pubkey,
+    pub sender: Pubkey,
     pub transfer_rate: u64,
 }
 
@@ -35,9 +36,10 @@ impl TryFrom<Vec<u8>> for Escrow {
 pub trait EscrowAccount {
     fn new(
         &mut self,
-        payer: Pubkey,
-        sender_token_account: Pubkey,
         amount: u64,
+        mint: Pubkey,
+        recipient: Pubkey,
+        sender: Pubkey,
         transfer_rate: u64,
     ) -> Result<()>;
 }
@@ -45,14 +47,16 @@ pub trait EscrowAccount {
 impl EscrowAccount for Account<'_, Escrow> {
     fn new(
         &mut self,
-        payer: Pubkey,
-        sender_token_account: Pubkey,
         amount: u64,
+        mint: Pubkey,
+        recipient: Pubkey,
+        sender: Pubkey,
         transfer_rate: u64,
     ) -> Result<()> {
-        self.payer = payer;
-        self.sender_token_account = sender_token_account;
         self.amount = amount;
+        self.mint = mint;
+        self.recipient = recipient;
+        self.sender = sender;
         self.transfer_rate = transfer_rate;
         Ok(())
     }
