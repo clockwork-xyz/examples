@@ -1,7 +1,7 @@
 use {
     crate::state::*,
     anchor_lang::prelude::*,
-    anchor_spl::token::{self, TokenAccount, Transfer},
+    anchor_spl::{token::{self, Mint, TokenAccount, Transfer}},
     cronos_scheduler::state::Manager,
 };
 
@@ -11,39 +11,49 @@ pub struct DisbursePayment<'info> {
     pub authority: Box<Account<'info, Authority>>,
 
     #[account(
-        mut,
-        constraint = escrow.payer == sender.key(),
+        has_one = sender,
+        has_one = recipient,
     )]
     pub escrow: Account<'info, Escrow>,
 
-    #[account(signer, constraint = manager.authority == authority.key())]
+    #[account(signer, has_one = authority)]
     pub manager: Account<'info, Manager>,
 
-    pub receiver: AccountInfo<'info>,
+    #[account(address = escrow.mint)]
+    pub mint: Account<'info, Mint>,
 
-    #[account(mut, constraint = receiver_token_account.owner == receiver.key())]
-    pub receiver_token_account: Account<'info, TokenAccount>,
+    #[account()]
+    pub recipient: AccountInfo<'info>,
 
-    #[account(mut)]
+    #[account(
+        mut, 
+        associated_token::authority = recipient,
+        associated_token::mint = mint,
+    )]
+    pub recipient_token_account: Account<'info, TokenAccount>,
+
+    #[account()]
     pub sender: AccountInfo<'info>,
 
     #[account(
         mut,
-        constraint = vault.owner == escrow.key()
+        associated_token::authority = escrow,
+        associated_token::mint = mint,
     )]
     pub vault: Account<'info, TokenAccount>,
 
-    pub token_program: AccountInfo<'info>,
+    #[account(address = anchor_spl::token::ID)]
+    pub token_program: Program<'info, anchor_spl::token::Token>,
 }
 
 pub fn handler(ctx: Context<'_, '_, '_, '_, DisbursePayment<'_>>) -> Result<()> {
     // Get accounts
     let escrow = &mut ctx.accounts.escrow;
-    let recipient_token_account = &mut ctx.accounts.receiver_token_account;
+    let recipient_token_account = &mut ctx.accounts.recipient_token_account;
     let token_program = &ctx.accounts.token_program;
     let vault = &mut ctx.accounts.vault;
 
-    // transfer from vault to receiver's token account
+    // transfer from vault to recipient's token account
     token::transfer(
         CpiContext::new(
             token_program.to_account_info(),
