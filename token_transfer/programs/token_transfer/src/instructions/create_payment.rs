@@ -40,13 +40,14 @@ pub struct CreatePayment<'info> {
 
     pub mint: Account<'info, Mint>,
 
+    #[account()]
     pub recipient: AccountInfo<'info>,
 
     #[account(
-        constraint = recipient_token_account.owner == recipient.key(),
-        constraint = recipient_token_account.mint == mint.key()
+        associated_token::authority = recipient,
+        associated_token::mint = mint,
     )]
-    pub recipient_token_account: Account<'info, TokenAccount>,
+    pub recipient_token_account: Box<Account<'info, TokenAccount>>,
 
     #[account(address = sysvar::rent::ID)]
     pub rent: Sysvar<'info, Rent>,
@@ -59,8 +60,8 @@ pub struct CreatePayment<'info> {
 
     #[account(
         mut,
-        constraint = sender_token_account.owner == sender.key(),
-        constraint = sender_token_account.mint == mint.key()
+        associated_token::authority = sender,
+        associated_token::mint = mint,
     )]
     pub sender_token_account: Box<Account<'info, TokenAccount>>,
 
@@ -68,7 +69,7 @@ pub struct CreatePayment<'info> {
     pub system_program: Program<'info, System>,
 
     #[account(address = anchor_spl::token::ID)]
-    pub token_program: AccountInfo<'info>,
+    pub token_program: Program<'info, anchor_spl::token::Token>,
 
     #[account(
         init,
@@ -90,7 +91,7 @@ pub fn handler<'info>(
     let clock = &ctx.accounts.clock;
     let escrow = &mut ctx.accounts.escrow;
     let manager = &mut ctx.accounts.manager;
-    let _mint = &ctx.accounts.mint;
+    let mint = &ctx.accounts.mint;
     let recipient = &ctx.accounts.recipient;
     let recipient_token_account = &ctx.accounts.recipient_token_account;
     let _rent = &ctx.accounts.rent;
@@ -108,9 +109,10 @@ pub fn handler<'info>(
 
     // initialize Accounts
     escrow.new(
-        sender.key(),
-        sender_token_account.key(),
         amount,
+        mint.key(),
+        recipient.key(),
+        sender.key(),
         transfer_rate,
     )?;
 
@@ -145,7 +147,7 @@ pub fn handler<'info>(
             },
             &[&[SEED_AUTHORITY, &[bump]]],
         ),
-        "*/15 * * * * * *".into(),
+        "*/30 * * * * * *".into(),
     )?;
 
     // create ix
@@ -153,15 +155,16 @@ pub fn handler<'info>(
         program_id: crate::ID,
         accounts: vec![
             AccountMeta::new_readonly(authority.key(), false),
-            AccountMeta::new(escrow.key(), false),
+            AccountMeta::new_readonly(escrow.key(), false),
             AccountMeta::new_readonly(manager.key(), true),
+            AccountMeta::new_readonly(mint.key(), false),
             AccountMeta::new_readonly(recipient.key(), false),
             AccountMeta::new(recipient_token_account.key(), false),
-            AccountMeta::new(sender.key(), false),
+            AccountMeta::new_readonly(sender.key(), false),
             AccountMeta::new(vault.key(), false),
             AccountMeta::new_readonly(token_program.key(), false),
         ],
-        data: sighash("global","disburse_payment").into(),
+        data: cronos_scheduler::anchor::sighash("disburse_payment").into(),
     };
 
     // Create task with the hello world ix and add it to the queue
@@ -182,13 +185,4 @@ pub fn handler<'info>(
     )?;
 
     Ok(())
-}
-
-fn sighash(namespace: &str, name: &str) -> [u8; 8] {
-    let preimage = format!("{}:{}", namespace, name);
-    let mut sighash = [0u8; 8];
-    sighash.copy_from_slice(
-        &anchor_lang::solana_program::hash::hash(preimage.as_bytes()).to_bytes()[..8],
-    );
-    sighash
 }
