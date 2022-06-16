@@ -18,9 +18,6 @@ pub struct Initialize<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
 
-    #[account()]
-    pub recipient: AccountInfo<'info>,
-
     #[account(address = cronos_scheduler::ID)]
     pub scheduler_program: Program<'info, cronos_scheduler::program::CronosScheduler>,
 
