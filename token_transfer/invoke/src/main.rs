@@ -28,7 +28,7 @@ fn main() -> ClientResult<()> {
     let authority_pubkey = token_transfer::state::Authority::pda().0;
     let manager_pubkey = cronos_scheduler::state::Manager::pda(authority_pubkey).0;
 
-    initialize(&client, recipient_pubkey, authority_pubkey, manager_pubkey)?;
+    initialize(&client, authority_pubkey, manager_pubkey)?;
 
     create_payment(
         &client,
@@ -44,7 +44,6 @@ fn main() -> ClientResult<()> {
 
 fn initialize(
     client: &Client,
-    recipient_pubkey: Pubkey,
     authority_pubkey: Pubkey,
     manager_pubkey: Pubkey,
 ) -> ClientResult<()> {
@@ -54,7 +53,6 @@ fn initialize(
         accounts: vec![
             AccountMeta::new(authority_pubkey, false),
             AccountMeta::new(client.payer_pubkey(), true),
-            AccountMeta::new_readonly(recipient_pubkey, false),
             AccountMeta::new_readonly(cronos_scheduler::ID, false),
             AccountMeta::new_readonly(system_program::ID, false),
             // Extra accounts
@@ -98,28 +96,40 @@ fn create_payment(
     // create mint
     let mint = client.create_token_mint(&client.payer_pubkey(), 9)?;
 
-    // create token accounts
-    let sender_token_account =
-        client.create_token_account(&client.payer_pubkey(), &mint.pubkey())?;
-    let recipient_token_account = client.create_token_account(&recipient_pubkey, &mint.pubkey())?;
+    // create associated token accounts
+    let sender_token_account_pubkey = client.create_associated_token_account(
+        &client.payer(),
+        &client.payer_pubkey(),
+        &mint.pubkey(),
+    )?;
+    let recipient_token_account_pubkey = client.create_associated_token_account(
+        &client.payer(),
+        &recipient_pubkey,
+        &mint.pubkey(),
+    )?;
 
+    // get vault associated token address
     let vault_pubkey =
         anchor_spl::associated_token::get_associated_token_address(&escrow_pubkey, &mint.pubkey());
 
     println!(
-        "recipient associated token account: https://explorer.solana.com/address/{}?cluster=devnet",
-        recipient_token_account.pubkey()
+        "sender associated token account: https://explorer.solana.com/address/{}?cluster=custom",
+        sender_token_account_pubkey
     );
     println!(
-        "vault: https://explorer.solana.com/address/{}?cluster=devnet",
+        "recipient associated token account: https://explorer.solana.com/address/{}?cluster=custom",
+        recipient_token_account_pubkey
+    );
+    println!(
+        "vault: https://explorer.solana.com/address/{}?cluster=custom",
         vault_pubkey
     );
 
-    // mint to sender's token account
+    // mint to sender's associated token account
     client.mint_to(
         &client.payer(),
         &mint.pubkey(),
-        &sender_token_account.pubkey(),
+        &sender_token_account_pubkey,
         amount,
         9,
     )?;
@@ -135,11 +145,11 @@ fn create_payment(
             AccountMeta::new(manager_pubkey, false),
             AccountMeta::new_readonly(mint.pubkey(), false),
             AccountMeta::new_readonly(recipient_pubkey, false),
-            AccountMeta::new_readonly(recipient_token_account.pubkey(), false),
+            AccountMeta::new_readonly(recipient_token_account_pubkey, false),
             AccountMeta::new_readonly(sysvar::rent::ID, false),
             AccountMeta::new_readonly(cronos_scheduler::ID, false),
             AccountMeta::new(client.payer_pubkey(), true),
-            AccountMeta::new(sender_token_account.pubkey(), false),
+            AccountMeta::new(sender_token_account_pubkey, false),
             AccountMeta::new_readonly(system_program::ID, false),
             AccountMeta::new_readonly(token::ID, false),
             AccountMeta::new(vault_pubkey, false),
