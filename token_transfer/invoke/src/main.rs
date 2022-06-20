@@ -17,7 +17,7 @@ fn main() -> ClientResult<()> {
     let transfer_rate = 10000;
 
     // Create Client
-    let client = RpcClient::new("http://localhost:8899");
+    let client = RpcClient::new("https://api.devnet.solana.com");
     let payer = Keypair::new();
     let client = Client { client, payer };
     client.airdrop(&client.payer_pubkey(), amount)?;
@@ -109,7 +109,7 @@ fn initialize(
     // Send and confirm initialize tx
     match client.send_and_confirm_transaction(&tx) {
         Ok(sig) => println!(
-            "Initialize ix: ✅ https://explorer.solana.com/tx/{}?cluster=custom",
+            "Initialize ix: ✅ https://explorer.solana.com/tx/{}?cluster=devnet",
             sig
         ),
         Err(err) => println!("Initialize ix: ❌ {:#?}", err),
@@ -151,7 +151,7 @@ fn create(
     // Send and confirm deposit tx
     match client.send_and_confirm_transaction(&tx) {
         Ok(sig) => println!(
-            "create ix: ✅ https://explorer.solana.com/tx/{}?cluster=custom",
+            "create ix: ✅ https://explorer.solana.com/tx/{}?cluster=devnet",
             sig
         ),
         Err(err) => println!("create ix: ❌ {:#?}", err),
@@ -205,7 +205,7 @@ fn deposit(
     };
 
     println!(
-        "vault: https://explorer.solana.com/address/{}?cluster=custom",
+        "vault: https://explorer.solana.com/address/{}?cluster=devnet",
         vault_pubkey
     );
 
@@ -216,7 +216,7 @@ fn deposit(
     // Send and confirm deposit tx
     match client.send_and_confirm_transaction(&tx) {
         Ok(sig) => println!(
-            "deposit ix: ✅ https://explorer.solana.com/tx/{}?cluster=custom",
+            "deposit ix: ✅ https://explorer.solana.com/tx/{}?cluster=devnet",
             sig
         ),
         Err(err) => println!("deposit ix: ❌ {:#?}", err),
@@ -268,7 +268,7 @@ fn auto_withdraw(
     // Send and confirm deposit tx
     match client.send_and_confirm_transaction(&tx) {
         Ok(sig) => println!(
-            "auto_withdraw ix: ✅ https://explorer.solana.com/tx/{}?cluster=custom",
+            "auto_withdraw ix: ✅ https://explorer.solana.com/tx/{}?cluster=devnet",
             sig
         ),
         Err(err) => println!("auto_withdraw ix: ❌ {:#?}", err),

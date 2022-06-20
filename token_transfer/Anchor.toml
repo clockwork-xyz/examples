@@ -1,13 +1,13 @@
 [features]
 seeds = false
-[programs.localnet]
-token_transfer = "BPqfJoCm8muWBJthepQTLmbrxVN8DnAc6jc1bvJ4MJiR"
+[programs.devnet]
+token_transfer = "HSPN2LP6yxiQfZfSnYDwTjwFEF7dbbhrYoidkoc61Gno"
 
 [registry]
 url = "https://anchor.projectserum.com"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
