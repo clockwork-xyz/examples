@@ -8,12 +8,11 @@ use {
 };
 
 #[derive(Accounts)]
-pub struct AutoWithdraw<'info> {
+pub struct AutoDisburse<'info> {
     #[account(address = anchor_spl::associated_token::ID)]
     pub associated_token_program: Program<'info, AssociatedToken>,
 
     #[account(
-        mut,
         seeds = [SEED_AUTHORITY], 
         bump
     )]
@@ -28,7 +27,7 @@ pub struct AutoWithdraw<'info> {
     )]
     pub escrow: Account<'info, Escrow>,
 
-    #[account(mut, has_one = authority)]
+    #[account(has_one = authority)]
     pub manager: Account<'info, cronos_scheduler::state::Manager>,
 
     #[account()]
@@ -60,13 +59,13 @@ pub struct AutoWithdraw<'info> {
 }
 
 pub fn handler<'info> (
-  ctx: Context<'_, '_, '_, 'info, AutoWithdraw<'info>>
+  ctx: Context<'_, '_, '_, 'info, AutoDisburse<'info>>
 ) -> Result<()> {
     // Get Accounts
-    let authority = &mut ctx.accounts.authority;
+    let authority = &ctx.accounts.authority;
     let clock = &ctx.accounts.clock;
     let escrow = &ctx.accounts.escrow;
-    let manager = &mut ctx.accounts.manager;
+    let manager = &ctx.accounts.manager;
     let recipient_token_account = &ctx.accounts.recipient_token_account;
     let scheduler_program = &ctx.accounts.scheduler_program;
     let sender = &ctx.accounts.sender;
