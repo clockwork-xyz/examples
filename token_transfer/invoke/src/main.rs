@@ -1,5 +1,3 @@
-use std::vec;
-
 use {
     anchor_lang::{prelude::Pubkey, solana_program::sysvar, InstructionData},
     anchor_spl::{associated_token, token},
@@ -16,7 +14,7 @@ use {
 
 fn main() -> ClientResult<()> {
     let amount = LAMPORTS_PER_SOL;
-    let transfer_rate = 1000000;
+    let transfer_rate = 10000;
 
     // Create Client
     let client = RpcClient::new("http://localhost:8899");
@@ -53,12 +51,18 @@ fn main() -> ClientResult<()> {
 
     initialize(&client, authority_pubkey, manager_pubkey)?;
 
+    create(
+        &client,
+        escrow_pubkey,
+        manager_pubkey,
+        mint.pubkey(),
+        recipient_pubkey,
+    )?;
+
     deposit(
         &client,
         amount,
-        authority_pubkey,
         escrow_pubkey,
-        manager_pubkey,
         mint.pubkey(),
         recipient_pubkey,
         sender_token_account_pubkey,
@@ -114,12 +118,52 @@ fn initialize(
     Ok(())
 }
 
+fn create(
+    client: &Client,
+    escrow_pubkey: Pubkey,
+    manager_pubkey: Pubkey,
+    mint_pubkey: Pubkey,
+    recipient_pubkey: Pubkey,
+) -> ClientResult<()> {
+    // Derive PDAs
+    let disburse_queue_pubkey = cronos_scheduler::state::Queue::pda(manager_pubkey, 0).0;
+
+    // create deposit ix
+    let create_payment_ix = Instruction {
+        program_id: token_transfer::ID,
+        accounts: vec![
+            AccountMeta::new(escrow_pubkey, false),
+            AccountMeta::new_readonly(mint_pubkey, false),
+            AccountMeta::new_readonly(recipient_pubkey, false),
+            AccountMeta::new_readonly(cronos_scheduler::ID, false),
+            AccountMeta::new(client.payer_pubkey(), true),
+            AccountMeta::new_readonly(system_program::ID, false),
+            // Extra Accounts
+            AccountMeta::new(disburse_queue_pubkey, false),
+        ],
+        data: token_transfer::instruction::Create {}.data(),
+    };
+
+    // Create deposit tx
+    let mut tx = Transaction::new_with_payer(&[create_payment_ix], Some(&client.payer_pubkey()));
+    tx.sign(&[client.payer()], client.latest_blockhash().unwrap());
+
+    // Send and confirm deposit tx
+    match client.send_and_confirm_transaction(&tx) {
+        Ok(sig) => println!(
+            "create ix: ✅ https://explorer.solana.com/tx/{}?cluster=custom",
+            sig
+        ),
+        Err(err) => println!("create ix: ❌ {:#?}", err),
+    }
+
+    Ok(())
+}
+
 fn deposit(
     client: &Client,
     amount: u64,
-    authority_pubkey: Pubkey,
     escrow_pubkey: Pubkey,
-    manager_pubkey: Pubkey,
     mint_pubkey: Pubkey,
     recipient_pubkey: Pubkey,
     sender_token_account_pubkey: Pubkey,
@@ -127,7 +171,6 @@ fn deposit(
     vault_pubkey: Pubkey,
 ) -> ClientResult<()> {
     // Derive PDAs
-    let disburse_queue_pubkey = cronos_scheduler::state::Queue::pda(manager_pubkey, 0).0;
 
     // mint to sender's associated token account
     client.mint_to(
@@ -143,9 +186,7 @@ fn deposit(
         program_id: token_transfer::ID,
         accounts: vec![
             AccountMeta::new_readonly(associated_token::ID, false),
-            AccountMeta::new_readonly(authority_pubkey, false),
             AccountMeta::new(escrow_pubkey, false),
-            AccountMeta::new(manager_pubkey, false),
             AccountMeta::new_readonly(mint_pubkey, false),
             AccountMeta::new_readonly(recipient_pubkey, false),
             AccountMeta::new_readonly(sysvar::rent::ID, false),
@@ -155,8 +196,6 @@ fn deposit(
             AccountMeta::new_readonly(system_program::ID, false),
             AccountMeta::new_readonly(token::ID, false),
             AccountMeta::new(vault_pubkey, false),
-            // Extra Accounts
-            AccountMeta::new(disburse_queue_pubkey, false),
         ],
         data: token_transfer::instruction::Deposit {
             amount,
@@ -220,7 +259,7 @@ fn auto_withdraw(
             AccountMeta::new(disburse_queue_pubkey, false),
             AccountMeta::new(disburse_task_pubkey, false),
         ],
-        data: token_transfer::instruction::AutoWithdraw {}.data(),
+        data: token_transfer::instruction::AutoDisburse {}.data(),
     };
 
     let mut tx = Transaction::new_with_payer(&[auto_withdraw_ix], Some(&client.payer_pubkey()));

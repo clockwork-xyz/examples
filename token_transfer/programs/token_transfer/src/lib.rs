@@ -17,6 +17,10 @@ pub mod token_transfer {
         initialize::handler(ctx)
     }
 
+    pub fn create(ctx: Context<Create>) -> Result<()> {
+        create::handler(ctx)
+    }
+
     pub fn deposit<'info>(
         ctx: Context<'_, '_, '_, 'info, Deposit<'info>>,
         amount: u64,
@@ -25,10 +29,10 @@ pub mod token_transfer {
         deposit::handler(ctx, amount, transfer_rate)
     }
 
-    pub fn auto_withdraw<'info>(
-        ctx: Context<'_, '_, '_, 'info, AutoWithdraw<'info>>,
+    pub fn auto_disburse<'info>(
+        ctx: Context<'_, '_, '_, 'info, AutoDisburse<'info>>,
     ) -> Result<()> {
-        auto_withdraw::handler(ctx)
+        auto_disburse::handler(ctx)
     }
 
     pub fn disburse_payment(ctx: Context<'_, '_, '_, '_, DisbursePayment<'_>>) -> Result<()> {
