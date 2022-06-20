@@ -8,7 +8,6 @@ use {
         associated_token::AssociatedToken,
         token::{self, Mint, TokenAccount, Transfer},
     },
-    std::mem::size_of,
 };
 
 #[derive(Accounts)]
@@ -18,24 +17,13 @@ pub struct Deposit<'info> {
     pub associated_token_program: Program<'info, AssociatedToken>,
 
     #[account(
-        seeds = [SEED_AUTHORITY], 
-        bump
-    )]
-    pub authority: Account<'info, Authority>,
-
-    #[account(
-        init,
-        payer = sender,
+        mut,
         seeds = [SEED_ESCROW, sender.key().as_ref(), recipient.key().as_ref()],
         bump,
-        space = 8 + size_of::<Escrow>(),
     )]
     pub escrow: Account<'info, Escrow>,
 
-    #[account(mut, has_one = authority)]
-    pub manager: Account<'info, cronos_scheduler::state::Manager>,
-
-    pub mint: Box<Account<'info, Mint>>,
+    pub mint: Account<'info, Mint>,
 
     #[account()]
     pub recipient: AccountInfo<'info>,
@@ -51,10 +39,10 @@ pub struct Deposit<'info> {
 
     #[account(
         mut,
-        associated_token::authority = sender,
-        associated_token::mint = mint,
+        associated_token::authority = escrow.sender,
+        associated_token::mint = escrow.mint,
     )]
-    pub sender_token_account: Box<Account<'info, TokenAccount>>,
+    pub sender_token_account: Account<'info, TokenAccount>,
 
     #[account(address = system_program::ID)]
     pub system_program: Program<'info, System>,
@@ -68,7 +56,7 @@ pub struct Deposit<'info> {
         associated_token::authority = escrow,
         associated_token::mint = mint,
     )]
-    pub vault: Box<Account<'info, TokenAccount>>,
+    pub vault: Account<'info, TokenAccount>,
 }
 
 pub fn handler<'info>(
@@ -78,37 +66,26 @@ pub fn handler<'info>(
 ) -> Result<()> {
     // Get accounts
     let escrow = &mut ctx.accounts.escrow;
-    let mint = &ctx.accounts.mint;
-    let recipient = &ctx.accounts.recipient;
     let sender = &mut ctx.accounts.sender;
     let sender_token_account = &ctx.accounts.sender_token_account;
     let token_program = &ctx.accounts.token_program;
-    let vault = &ctx.accounts.vault;    
+    let vault = &ctx.accounts.vault;
 
-    // Get remaining Accounts
-    let disburse_queue = ctx.remaining_accounts.get(0).unwrap();
+    // update escrow
+    escrow.amount = amount;
+    escrow.transfer_rate = transfer_rate;
 
-    // initialize Escrow
-    escrow.new(
-        mint.key(),
-        recipient.key(),
-        sender.key(),
-        Some(disburse_queue.key()),
-        amount,
-        transfer_rate,
-    )?;
-
-    // deposit funds from sender to vault token account
+    // deposit funds from sender's token account to vault token account
     token::transfer(
         CpiContext::new(
-            token_program.to_account_info(), 
+            token_program.to_account_info(),
             Transfer {
                 from: sender_token_account.to_account_info().clone(),
                 to: vault.to_account_info().clone(),
                 authority: sender.to_account_info().clone(),
-            }
-        ), 
-        amount
+            },
+        ),
+        escrow.amount,
     )?;
 
     Ok(())
