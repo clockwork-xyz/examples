@@ -42,7 +42,7 @@ pub struct AutoDisburse<'info> {
     #[account(address = cronos_scheduler::ID)]
     pub scheduler_program: Program<'info, cronos_scheduler::program::CronosScheduler>,
 
-     #[account(mut)]
+    #[account(mut)]
     pub sender: Signer<'info>,
 
     #[account(address = system_program::ID)]

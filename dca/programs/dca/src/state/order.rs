@@ -1,9 +1,4 @@
-use {
-    crate::pda::PDA,
-    anchor_lang::{prelude::*, AnchorDeserialize},
-    anchor_spl::dex::serum_dex::matching::Side,
-    std::convert::TryFrom,
-};
+use {crate::pda::PDA, anchor_lang::prelude::*, std::convert::TryFrom};
 
 pub const SEED_ORDER: &[u8] = b"order";
 
@@ -12,12 +7,11 @@ pub const SEED_ORDER: &[u8] = b"order";
  */
 
 #[account]
-#[derive(Debug)]
 pub struct Order {
     pub fund: Pubkey,
     pub buyer: Pubkey,
     pub amount: u64,
-    pub side: Side,
+    // pub side: Side,
     pub supply_snapshot: u64,
     pub usdc_slippage_refunded: u64,
     pub asset_index: u8,
@@ -49,7 +43,7 @@ pub trait OrderAccount {
         fund: Pubkey,
         buyer: Pubkey,
         amount: u64,
-        side: Side,
+        // side: Side,
         supply_snapshot: u64,
         usdc_slippage_refunded: u64,
         asset_index: u8,
@@ -62,7 +56,7 @@ impl OrderAccount for Account<'_, Order> {
         fund: Pubkey,
         buyer: Pubkey,
         amount: u64,
-        side: Side,
+        // side: Side,
         supply_snapshot: u64,
         usdc_slippage_refunded: u64,
         asset_index: u8,
@@ -70,7 +64,7 @@ impl OrderAccount for Account<'_, Order> {
         self.fund = fund;
         self.buyer = buyer;
         self.amount = amount;
-        self.side = side;
+        // self.side = side;
         self.supply_snapshot = supply_snapshot;
         self.usdc_slippage_refunded = usdc_slippage_refunded;
         self.asset_index = asset_index;

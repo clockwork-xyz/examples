@@ -683,7 +683,7 @@ dependencies = [
 
 [[package]]
 name = "cronos-cron"
-version = "0.2.0-alpha6"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "nom",
@@ -692,14 +692,14 @@ dependencies = [
 
 [[package]]
 name = "cronos-pool"
-version = "0.2.0-alpha6"
+version = "0.2.0"
 dependencies = [
  "anchor-lang",
 ]
 
 [[package]]
 name = "cronos-scheduler"
-version = "0.2.0-alpha6"
+version = "0.2.0"
 dependencies = [
  "anchor-lang",
  "chrono",

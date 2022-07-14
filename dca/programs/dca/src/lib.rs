@@ -14,51 +14,30 @@ pub mod dca {
     use super::*;
 
     /*
-     * add documentation here
+     * initialize clockworks related accounts
      */
     pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Result<()> {
         initialize::handler(ctx)
     }
 
     /*
-     * add documentation here
+     * create fund account
      */
-    pub fn create_fund(
-        ctx: Context<'_, '_, '_, 'info, CreateFund<'info>>,
-        name: String,
-        symbol: String,
-        assets: [Pubkey; 3],
-        weights: [u64; 3],
-        _token_decimals: u8,
-    ) -> Result<()> {
-        create_fund::handler(ctx, name, symbol, assets, weights, _token_decimals)
+    pub fn create_fund<'info>(ctx: Context<'_, '_, '_, 'info, CreateFund<'info>>) -> Result<()> {
+        create_fund::handler(ctx)
     }
 
     /*
-     * add documentation here
+     * initiating swap
      */
-    pub fn init_order(ctx: Context<InitOrder>, amount: u64) -> Result<()> {
-        init_order::handler(ctx, amount)
+    pub fn swap<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<()> {
+        swap::handler(ctx)
     }
 
     /*
-     * add documentation here
-     */
-    pub fn fund_ata(ctx: Context<'_, '_, '_, 'info, FundAta<'info>>) -> Result<()> {
-        fund_ata::handler(ctx)
-    }
-
-    /*
-     * add documentation here
+     * clockworks automation for auto swapping on serum dex
      */
     // pub fn auto_swap(ctx: Context<'_, '_, '_, 'info, AutoSwap<'info>>) -> Result<()> {
     // auto_swap::handler(ctx)
-    // }
-
-    /*
-     * add documentation here
-     */
-    // pub fn swap(ctx: Context<'_, '_, '_, '_, Swap<'_>>) -> Result<()> {
-    //     swap::handler(ctx)
     // }
 }

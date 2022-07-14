@@ -1,6 +1,5 @@
 [workspace]
 members = [
-    "dca",
-    "invoke",
-    "programs/*",
+   "invoke",
+   "programs/*",
 ]

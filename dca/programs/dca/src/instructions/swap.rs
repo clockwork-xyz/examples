@@ -1,127 +1,98 @@
-use anchor_spl::token::TokenAccount;
-
 use {
-    crate::state::*,
-    anchor_lang::{prelude::*, solana_program::system_program},
-    anchor_spl::{
-        dex::serum_dex::state::{Market, OpenOrders},
-        token::TokenAccount,
+    anchor_lang::{
+        prelude::*,
+        solana_program::{system_program, sysvar},
     },
-    std::mem::size_of,
+    anchor_spl::{
+        associated_token::AssociatedToken,
+        dex::{
+            serum_dex::{
+                instruction::SelfTradeBehavior,
+                matching::{OrderType, Side},
+            },
+            NewOrderV3,
+        },
+        token::{Mint, Token, TokenAccount},
+    },
+    std::num::NonZeroU64,
 };
 
 #[derive(Accounts)]
 pub struct Swap<'info> {
-    #[account(address == anchor_spl::associated_token::ID)]
+    #[account(address = anchor_spl::associated_token::ID)]
     pub associated_token_program: Program<'info, AssociatedToken>,
 
-    #[account(mut)]
-    pub buyer: Signer<'info>,
-
-    #[account(
-        init,
-        payer = buyer,
-        associated_token::mint = index_token_mint,
-        associated_token::authority = buyer
-    )]
-    pub buyer_index_ata: Box<Account<'info, TokenAccount>>,
+    #[account(address = anchor_spl::dex::ID)]
+    pub dex_program: Program<'info, anchor_spl::dex::Dex>,
 
     #[account(mut)]
-    pub buyer_usdc_ata: Account<'info, TokenAccount>,
+    pub payer: Signer<'info>,
 
     #[account(
         mut,
-        constraint = order.fund.key() == fund.key()
+        token::authority = payer,
+        token::mint = pc_mint
     )]
-    pub fund: Account<'info, Fund>,
+    pub pc_wallet: Account<'info, TokenAccount>,
 
-    #[account(mut)]
-    pub fund_usdc_ata: Account<'info, TokenAccount>,
-
-    #[account(mut)]
-    pub index_token_mint: Account<'info, Mint>,
-
-    #[account(mut)]
-    pub order: Account<'info, Order>,
+    #[account()]
+    pub pc_mint: Account<'info, Mint>,
 
     #[account(address = anchor_spl::token::ID)]
     pub token_program: Program<'info, Token>,
 
-    #[account(address = system_program::ID)]
-    pub system_program: Program<'info, System>,
-
-    #[account(address = anchor_spl::ID)]
-    pub dex_program: Program<'info, anchor_spl::dex::Dex>,
-
     #[account(address = sysvar::rent::ID)]
     pub rent: Sysvar<'info, Rent>,
+
+    #[account(address = system_program::ID)]
+    pub system_program: Program<'info, System>,
 }
 
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<()> {
-    // Get accounts
-    let associated_token_program = &ctx.accounts.associated_token_program;
-    let buyer = &ctx.accounts.buyer;
-    let buyer_index_ata = &ctx.accounts.buyer_index_ata;
-    let buyer_usdc_ata = &ctx.accounts.buyer_usdc_ata;
+    // get accounts
     let dex_program = &ctx.accounts.dex_program;
-    let fund = &mut ctx.accounts.fund;
-    let fund_usdc_ata = &ctx.accounts.fund_usdc_ata;
-    let index_mint = &ctx.accounts.index_token_mint;
-    let order = &mut ctx.accounts.order;
+    let payer = &ctx.accounts.payer;
+    let pc_wallet = &mut ctx.accounts.pc_wallet;
+    let rent = &ctx.accounts.rent;
     let token_program = &ctx.accounts.token_program;
-    let system_program = &ctx.accounts.system_program;
-    let rent_sysvar = &ctx.accounts.rent;
 
-    // Get remaining accounts
-    let remaining_accounts_iter = &mut ctx.remaining_accounts.iter();
-    let market = next_account_info(remaining_accounts_iter)?;
-    let open_orders = next_account_info(remaining_accounts_iter)?;
-    let request_queue = next_account_info(remaining_accounts_iter)?;
-    let event_queue = next_account_info(remaining_accounts_iter)?;
-    let bids = next_account_info(remaining_accounts_iter)?;
-    let asks = next_account_info(remaining_accounts_iter)?;
-    let coin_vault = next_account_info(remaining_accounts_iter)?;
-    let pc_vault = next_account_info(remaining_accounts_iter)?;
-    let vault_signer = next_account_info(remaining_accounts_iter)?;
-    let coin_wallet = next_account_info(remaining_accounts_iter)?;
-    let asset_mint = next_account_info(remaining_accounts_iter)?;
+    // get remaining accounts
+    let market = ctx.remaining_accounts.get(0).unwrap();
+    let coin_vault = ctx.remaining_accounts.get(1).unwrap();
+    let pc_vault = ctx.remaining_accounts.get(2).unwrap();
+    let request_queue = ctx.remaining_accounts.get(3).unwrap();
+    let event_queue = ctx.remaining_accounts.get(4).unwrap();
+    let market_bids = ctx.remaining_accounts.get(5).unwrap();
+    let market_asks = ctx.remaining_accounts.get(6).unwrap();
+    let open_orders = ctx.remaining_accounts.get(7).unwrap();
 
-    // get fund asset ata
-    let fund_asset_ata = get_associated_token_address(
-        &fund.to_account_info().key(),
-        &asset_mint.to_account_info().key(),
-    );
-
-    // create coin vault ata if needed
-    if coin_wallet.to_account_info().data_is_empty() {
-        create_ata(
-            &buyer.to_account_info(),
-            &fund.to_account_info(),
-            &asset_mint.to_account_info(),
-            &coin_wallet.to_account_info(),
-            &token_program.to_account_info(),
-            &associated_token_program.to_account_info(),
-            &system_program.to_account_info(),
-            &rent_sysvar.to_account_info(),
-        )?;
-    }
-
-    serum_swap::cpi::swap(
-        CpiContext::new_with_signer(
-            token_program.to_account_info(),
-            serum_swap::Swap {
-                authority: order.fund,
-                market,
-                pc_wallet,
-                dex_program,
-                token_program,
-                rent,
+    // make cpi to serum dex to swap
+    anchor_spl::dex::new_order_v3(
+        CpiContext::new(
+            dex_program.to_account_info(),
+            NewOrderV3 {
+                market: market.to_account_info(),
+                coin_vault: coin_vault.to_account_info(),
+                pc_vault: pc_vault.to_account_info(),
+                request_queue: request_queue.to_account_info(),
+                event_queue: event_queue.to_account_info(),
+                market_bids: market_bids.to_account_info(),
+                market_asks: market_asks.to_account_info(),
+                open_orders: open_orders.to_account_info(),
+                order_payer_token_account: pc_wallet.to_account_info(),
+                open_orders_authority: payer.to_account_info(),
+                token_program: token_program.to_account_info(),
+                rent: rent.to_account_info(),
             },
-            &[&[&[fund.manager.as_ref(), fund.name.as_ref(), SEED_FUND]]],
         ),
-        order.side,
-        order.amount,
-        min_exchange_rate,
+        Side::Bid,
+        NonZeroU64::new(500).unwrap(),
+        NonZeroU64::new(1_000).unwrap(),
+        NonZeroU64::new(500_000).unwrap(),
+        SelfTradeBehavior::DecrementTake,
+        OrderType::Limit,
+        019269,
+        std::u16::MAX,
     )?;
 
     Ok(())
