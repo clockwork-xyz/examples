@@ -1,23 +1,15 @@
-use anchor_spl::token::{self, Mint};
-
 use {
     crate::state::*,
     anchor_lang::{
         prelude::*,
         solana_program::{instruction::Instruction, system_program, sysvar},
     },
-    anchor_spl::{
-        associated_token::{self, AssociatedToken},
-        token::TokenAccount,
-    },
+    anchor_spl::token::{self, Mint, TokenAccount},
 };
 
 #[derive(Accounts)]
 pub struct AutoSwap<'info> {
-    #[account(
-        seeds = [SEED_AUTHORITY],
-        bump
-    )]
+    #[account(seeds = [SEED_AUTHORITY, authority.payer.as_ref()], bump, has_one = manager)]
     pub authority: Account<'info, Authority>,
 
     #[account(address = sysvar::clock::ID)]
@@ -26,7 +18,7 @@ pub struct AutoSwap<'info> {
     #[account(address = anchor_spl::dex::ID)]
     pub dex_program: Program<'info, anchor_spl::dex::Dex>,
 
-    #[account(has_one = authority)]
+    #[account(mut, has_one = authority)]
     pub manager: Account<'info, cronos_scheduler::state::Manager>,
 
     #[account(mut)]
@@ -35,11 +27,7 @@ pub struct AutoSwap<'info> {
     #[account()]
     pub pc_mint: Account<'info, Mint>,
 
-    #[account(
-      mut,
-      token::authority = manager,
-      token::mint = pc_mint
-    )]
+    #[account(mut, token::authority = authority, token::mint = pc_mint)]
     pub pc_wallet: Account<'info, TokenAccount>,
 
     #[account(address = cronos_scheduler::ID)]
@@ -57,7 +45,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, AutoSwap<'info>>) -> Resul
     let authority = &ctx.accounts.authority;
     let clock = &ctx.accounts.clock;
     let dex_program = &ctx.accounts.dex_program;
-    let manager = &ctx.accounts.manager;
+    let manager = &mut ctx.accounts.manager;
     let payer = &ctx.accounts.payer;
     let pc_mint = &ctx.accounts.pc_mint;
     let pc_wallet = &mut ctx.accounts.pc_wallet;
@@ -65,9 +53,9 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, AutoSwap<'info>>) -> Resul
     let system_program = &ctx.accounts.system_program;
 
     // Get remaining Accounts
-    let disburse_fee = ctx.remaining_accounts.get(0).unwrap();
-    let disburse_queue = ctx.remaining_accounts.get(1).unwrap();
-    let disburse_task = ctx.remaining_accounts.get(2).unwrap();
+    let swap_fee = ctx.remaining_accounts.get(0).unwrap();
+    let swap_queue = ctx.remaining_accounts.get(1).unwrap();
+    let swap_task = ctx.remaining_accounts.get(2).unwrap();
     let market = ctx.remaining_accounts.get(3).unwrap();
     let coin_vault = ctx.remaining_accounts.get(4).unwrap();
     let pc_vault = ctx.remaining_accounts.get(5).unwrap();
@@ -87,13 +75,13 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, AutoSwap<'info>>) -> Resul
             cronos_scheduler::cpi::accounts::QueueNew {
                 authority: authority.to_account_info(),
                 clock: clock.to_account_info(),
-                fee: disburse_fee.to_account_info(),
+                fee: swap_fee.to_account_info(),
                 manager: manager.to_account_info(),
                 payer: payer.to_account_info(),
-                queue: disburse_queue.to_account_info(),
+                queue: swap_queue.to_account_info(),
                 system_program: system_program.to_account_info(),
             },
-            &[&[SEED_AUTHORITY, &[bump]]],
+            &[&[SEED_AUTHORITY, authority.payer.as_ref(), &[bump]]],
         ),
         "*/30 * * * * * *".into(),
     )?;
@@ -102,11 +90,12 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, AutoSwap<'info>>) -> Resul
     let swap_ix = Instruction {
         program_id: crate::ID,
         accounts: vec![
-            AccountMeta::new_readonly(associated_token::ID, false),
+            AccountMeta::new_readonly(authority.key(), false),
             AccountMeta::new_readonly(dex_program.key(), false),
             AccountMeta::new(manager.key(), true),
-            AccountMeta::new(pc_wallet.key(), false),
+            AccountMeta::new(cronos_scheduler::payer::ID, true),
             AccountMeta::new_readonly(pc_mint.key(), false),
+            AccountMeta::new(pc_wallet.key(), false),
             AccountMeta::new_readonly(token::ID, false),
             AccountMeta::new_readonly(sysvar::rent::ID, false),
             AccountMeta::new_readonly(system_program::ID, false),
@@ -131,11 +120,11 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, AutoSwap<'info>>) -> Resul
                 authority: authority.to_account_info(),
                 manager: manager.to_account_info(),
                 payer: payer.to_account_info(),
-                queue: disburse_queue.to_account_info(),
+                queue: swap_queue.to_account_info(),
                 system_program: system_program.to_account_info(),
-                task: disburse_task.to_account_info(),
+                task: swap_task.to_account_info(),
             },
-            &[&[SEED_AUTHORITY, &[bump]]],
+            &[&[SEED_AUTHORITY, authority.payer.as_ref(), &[bump]]],
         ),
         vec![swap_ix.into()],
     )?;

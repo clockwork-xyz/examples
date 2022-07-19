@@ -1,10 +1,10 @@
 use {
+    crate::state::{Authority, SEED_AUTHORITY},
     anchor_lang::{
         prelude::*,
         solana_program::{system_program, sysvar},
     },
     anchor_spl::{
-        associated_token::AssociatedToken,
         dex::{
             serum_dex::{
                 instruction::SelfTradeBehavior,
@@ -14,26 +14,29 @@ use {
         },
         token::{Mint, Token, TokenAccount},
     },
+    cronos_scheduler::state::Manager,
     std::num::NonZeroU64,
 };
 
 #[derive(Accounts)]
 pub struct Swap<'info> {
+    #[account(seeds = [SEED_AUTHORITY, authority.payer.as_ref()], bump, has_one = manager)]
+    pub authority: Account<'info, Authority>,
+
     #[account(address = anchor_spl::dex::ID)]
     pub dex_program: Program<'info, anchor_spl::dex::Dex>,
+
+    #[account(signer, has_one = authority)]
+    pub manager: Account<'info, Manager>,
 
     #[account(mut)]
     pub payer: Signer<'info>,
 
-    #[account(
-        mut,
-        token::authority = payer,
-        token::mint = pc_mint
-    )]
-    pub pc_wallet: Account<'info, TokenAccount>,
-
     #[account()]
     pub pc_mint: Account<'info, Mint>,
+
+    #[account(mut, token::authority = authority, token::mint = pc_mint)]
+    pub pc_wallet: Account<'info, TokenAccount>,
 
     #[account(address = anchor_spl::token::ID)]
     pub token_program: Program<'info, Token>,
@@ -47,8 +50,8 @@ pub struct Swap<'info> {
 
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<()> {
     // get accounts
+    let authority = &ctx.accounts.authority;
     let dex_program = &ctx.accounts.dex_program;
-    let payer = &ctx.accounts.payer;
     let pc_wallet = &mut ctx.accounts.pc_wallet;
     let rent = &ctx.accounts.rent;
     let token_program = &ctx.accounts.token_program;
@@ -63,9 +66,12 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<()
     let market_asks = ctx.remaining_accounts.get(6).unwrap();
     let open_orders = ctx.remaining_accounts.get(7).unwrap();
 
+    // get authority bump
+    let bump = *ctx.bumps.get("authority").unwrap();
+
     // make cpi to serum dex to swap
     anchor_spl::dex::new_order_v3(
-        CpiContext::new(
+        CpiContext::new_with_signer(
             dex_program.to_account_info(),
             NewOrderV3 {
                 market: market.to_account_info(),
@@ -77,10 +83,11 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<()
                 market_asks: market_asks.to_account_info(),
                 open_orders: open_orders.to_account_info(),
                 order_payer_token_account: pc_wallet.to_account_info(),
-                open_orders_authority: payer.to_account_info(),
+                open_orders_authority: authority.to_account_info(),
                 token_program: token_program.to_account_info(),
                 rent: rent.to_account_info(),
             },
+            &[&[SEED_AUTHORITY, authority.payer.as_ref(), &[bump]]],
         ),
         Side::Bid,
         NonZeroU64::new(500).unwrap(),
