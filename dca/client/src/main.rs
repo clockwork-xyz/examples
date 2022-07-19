@@ -1,20 +1,19 @@
-use std::mem::size_of;
-
-use anchor_spl::dex::serum_dex::{self, state::OpenOrders};
-use solana_sdk::{sysvar::clock, transaction::Transaction};
-
 mod utils;
 
 use {
     anchor_lang::{prelude::*, solana_program::sysvar, system_program, InstructionData},
-    anchor_spl::{associated_token, dex::serum_dex::instruction::initialize_market, token},
+    anchor_spl::{
+        dex::serum_dex::{instruction::initialize_market, state::OpenOrders},
+        token,
+    },
     debug_print::debug_println,
     serum_common::client::rpc::mint_to_new_account,
     solana_client_helpers::{Client, ClientResult, RpcClient, SplToken},
     solana_sdk::{
         instruction::Instruction, native_token::LAMPORTS_PER_SOL, signature::Keypair,
-        signer::Signer,
+        signer::Signer, sysvar::clock,
     },
+    std::mem::size_of,
     utils::*,
 };
 
@@ -32,34 +31,36 @@ fn main() -> ClientResult<()> {
     // setup market
     let market_keys = setup_market(&client)?;
 
+    let mut orders = None;
+
     initialize(&client, authority_pubkey, manager_pubkey)?;
 
     delegate_funds(&client, authority_pubkey, manager_pubkey, &market_keys)?;
 
-    let mut orders = None;
+    init_dex_account(&client, &mut orders)?;
 
     init_open_order_account(
         &client,
         authority_pubkey,
         manager_pubkey,
         &market_keys,
-        &mut orders,
+        orders.unwrap(),
     )?;
 
-    debug_println!("manager: {}", manager_pubkey);
-    debug_println!("oo: {}", orders.unwrap());
-
-    // auto_swap(&client, &market_keys, &orders)?;
-
-    // temp for testing
-    // swap(&client, &market_keys, &orders)?;
+    // auto_swap(
+    //     &client,
+    //     &market_keys,
+    //     &orders,
+    //     manager_pubkey,
+    //     authority_pubkey,
+    // )?;
 
     Ok(())
 }
 
 fn setup_market(client: &Client) -> ClientResult<MarketKeys> {
     // temp variable local build of serum dex program id to use for bpf deployment
-    let program_id = Pubkey::try_from("9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin").unwrap();
+    let dex_program_id = Pubkey::try_from("9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin").unwrap();
 
     // generate 2 mints to list on market
     let coin_mint_pk = client
@@ -67,19 +68,19 @@ fn setup_market(client: &Client) -> ClientResult<MarketKeys> {
         .unwrap()
         .pubkey();
 
-    debug_println!("coin mint: {}", coin_mint_pk);
+    // debug_println!("coin mint: {}", coin_mint_pk);
 
     let pc_mint_pk = client
         .create_token_mint(&client.payer_pubkey(), 9)
         .unwrap()
         .pubkey();
 
-    debug_println!("pc mint: {}", pc_mint_pk);
+    // debug_println!("pc mint: {}", pc_mint_pk);
 
     // get market listing keys
     let (listing_keys, mut ix) = gen_listing_params(
         client,
-        &program_id,
+        &dex_program_id,
         &client.payer_pubkey(),
         &coin_mint_pk,
         &pc_mint_pk,
@@ -106,7 +107,7 @@ fn setup_market(client: &Client) -> ClientResult<MarketKeys> {
     // get the init market ix
     let init_market_ix = initialize_market(
         &market_key.pubkey(),
-        &program_id,
+        &dex_program_id,
         &coin_mint_pk,
         &pc_mint_pk,
         &coin_vault_pk,
@@ -162,8 +163,6 @@ fn setup_market(client: &Client) -> ClientResult<MarketKeys> {
     )
     .unwrap();
 
-    debug_println!("Listing market: {} ...", market_key.pubkey());
-
     Ok(MarketKeys {
         market_pk: market_key.pubkey(),
         req_q_pk: req_q_key.pubkey(),
@@ -214,11 +213,6 @@ fn delegate_funds(
 ) -> ClientResult<()> {
     let mut ix = Vec::new();
 
-    // debug_println!("{}", authority_pubkey);
-    // debug_println!("{}", manager_pubkey);
-    // debug_println!("{}", market_keys.pc_wallet_key.pubkey());
-    // debug_println!("{}", market_keys.pc_mint_pk);
-
     // create ix for initialize ix and add to ix vec
     ix.push(Instruction {
         program_id: dca::ID,
@@ -240,15 +234,9 @@ fn delegate_funds(
     Ok(())
 }
 
-fn init_open_order_account(
-    client: &Client,
-    authority_pubkey: Pubkey,
-    manager_pubkey: Pubkey,
-    market_keys: &MarketKeys,
-    orders: &mut Option<Pubkey>,
-) -> ClientResult<()> {
+fn init_dex_account(client: &Client, orders: &mut Option<Pubkey>) -> ClientResult<()> {
     // temp variable local build of serum dex program id to use for bpf deployment
-    let program_id = Pubkey::try_from("9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin").unwrap();
+    let dex_program_id = Pubkey::try_from("9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin").unwrap();
     let orders_keypair;
     let mut signers = Vec::new();
     let mut ix = Vec::new();
@@ -258,7 +246,7 @@ fn init_open_order_account(
         None => {
             let (orders_key, instruction) = create_dex_account(
                 client,
-                &program_id,
+                &dex_program_id,
                 &client.payer_pubkey(),
                 size_of::<OpenOrders>(),
             )?;
@@ -273,22 +261,33 @@ fn init_open_order_account(
 
     signers.push(client.payer());
 
-    sign_send_and_confirm_tx(client, ix, Some(signers), "create_dex_acct".to_string())?;
+    sign_send_and_confirm_tx(client, ix, Some(signers), "init_dex_account".to_string())?;
 
-    let mut ix2 = Vec::new();
+    Ok(())
+}
+fn init_open_order_account(
+    client: &Client,
+    authority_pubkey: Pubkey,
+    manager_pubkey: Pubkey,
+    market_keys: &MarketKeys,
+    orders_pubkey: Pubkey,
+) -> ClientResult<()> {
+    // temp variable local build of serum dex program id to use for bpf deployment
+    let dex_program_id = Pubkey::try_from("9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin").unwrap();
 
-    debug_println!("{}", authority_pubkey);
-    debug_println!("{}", program_id);
-    debug_println!("{}", manager_pubkey);
-    debug_println!("{}", orders_pubkey);
-    debug_println!("{}", client.payer_pubkey());
-    debug_println!("{}", market_keys.market_pk);
+    let mut ix = Vec::new();
 
-    ix2.push(Instruction {
+    debug_println!("authority pk: {}", authority_pubkey);
+    debug_println!("  program id: {}", dex_program_id);
+    debug_println!("  manager pk: {}", manager_pubkey);
+    debug_println!("   orders pk: {}", orders_pubkey);
+    debug_println!("       payer: {}", client.payer_pubkey());
+    debug_println!("   market pk: {}", market_keys.market_pk);
+
+    ix.push(Instruction {
         program_id: dca::ID,
         accounts: vec![
-            AccountMeta::new_readonly(authority_pubkey, false),
-            AccountMeta::new_readonly(program_id, false),
+            AccountMeta::new_readonly(dex_program_id, false),
             AccountMeta::new_readonly(manager_pubkey, false),
             AccountMeta::new(orders_pubkey, false),
             AccountMeta::new(client.payer_pubkey(), true),
@@ -297,82 +296,82 @@ fn init_open_order_account(
             // Extra accounts
             AccountMeta::new_readonly(market_keys.market_pk, false),
         ],
-        data: dca::instruction::InitOpenOrderAccount {}.data(),
+        data: dca::instruction::InitOOAccount {}.data(),
     });
 
-    sign_send_and_confirm_tx(client, ix2, None, "init_open_order_account".to_string())?;
+    sign_send_and_confirm_tx(client, ix, None, "init_open_order_account".to_string())?;
 
     Ok(())
 }
 
-fn _auto_swap(
-    client: &Client,
-    market_keys: &MarketKeys,
-    orders: &Option<Pubkey>,
-    manager_pubkey: Pubkey,
-    authority_pubkey: Pubkey,
-) -> ClientResult<()> {
-    let mut ix = Vec::new();
-    let program_id = Pubkey::try_from("9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin").unwrap();
+// fn _auto_swap(
+//     client: &Client,
+//     market_keys: &MarketKeys,
+//     orders: &Option<Pubkey>,
+//     manager_pubkey: Pubkey,
+//     authority_pubkey: Pubkey,
+// ) -> ClientResult<()> {
+//     let mut ix = Vec::new();
+//     let program_id = Pubkey::try_from("9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin").unwrap();
 
-    // Derive PDAs
-    let swap_queue_pubkey = cronos_scheduler::state::Queue::pda(manager_pubkey, 0).0;
-    let swap_fee_pubkey = cronos_scheduler::state::Fee::pda(swap_queue_pubkey).0;
-    let swap_task_pubkey = cronos_scheduler::state::Task::pda(swap_queue_pubkey, 0).0;
+//     // Derive PDAs
+//     let swap_queue_pubkey = cronos_scheduler::state::Queue::pda(manager_pubkey, 0).0;
+//     let swap_fee_pubkey = cronos_scheduler::state::Fee::pda(swap_queue_pubkey).0;
+//     let swap_task_pubkey = cronos_scheduler::state::Task::pda(swap_queue_pubkey, 0).0;
 
-    debug_println!("\n");
-    debug_println!("              authority: {}", authority_pubkey);
-    debug_println!("                  clock: {}", clock::ID);
-    debug_println!("                   dex: {}", program_id);
-    debug_println!("                 payer: {}", client.payer_pubkey());
-    debug_println!("   market_keys.pc_mint: {}", market_keys.pc_mint_pk);
-    debug_println!(
-        "             pc_wallet: {}",
-        market_keys.pc_wallet_key.pubkey()
-    );
-    debug_println!("----- EXTRA ACCOUNTS -----");
-    debug_println!("                market: {}", market_keys.market_pk);
-    debug_println!("            coin_vault: {}", market_keys.coin_vault_pk);
-    debug_println!("              pc_vault: {}", market_keys.pc_vault_pk);
-    debug_println!("                 req_q: {}", market_keys.req_q_pk);
-    debug_println!("               event_q: {}", market_keys.event_q_pk);
-    debug_println!("                  bids: {}", market_keys.bids_pk);
-    debug_println!("                  asks: {}", market_keys.asks_pk);
-    debug_println!("                orders: {}\n", orders.unwrap());
+//     debug_println!("\n");
+//     debug_println!("              authority: {}", authority_pubkey);
+//     debug_println!("                  clock: {}", clock::ID);
+//     debug_println!("                   dex: {}", program_id);
+//     debug_println!("                 payer: {}", client.payer_pubkey());
+//     debug_println!("   market_keys.pc_mint: {}", market_keys.pc_mint_pk);
+//     debug_println!(
+//         "             pc_wallet: {}",
+//         market_keys.pc_wallet_key.pubkey()
+//     );
+//     debug_println!("----- EXTRA ACCOUNTS -----");
+//     debug_println!("                market: {}", market_keys.market_pk);
+//     debug_println!("            coin_vault: {}", market_keys.coin_vault_pk);
+//     debug_println!("              pc_vault: {}", market_keys.pc_vault_pk);
+//     debug_println!("                 req_q: {}", market_keys.req_q_pk);
+//     debug_println!("               event_q: {}", market_keys.event_q_pk);
+//     debug_println!("                  bids: {}", market_keys.bids_pk);
+//     debug_println!("                  asks: {}", market_keys.asks_pk);
+//     debug_println!("                orders: {}\n", orders.unwrap());
 
-    ix.push(Instruction {
-        program_id: dca::ID,
-        accounts: vec![
-            AccountMeta::new_readonly(authority_pubkey, false),
-            AccountMeta::new_readonly(clock::ID, false),
-            AccountMeta::new_readonly(program_id, false),
-            AccountMeta::new_readonly(manager_pubkey, false),
-            AccountMeta::new(client.payer_pubkey(), true),
-            AccountMeta::new_readonly(market_keys.pc_mint_pk, false),
-            AccountMeta::new(market_keys.pc_wallet_key.pubkey(), false),
-            AccountMeta::new_readonly(cronos_scheduler::ID, false),
-            AccountMeta::new_readonly(system_program::ID, false),
-            AccountMeta::new_readonly(token::ID, false),
-            // Extra Accounts
-            AccountMeta::new(swap_fee_pubkey, false),
-            AccountMeta::new(swap_queue_pubkey, false),
-            AccountMeta::new(swap_task_pubkey, false),
-            AccountMeta::new(market_keys.market_pk, false),
-            AccountMeta::new(market_keys.coin_vault_pk, false),
-            AccountMeta::new(market_keys.pc_vault_pk, false),
-            AccountMeta::new(market_keys.req_q_pk, false),
-            AccountMeta::new(market_keys.event_q_pk, false),
-            AccountMeta::new(market_keys.bids_pk, false),
-            AccountMeta::new(market_keys.asks_pk, false),
-            AccountMeta::new(orders.unwrap(), false),
-        ],
-        data: dca::instruction::AutoSwap {}.data(),
-    });
+//     ix.push(Instruction {
+//         program_id: dca::ID,
+//         accounts: vec![
+//             AccountMeta::new_readonly(authority_pubkey, false),
+//             AccountMeta::new_readonly(clock::ID, false),
+//             AccountMeta::new_readonly(program_id, false),
+//             AccountMeta::new_readonly(manager_pubkey, false),
+//             AccountMeta::new(client.payer_pubkey(), true),
+//             AccountMeta::new_readonly(market_keys.pc_mint_pk, false),
+//             AccountMeta::new(market_keys.pc_wallet_key.pubkey(), false),
+//             AccountMeta::new_readonly(cronos_scheduler::ID, false),
+//             AccountMeta::new_readonly(system_program::ID, false),
+//             AccountMeta::new_readonly(token::ID, false),
+//             // Extra Accounts
+//             AccountMeta::new(swap_fee_pubkey, false),
+//             AccountMeta::new(swap_queue_pubkey, false),
+//             AccountMeta::new(swap_task_pubkey, false),
+//             AccountMeta::new(market_keys.market_pk, false),
+//             AccountMeta::new(market_keys.coin_vault_pk, false),
+//             AccountMeta::new(market_keys.pc_vault_pk, false),
+//             AccountMeta::new(market_keys.req_q_pk, false),
+//             AccountMeta::new(market_keys.event_q_pk, false),
+//             AccountMeta::new(market_keys.bids_pk, false),
+//             AccountMeta::new(market_keys.asks_pk, false),
+//             AccountMeta::new(orders.unwrap(), false),
+//         ],
+//         data: dca::instruction::AutoSwap {}.data(),
+//     });
 
-    sign_send_and_confirm_tx(client, ix, None, "swap".to_string())?;
+//     sign_send_and_confirm_tx(client, ix, None, "swap".to_string())?;
 
-    Ok(())
-}
+//     Ok(())
+// }
 
 // fn _swap(client: &Client, market_keys: &MarketKeys, orders: &Option<Pubkey>) -> ClientResult<()> {
 //     let mut ix = Vec::new();
