@@ -21,23 +21,34 @@ pub mod dca {
     }
 
     /*
-     * create fund account
+     * delegate funds to manager (clockworks owned account) that will enable for automated swaps
      */
-    pub fn create_fund<'info>(ctx: Context<'_, '_, '_, 'info, CreateFund<'info>>) -> Result<()> {
-        create_fund::handler(ctx)
+    pub fn delegate_funds<'info>(
+        ctx: Context<'_, '_, '_, 'info, DelegateFunds<'info>>,
+    ) -> Result<()> {
+        delegate_funds::handler(ctx)
     }
 
     /*
-     * initiating swap
+     * makes cpi to serum dex to init open order account
      */
-    pub fn swap<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<()> {
-        swap::handler(ctx)
+    pub fn init_oo_account<'info>(
+        ctx: Context<'_, '_, '_, 'info, InitOOAccount<'info>>,
+    ) -> Result<()> {
+        init_oo_account::handler(ctx)
     }
 
     /*
      * clockworks automation for auto swapping on serum dex
      */
-    // pub fn auto_swap(ctx: Context<'_, '_, '_, 'info, AutoSwap<'info>>) -> Result<()> {
-    // auto_swap::handler(ctx)
-    // }
+    pub fn auto_swap<'info>(ctx: Context<'_, '_, '_, 'info, AutoSwap<'info>>) -> Result<()> {
+        auto_swap::handler(ctx)
+    }
+
+    /*
+     * swap
+     */
+    pub fn swap<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<()> {
+        swap::handler(ctx)
+    }
 }
