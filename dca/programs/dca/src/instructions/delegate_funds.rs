@@ -1,5 +1,4 @@
 use {
-    cronos_scheduler::state::Manager,
     crate::state::*,
     anchor_lang::{
         prelude::*,
@@ -14,13 +13,10 @@ use {
 
 pub struct DelegateFunds<'info> {
     #[account( 
-        seeds = [SEED_AUTHORITY],
+        seeds = [SEED_AUTHORITY, authority.payer.as_ref()],
         bump
     )]
     pub authority: Account<'info, Authority>,
-
-    #[account(has_one = authority)]
-    pub manager: Account<'info, Manager>,
 
     #[account(
         token::authority = payer,
@@ -46,7 +42,7 @@ pub struct DelegateFunds<'info> {
 
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, DelegateFunds<'info>>) -> Result<()> {
     // Get accounts
-    let manager = &mut ctx.accounts.manager;
+    let authority= &mut ctx.accounts.authority;
     let payer = &mut ctx.accounts.payer;
     let pc_wallet = &ctx.accounts.pc_wallet;
     let token_program = &ctx.accounts.token_program;
@@ -61,7 +57,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, DelegateFunds<'info>>) -> 
             },
         ),
         AuthorityType::AccountOwner,
-        Some(manager.key()),
+        Some(authority.key()),
     )?;
 
     Ok(())
