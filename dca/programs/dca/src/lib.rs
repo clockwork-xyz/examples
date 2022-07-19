@@ -32,21 +32,21 @@ pub mod dca {
     /*
      * makes cpi to serum dex to init open order account
      */
-    pub fn init_oo_account<'info>(
-        ctx: Context<'_, '_, '_, 'info, InitOOAccount<'info>>,
+    pub fn init_orders_acct<'info>(
+        ctx: Context<'_, '_, '_, 'info, InitOrdersAcct<'info>>,
     ) -> Result<()> {
-        init_oo_account::handler(ctx)
+        init_orders_acct::handler(ctx)
     }
 
     /*
-     * clockworks automation for auto swapping on serum dex
+     * clockworks automation ix for auto swapping on serum dex
      */
     pub fn auto_swap<'info>(ctx: Context<'_, '_, '_, 'info, AutoSwap<'info>>) -> Result<()> {
         auto_swap::handler(ctx)
     }
 
     /*
-     * swap
+     * swap ix
      */
     pub fn swap<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<()> {
         swap::handler(ctx)
