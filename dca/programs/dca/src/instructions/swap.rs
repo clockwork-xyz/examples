@@ -19,9 +19,6 @@ use {
 
 #[derive(Accounts)]
 pub struct Swap<'info> {
-    #[account(address = anchor_spl::associated_token::ID)]
-    pub associated_token_program: Program<'info, AssociatedToken>,
-
     #[account(address = anchor_spl::dex::ID)]
     pub dex_program: Program<'info, anchor_spl::dex::Dex>,
 
