@@ -1,7 +1,7 @@
 [features]
 seeds = false
 [programs.localnet]
-dca = "Eg9UyURZhAhCgkUB8LKrpF9RnhosJ14puCQ9uq2hFthW"
+dca = "jjSDYeytwBNjjFn8W6X7o7AEyQQZdXn7VkZzLhCC34U"
 
 [registry]
 url = "https://anchor.projectserum.com"
