@@ -8,7 +8,7 @@ use {
 pub struct Initialize<'info> {
     #[account(
         init,
-        seeds = [SEED_AUTHORITY],
+        seeds = [SEED_AUTHORITY, payer.key.as_ref()],
         bump,
         payer = payer,
         space = 8 + size_of::<Authority>(),
@@ -36,10 +36,12 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Res
     let manager = ctx.remaining_accounts.get(0).unwrap();
 
     // initialize authority account
-    authority.new(manager.key())?;
+    authority.new(manager.key(), payer.key())?;
+
+    // get authority bump
+    let bump = *ctx.bumps.get("authority").unwrap();
 
     // create manager
-    let bump = *ctx.bumps.get("authority").unwrap();
     cronos_scheduler::cpi::manager_new(CpiContext::new_with_signer(
         scheduler_program.to_account_info(),
         cronos_scheduler::cpi::accounts::ManagerNew {
@@ -48,7 +50,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Res
             payer: payer.to_account_info(),
             system_program: system_program.to_account_info(),
         },
-        &[&[SEED_AUTHORITY, &[bump]]],
+        &[&[SEED_AUTHORITY, authority.payer.as_ref(), &[bump]]],
     ))?;
 
     Ok(())
