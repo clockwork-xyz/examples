@@ -643,7 +643,6 @@ dependencies = [
  "anchor-spl",
  "cronos-scheduler",
  "dca",
- "debug_print",
  "serum-common",
  "solana-client",
  "solana-client-helpers",
@@ -858,12 +857,6 @@ dependencies = [
  "anchor-spl",
  "cronos-scheduler",
 ]
-
-[[package]]
-name = "debug_print"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f215f9b7224f49fb73256115331f677d868b34d18b65dbe4db392e6021eea90"
 
 [[package]]
 name = "derivation-path"

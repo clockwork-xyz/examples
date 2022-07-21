@@ -11,5 +11,4 @@ anchor-lang = "0.24.2"
 solana-sdk = "~1.9.13"
 solana-client = "~1.9.13"
 solana-client-helpers = "1.1.0"
-debug_print = "1.0.0"
 serum-common = { version = "0.4.7", features = ["client"] }
