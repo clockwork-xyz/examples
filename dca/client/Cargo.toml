@@ -1,0 +1,14 @@
+[package]
+name = "client"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dca = { path = "../programs/dca", features = ["no-entrypoint"], version = "0.1.0" }
+cronos-scheduler = { path = "../../../cronos/programs/scheduler" }
+anchor-spl = "0.24.2"
+anchor-lang = "0.24.2"
+solana-sdk = "~1.9.13"
+solana-client = "~1.9.13"
+solana-client-helpers = "1.1.0"
+serum-common = { version = "0.4.7", features = ["client"] }

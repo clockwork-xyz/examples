@@ -1,0 +1,24 @@
+[package]
+name = "dca"
+version = "0.1.0"
+description = "Created with Anchor"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "dca"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+[profile.release]
+overflow-checks = true
+
+[dependencies]
+anchor-spl = { version = "0.24.2", features = ["dex"] }
+anchor-lang = "0.24.2"
+cronos-scheduler = { path = "../../../../cronos/programs/scheduler", features = ["cpi"] }
