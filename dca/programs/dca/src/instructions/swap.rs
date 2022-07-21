@@ -92,7 +92,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<()
         Side::Bid,
         NonZeroU64::new(500).unwrap(),
         NonZeroU64::new(1_000).unwrap(),
-        NonZeroU64::new(500_000).unwrap(),
+        NonZeroU64::new(500_000_000).unwrap(),
         SelfTradeBehavior::DecrementTake,
         OrderType::Limit,
         019269,
