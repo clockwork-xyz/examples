@@ -21,6 +21,9 @@ use {
 };
 
 fn main() -> ClientResult<()> {
+    // use this program id when deploying local build of serum dex
+    let dex_program_id = Pubkey::try_from("9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin").unwrap();
+
     // Create Client
     let client = RpcClient::new("http://localhost:8899");
     let payer = Keypair::new();
@@ -32,7 +35,7 @@ fn main() -> ClientResult<()> {
     let manager_pubkey = cronos_scheduler::state::Manager::pubkey(authority_pubkey);
 
     // setup market
-    let market_keys = setup_market(&client)?;
+    let market_keys = setup_market(&client, dex_program_id)?;
 
     // open orders account
     let mut orders = None;
@@ -41,9 +44,15 @@ fn main() -> ClientResult<()> {
 
     delegate_funds(&client, authority_pubkey, &market_keys)?;
 
-    init_dex_account(&client, &mut orders)?;
+    init_dex_account(&client, &mut orders, dex_program_id)?;
 
-    init_oo_acct(&client, authority_pubkey, &market_keys, orders.unwrap())?;
+    init_oo_acct(
+        &client,
+        authority_pubkey,
+        &market_keys,
+        orders.unwrap(),
+        dex_program_id,
+    )?;
 
     auto_swap(
         &client,
@@ -51,15 +60,13 @@ fn main() -> ClientResult<()> {
         manager_pubkey,
         authority_pubkey,
         orders.unwrap(),
+        dex_program_id,
     )?;
 
     Ok(())
 }
 
-fn setup_market(client: &Client) -> ClientResult<MarketKeys> {
-    // temp variable local build of serum dex program id to use for bpf deployment
-    let dex_program_id = Pubkey::try_from("9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin").unwrap();
-
+fn setup_market(client: &Client, dex_program_id: Pubkey) -> ClientResult<MarketKeys> {
     // generate 2 mints to list on market
     let coin_mint_pk = client
         .create_token_mint(&client.payer_pubkey(), 9)
@@ -222,9 +229,11 @@ fn delegate_funds(
     Ok(())
 }
 
-fn init_dex_account(client: &Client, orders: &mut Option<Pubkey>) -> ClientResult<()> {
-    // temp variable local build of serum dex program id to use for bpf deployment
-    let dex_program_id = Pubkey::try_from("9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin").unwrap();
+fn init_dex_account(
+    client: &Client,
+    orders: &mut Option<Pubkey>,
+    dex_program_id: Pubkey,
+) -> ClientResult<()> {
     let orders_keypair;
     let mut signers = Vec::new();
     let mut ix = Vec::new();
@@ -259,10 +268,8 @@ fn init_oo_acct(
     authority_pk: Pubkey,
     market_keys: &MarketKeys,
     orders_pk: Pubkey,
+    dex_program_id: Pubkey,
 ) -> ClientResult<()> {
-    // temp variable local build of serum dex program id to use for bpf deployment
-    let dex_program_id = Pubkey::try_from("9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin").unwrap();
-
     let mut ix = Vec::new();
 
     ix.push(Instruction {
@@ -291,10 +298,8 @@ fn auto_swap(
     manager_pubkey: Pubkey,
     authority_pubkey: Pubkey,
     orders_pubkey: Pubkey,
+    dex_program_id: Pubkey,
 ) -> ClientResult<()> {
-    // temp variable local build of serum dex program id to use for bpf deployment
-    let dex_program_id = Pubkey::try_from("9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin").unwrap();
-
     let mut ix = Vec::new();
 
     // Derive PDAs
