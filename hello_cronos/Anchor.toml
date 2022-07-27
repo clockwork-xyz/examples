@@ -1,7 +1,8 @@
 [features]
 seeds = false
+
 [programs.devnet]
-hello_cronos = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+hello_cronos = "JDf3AXbfB8FFud6ntoNGYGwZRSQsE48DCAWfh9knSqQM"
 
 [registry]
 url = "https://anchor.projectserum.com"
