@@ -22,14 +22,21 @@ use {
 
 fn main() -> ClientResult<()> {
     // Create Client
-    let client = RpcClient::new("http://localhost:8899");
+    let client = RpcClient::new("http://api.devnet.solana.com");
     let payer = Keypair::new();
     let client = Client { client, payer };
-    client.airdrop(&client.payer_pubkey(), 20 * LAMPORTS_PER_SOL)?;
+
+    // airdrop a bunch for all of the txs lol
+    client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
+    client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
+    client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
+    client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
+    client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
+    client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
 
     // Derive PDAs
     let authority_pubkey = dca::state::Authority::pubkey(client.payer_pubkey());
-    let manager_pubkey = cronos_scheduler::state::Manager::pubkey(authority_pubkey);
+    let manager_pubkey = cronos_scheduler::state::Manager::pda(authority_pubkey).0;
 
     // setup market
     let market_keys = setup_market(&client)?;
@@ -57,9 +64,6 @@ fn main() -> ClientResult<()> {
 }
 
 fn setup_market(client: &Client) -> ClientResult<MarketKeys> {
-    // temp variable local build of serum dex program id to use for bpf deployment
-    let dex_program_id = Pubkey::try_from("9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin").unwrap();
-
     // generate 2 mints to list on market
     let coin_mint_pk = client
         .create_token_mint(&client.payer_pubkey(), 9)
@@ -74,7 +78,7 @@ fn setup_market(client: &Client) -> ClientResult<MarketKeys> {
     // get market listing keys
     let (listing_keys, mut ix) = gen_listing_params(
         client,
-        &dex_program_id,
+        &anchor_spl::dex::ID,
         &client.payer_pubkey(),
         &coin_mint_pk,
         &pc_mint_pk,
@@ -101,7 +105,7 @@ fn setup_market(client: &Client) -> ClientResult<MarketKeys> {
     // get the init market ix
     let init_market_ix = initialize_market(
         &market_key.pubkey(),
-        &dex_program_id,
+        &anchor_spl::dex::ID,
         &coin_mint_pk,
         &pc_mint_pk,
         &coin_vault_pk,
@@ -223,8 +227,6 @@ fn delegate_funds(
 }
 
 fn init_dex_account(client: &Client, orders: &mut Option<Pubkey>) -> ClientResult<()> {
-    // temp variable local build of serum dex program id to use for bpf deployment
-    let dex_program_id = Pubkey::try_from("9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin").unwrap();
     let orders_keypair;
     let mut signers = Vec::new();
     let mut ix = Vec::new();
@@ -234,7 +236,7 @@ fn init_dex_account(client: &Client, orders: &mut Option<Pubkey>) -> ClientResul
         None => {
             let (orders_key, instruction) = create_dex_account(
                 client,
-                &dex_program_id,
+                &anchor_spl::dex::ID,
                 &client.payer_pubkey(),
                 size_of::<OpenOrders>(),
             )?;
@@ -260,16 +262,13 @@ fn init_oo_acct(
     market_keys: &MarketKeys,
     orders_pk: Pubkey,
 ) -> ClientResult<()> {
-    // temp variable local build of serum dex program id to use for bpf deployment
-    let dex_program_id = Pubkey::try_from("9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin").unwrap();
-
     let mut ix = Vec::new();
 
     ix.push(Instruction {
         program_id: dca::ID,
         accounts: vec![
             AccountMeta::new_readonly(authority_pk, false),
-            AccountMeta::new_readonly(dex_program_id, false),
+            AccountMeta::new_readonly(anchor_spl::dex::ID, false),
             AccountMeta::new(client.payer_pubkey(), true),
             AccountMeta::new_readonly(sysvar::rent::ID, false),
             AccountMeta::new_readonly(system_program::ID, false),
@@ -292,20 +291,17 @@ fn auto_swap(
     authority_pubkey: Pubkey,
     orders_pubkey: Pubkey,
 ) -> ClientResult<()> {
-    // temp variable local build of serum dex program id to use for bpf deployment
-    let dex_program_id = Pubkey::try_from("9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin").unwrap();
-
     let mut ix = Vec::new();
 
     // Derive PDAs
-    let swap_queue_pk = cronos_scheduler::state::Queue::pubkey(manager_pubkey, 0);
-    let swap_fee_pk = cronos_scheduler::state::Fee::pubkey(swap_queue_pk);
-    let swap_task_pk = cronos_scheduler::state::Task::pubkey(swap_queue_pk, 0);
+    let swap_queue_pk = cronos_scheduler::state::Queue::pda(manager_pubkey, 0).0;
+    let swap_fee_pk = cronos_scheduler::state::Fee::pda(swap_queue_pk).0;
+    let swap_task_pk = cronos_scheduler::state::Task::pda(swap_queue_pk, 0).0;
 
     // println!("\n");
     // println!("             authority: {}", authority_pubkey);
     // println!("                 clock: {}", clock::ID);
-    // println!("                   dex: {}", dex_program_id);
+    // println!("                   dex: {}", anchor_spl::dex::ID);
     // println!("               manager: {}", manager_pubkey);
     // println!("                 payer: {}", client.payer_pubkey());
     // println!("               pc_mint: {}", market_keys.pc_mint_pk);
@@ -339,7 +335,7 @@ fn auto_swap(
         accounts: vec![
             AccountMeta::new_readonly(authority_pubkey, false),
             AccountMeta::new_readonly(clock::ID, false),
-            AccountMeta::new_readonly(dex_program_id, false),
+            AccountMeta::new_readonly(anchor_spl::dex::ID, false),
             AccountMeta::new(manager_pubkey, false),
             AccountMeta::new(client.payer_pubkey(), true),
             AccountMeta::new_readonly(market_keys.pc_mint_pk, false),
