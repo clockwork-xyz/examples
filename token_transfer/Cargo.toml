@@ -1,5 +1,5 @@
 [workspace]
 members = [
-   "invoke",
+   "client",
    "programs/*",
 ]

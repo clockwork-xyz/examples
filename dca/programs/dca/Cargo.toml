@@ -19,6 +19,6 @@ default = []
 overflow-checks = true
 
 [dependencies]
-anchor-spl = { version = "0.24.2", features = ["dex"] }
+anchor-spl = { version = "0.24.2", features = ["dex", "devnet"] }
 anchor-lang = "0.24.2"
-cronos-scheduler = { path = "../../../../cronos/programs/scheduler", features = ["cpi"] }
+cronos-scheduler = { version = "0.2.0", features = ["cpi"] }

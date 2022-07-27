@@ -711,6 +711,8 @@ dependencies = [
 [[package]]
 name = "cronos-cron"
 version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c53d6945f67d477055176a95de0c090bfda1dff40129bef42537eabe2aa844c2"
 dependencies = [
  "chrono",
  "nom",
@@ -720,6 +722,8 @@ dependencies = [
 [[package]]
 name = "cronos-pool"
 version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7245512b360f696c70a589988b87ea300e0c1b078927bd655eac50cc6e71a7e0"
 dependencies = [
  "anchor-lang",
 ]
@@ -727,6 +731,8 @@ dependencies = [
 [[package]]
 name = "cronos-scheduler"
 version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d42e049bba7d800a7e045c2009692984415563cd0feefc9bca8eaac098a48ce7"
 dependencies = [
  "anchor-lang",
  "chrono",
