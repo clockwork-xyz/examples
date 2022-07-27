@@ -611,6 +611,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "client"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "cronos-scheduler",
+ "hello-cronos",
+ "solana-client-helpers",
+ "solana-sdk",
+]
+
+[[package]]
 name = "console"
 version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -671,9 +682,9 @@ dependencies = [
 
 [[package]]
 name = "cronos-cron"
-version = "0.2.0-alpha5"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6753d9b2d0d01e73df65470328bc37048128a8f91f883efe57b9d277d8f8734"
+checksum = "c53d6945f67d477055176a95de0c090bfda1dff40129bef42537eabe2aa844c2"
 dependencies = [
  "chrono",
  "nom",
@@ -682,18 +693,18 @@ dependencies = [
 
 [[package]]
 name = "cronos-pool"
-version = "0.2.0-alpha5"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd74ab13f7243cd3c66aba3c5b1aca2caa50b8e9f9448440cd73818f2b7f1537"
+checksum = "7245512b360f696c70a589988b87ea300e0c1b078927bd655eac50cc6e71a7e0"
 dependencies = [
  "anchor-lang",
 ]
 
 [[package]]
 name = "cronos-scheduler"
-version = "0.2.0-alpha5"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0aad92d1bc5c67430f0dbdcc862369b47cb5b86df53e8ce5f918e0a55e1e77b1"
+checksum = "d42e049bba7d800a7e045c2009692984415563cd0feefc9bca8eaac098a48ce7"
 dependencies = [
  "anchor-lang",
  "chrono",
@@ -1463,17 +1474,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a5bbe824c507c5da5956355e86a746d82e0e1464f65d862cc5e71da70e94b2c"
 dependencies = [
  "cfg-if",
-]
-
-[[package]]
-name = "invoke"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
- "cronos-scheduler",
- "hello-cronos",
- "solana-client-helpers",
- "solana-sdk",
 ]
 
 [[package]]

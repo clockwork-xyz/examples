@@ -2,13 +2,16 @@
 seeds = false
 
 [programs.localnet]
-dca = "44opPXADb4iVtE3nPtWpQu3eNW1QQ3zHxFREN8Pwh7Aw"
+dca = "FUiHLukGXsmSoDvF4aWaget9RcMFmSTMLtkZDjULkgPE"
+
+[programs.devnet]
+dca = "FUiHLukGXsmSoDvF4aWaget9RcMFmSTMLtkZDjULkgPE"
 
 [registry]
 url = "https://anchor.projectserum.com"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

@@ -6,12 +6,12 @@
 ## Deploying Hello Cronos
 - run `anchor build` in the root directory of `hello_cronos`
 - run `solana address -k target/deploy/hello_cronos-keypair.json` to get your program's ID
-- copy that ID and replace it with the Program ID in `id.rs`
+- copy that ID and replace it with the Program ID in `id.rs` and `Anchor.toml`
 - run `anchor build` again
 - be sure to set your solana config to devnet with `solana config set --url https://api.devnet.solana.com`
 - run `solana airdrop 2` a couple of times to ensure that you have enough sol to pay for this transaction
-- run `solana program deploy target/deploy/hello_cronos.so` to deploy this program on-chain
+- run `solana program deploy target/deploy/hello_cronos.so` or `anchor deploy` to deploy this program on-chain
 
 ## Invoking Hello Cronos Program
-- navigate to the `invoke` directory
+- navigate to the `client` directory
 - run `cargo run` 

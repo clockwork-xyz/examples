@@ -10,8 +10,8 @@
 - run `anchor build` again
 - be sure to set your solana config to devnet with `solana config set --url https://api.devnet.solana.com`
 - run `solana airdrop 2` a couple of times to ensure that you have enough sol to pay for this transaction
-- run `solana program deploy target/deploy/token_transfer.so` to deploy this program on-chain
+- run `solana program deploy target/deploy/token_transfer.so` or `anchor deploy` to deploy this program on-chain
 
 ## Invoking Token Transfer Program
-- navigate to the `invoke` directory
+- navigate to the `client` directory
 - run `cargo run` 

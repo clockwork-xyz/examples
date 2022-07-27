@@ -33,7 +33,7 @@ pub fn sign_send_and_confirm_tx(
     // Send and confirm initialize tx
     match client.send_and_confirm_transaction(&tx) {
         Ok(sig) => println!(
-            "{} tx: ✅ https://explorer.solana.com/tx/{}?cluster=custom",
+            "{} tx: ✅ https://explorer.solana.com/tx/{}?cluster=devnet",
             tx_label, sig
         ),
         Err(err) => println!("{} tx: ❌ {:#?}", tx_label, err),
