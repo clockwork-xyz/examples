@@ -1,12 +1,12 @@
 [package]
-name = "hello-cronos"
+name = "hello-clockwork"
 version = "0.1.0"
 description = "Created with Anchor"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "hello_cronos"
+name = "hello_clockwork"
 
 [features]
 no-entrypoint = []
@@ -19,6 +19,6 @@ default = []
 overflow-checks = true
 
 [dependencies]
-anchor-lang = "0.24.2"
-cronos-scheduler = { version = "0.2.0", features = ["cpi"] }
+anchor-lang = "0.25.0"
+clockwork-scheduler = { version = "1.0.1", features = ["cpi"] }
 
