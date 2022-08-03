@@ -764,19 +764,10 @@ name = "client"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
- "clockwork-scheduler 1.0.1",
+ "clockwork-scheduler",
  "hello-clockwork",
  "solana-client-helpers",
  "solana-sdk",
-]
-
-[[package]]
-name = "clockwork-cron"
-version = "1.0.1"
-dependencies = [
- "chrono",
- "nom",
- "once_cell",
 ]
 
 [[package]]
@@ -793,27 +784,10 @@ dependencies = [
 [[package]]
 name = "clockwork-pool"
 version = "1.0.1"
-dependencies = [
- "anchor-lang",
-]
-
-[[package]]
-name = "clockwork-pool"
-version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d1f4d542e97b799f0c78307661f9b7a248264c98315d972dd3c3aba58df3f56f"
 dependencies = [
  "anchor-lang",
-]
-
-[[package]]
-name = "clockwork-scheduler"
-version = "1.0.1"
-dependencies = [
- "anchor-lang",
- "chrono",
- "clockwork-cron 1.0.1",
- "clockwork-pool 1.0.1",
 ]
 
 [[package]]
@@ -824,8 +798,8 @@ checksum = "7bdd57b72730708f5dc94d80d383fd93f5ed20fb9a6b35fe4fa6d61d7d3f4fb8"
 dependencies = [
  "anchor-lang",
  "chrono",
- "clockwork-cron 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "clockwork-pool 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "clockwork-cron",
+ "clockwork-pool",
 ]
 
 [[package]]
@@ -1524,7 +1498,7 @@ name = "hello-clockwork"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
- "clockwork-scheduler 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "clockwork-scheduler",
 ]
 
 [[package]]
