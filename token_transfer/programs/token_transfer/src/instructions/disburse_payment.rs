@@ -5,7 +5,7 @@ use {
         associated_token::AssociatedToken,
         token::{self, Mint, TokenAccount, Transfer}
     },
-    cronos_scheduler::state::Manager,
+    clockwork_scheduler::state::Queue,
 };
 
 #[derive(Accounts)]
@@ -13,8 +13,11 @@ pub struct DisbursePayment<'info> {
     #[account(address = anchor_spl::associated_token::ID)]
     pub associated_token_program: Program<'info, AssociatedToken>,
 
-    #[account(seeds = [SEED_AUTHORITY], bump, has_one = manager)]
-    pub authority: Box<Account<'info, Authority>>,
+    #[account(
+        seeds = [SEED_AUTHORITY], 
+        bump
+    )]
+    pub authority: Account<'info, Authority>,
 
     #[account(
         seeds = [SEED_ESCROW, sender.key().as_ref(), recipient.key().as_ref()],
@@ -25,11 +28,11 @@ pub struct DisbursePayment<'info> {
     )]
     pub escrow: Account<'info, Escrow>,
 
-    #[account(signer, has_one = authority)]
-    pub manager: Account<'info, Manager>,
-
     #[account(address = escrow.mint)]
     pub mint: Account<'info, Mint>,
+
+    #[account(signer, has_one = authority)]
+    pub queue: Account<'info, Queue>,
 
     #[account()]
     pub recipient: AccountInfo<'info>,

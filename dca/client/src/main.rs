@@ -1,11 +1,7 @@
 mod utils;
 
 use {
-    anchor_lang::{
-        prelude::*,
-        solana_program::sysvar::{self, clock},
-        system_program, InstructionData,
-    },
+    anchor_lang::{prelude::*, solana_program::sysvar, system_program, InstructionData},
     anchor_spl::{
         dex::serum_dex::{instruction::initialize_market, state::OpenOrders},
         token,
@@ -22,11 +18,11 @@ use {
 
 fn main() -> ClientResult<()> {
     // Create Client
-    let client = RpcClient::new("http://api.devnet.solana.com");
+    let client = RpcClient::new("https://api.devnet.solana.com");
     let payer = Keypair::new();
     let client = Client { client, payer };
 
-    // airdrop a bunch for all of the txs lol
+    // airdrop a bunch bc it's expensive to setup a dex market and for all of the txs lol
     client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
     client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
     client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
@@ -35,8 +31,9 @@ fn main() -> ClientResult<()> {
     client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
 
     // Derive PDAs
-    let authority_pubkey = dca::state::Authority::pubkey(client.payer_pubkey());
-    let manager_pubkey = cronos_scheduler::state::Manager::pda(authority_pubkey).0;
+    let authority = dca::state::Authority::pubkey(client.payer_pubkey());
+    let queue = clockwork_scheduler::state::Queue::pubkey(authority, "dca_queue".to_string());
+    let task = clockwork_scheduler::state::Task::pubkey(queue, 0);
 
     // setup market
     let market_keys = setup_market(&client)?;
@@ -44,19 +41,20 @@ fn main() -> ClientResult<()> {
     // open orders account
     let mut orders = None;
 
-    initialize(&client, authority_pubkey, manager_pubkey)?;
+    create_queue(&client, authority, queue)?;
 
-    delegate_funds(&client, authority_pubkey, &market_keys)?;
+    delegate_funds(&client, authority, &market_keys)?;
 
     init_dex_account(&client, &mut orders)?;
 
-    init_oo_acct(&client, authority_pubkey, &market_keys, orders.unwrap())?;
+    create_orders(&client, authority, &market_keys, orders.unwrap())?;
 
-    auto_swap(
+    create_task(
         &client,
         &market_keys,
-        manager_pubkey,
-        authority_pubkey,
+        queue,
+        task,
+        authority,
         orders.unwrap(),
     )?;
 
@@ -177,51 +175,46 @@ fn setup_market(client: &Client) -> ClientResult<MarketKeys> {
     })
 }
 
-fn initialize(client: &Client, authority_pk: Pubkey, manager_pk: Pubkey) -> ClientResult<()> {
-    let mut ix = Vec::new();
-
-    // create ix for initialize ix and add to ix vec
-    ix.push(Instruction {
+fn create_queue(client: &Client, authority: Pubkey, queue: Pubkey) -> ClientResult<()> {
+    // create ix
+    let ix = Instruction {
         program_id: dca::ID,
         accounts: vec![
-            AccountMeta::new(authority_pk, false),
+            AccountMeta::new(authority, false),
             AccountMeta::new(client.payer_pubkey(), true),
-            AccountMeta::new_readonly(cronos_scheduler::ID, false),
+            AccountMeta::new(queue, false),
+            AccountMeta::new_readonly(clockwork_scheduler::ID, false),
             AccountMeta::new_readonly(system_program::ID, false),
-            // Extra accounts
-            AccountMeta::new(manager_pk, false),
         ],
-        data: dca::instruction::Initialize {}.data(),
-    });
+        data: dca::instruction::CreateQueue {}.data(),
+    };
 
-    sign_send_and_confirm_tx(&client, ix, None, "initialize".to_string())?;
+    sign_send_and_confirm_tx(&client, [ix].to_vec(), None, "create_queue".to_string())?;
 
     Ok(())
 }
 
 fn delegate_funds(
     client: &Client,
-    authority_pk: Pubkey,
-    manager_pk: &MarketKeys,
+    authority: Pubkey,
+    market_keys: &MarketKeys,
 ) -> ClientResult<()> {
-    let mut ix = Vec::new();
-
-    // create ix for initialize ix and add to ix vec
-    ix.push(Instruction {
+    // create ix
+    let ix = Instruction {
         program_id: dca::ID,
         accounts: vec![
-            AccountMeta::new_readonly(authority_pk, false),
-            AccountMeta::new(manager_pk.pc_wallet_key.pubkey(), false),
+            AccountMeta::new_readonly(authority, false),
+            AccountMeta::new(market_keys.pc_wallet_key.pubkey(), false),
             AccountMeta::new(client.payer_pubkey(), true),
-            AccountMeta::new_readonly(manager_pk.pc_mint_pk, false),
+            AccountMeta::new_readonly(market_keys.pc_mint_pk, false),
             AccountMeta::new_readonly(sysvar::rent::ID, false),
             AccountMeta::new_readonly(system_program::ID, false),
             AccountMeta::new_readonly(token::ID, false),
         ],
         data: dca::instruction::DelegateFunds {}.data(),
-    });
+    };
 
-    sign_send_and_confirm_tx(&client, ix, None, "delegate_funds".to_string())?;
+    sign_send_and_confirm_tx(&client, [ix].to_vec(), None, "delegate_funds".to_string())?;
 
     Ok(())
 }
@@ -256,97 +249,54 @@ fn init_dex_account(client: &Client, orders: &mut Option<Pubkey>) -> ClientResul
     Ok(())
 }
 
-fn init_oo_acct(
+fn create_orders(
     client: &Client,
-    authority_pk: Pubkey,
+    authority: Pubkey,
     market_keys: &MarketKeys,
-    orders_pk: Pubkey,
+    orders: Pubkey,
 ) -> ClientResult<()> {
-    let mut ix = Vec::new();
-
-    ix.push(Instruction {
+    let ix = Instruction {
         program_id: dca::ID,
         accounts: vec![
-            AccountMeta::new_readonly(authority_pk, false),
+            AccountMeta::new_readonly(authority, false),
             AccountMeta::new_readonly(anchor_spl::dex::ID, false),
             AccountMeta::new(client.payer_pubkey(), true),
             AccountMeta::new_readonly(sysvar::rent::ID, false),
             AccountMeta::new_readonly(system_program::ID, false),
             // Extra accounts
             AccountMeta::new_readonly(market_keys.market_pk, false),
-            AccountMeta::new(orders_pk, false),
+            AccountMeta::new(orders, false),
         ],
-        data: dca::instruction::InitOrdersAcct {}.data(),
-    });
+        data: dca::instruction::CreateOrders {}.data(),
+    };
 
-    sign_send_and_confirm_tx(client, ix, None, "init_oo_acct".to_string())?;
+    sign_send_and_confirm_tx(client, [ix].to_vec(), None, "create_orders".to_string())?;
 
     Ok(())
 }
 
-fn auto_swap(
+fn create_task(
     client: &Client,
     market_keys: &MarketKeys,
-    manager_pubkey: Pubkey,
-    authority_pubkey: Pubkey,
-    orders_pubkey: Pubkey,
+    queue: Pubkey,
+    task: Pubkey,
+    authority: Pubkey,
+    orders: Pubkey,
 ) -> ClientResult<()> {
-    let mut ix = Vec::new();
-
-    // Derive PDAs
-    let swap_queue_pk = cronos_scheduler::state::Queue::pda(manager_pubkey, 0).0;
-    let swap_fee_pk = cronos_scheduler::state::Fee::pda(swap_queue_pk).0;
-    let swap_task_pk = cronos_scheduler::state::Task::pda(swap_queue_pk, 0).0;
-
-    // println!("\n");
-    // println!("             authority: {}", authority_pubkey);
-    // println!("                 clock: {}", clock::ID);
-    // println!("                   dex: {}", anchor_spl::dex::ID);
-    // println!("               manager: {}", manager_pubkey);
-    // println!("                 payer: {}", client.payer_pubkey());
-    // println!("               pc_mint: {}", market_keys.pc_mint_pk);
-    // println!(
-    //     "             pc_wallet: {}",
-    //     market_keys.pc_wallet_key.pubkey()
-    // );
-    // println!("----- EXTRA ACCOUNTS -----");
-    // println!("            swap_queue: {}", swap_queue_pk);
-    // println!("              swap_fee: {}", swap_fee_pk);
-    // println!("             swap_task: {}", swap_task_pk);
-    // println!("                market: {}", market_keys.market_pk);
-    // println!("            coin_vault: {}", market_keys.coin_vault_pk);
-    // println!("              pc_vault: {}", market_keys.pc_vault_pk);
-    // println!("                 req_q: {}", market_keys.req_q_pk);
-    // println!("               event_q: {}", market_keys.event_q_pk);
-    // println!("                  bids: {}", market_keys.bids_pk);
-    // println!("                  asks: {}", market_keys.asks_pk);
-    // println!("                orders: {}\n", orders_pubkey);
-    // println!("----- DEBUG CHECK -----");
-    // println!("             coin_mint: {}", market_keys.coin_mint_pk);
-    // println!("            coin_vault: {}", market_keys.coin_vault_pk);
-    // println!(
-    //     "           coin_wallet: {}",
-    //     market_keys.coin_wallet_key.pubkey()
-    // );
-    // println!("          vault_signer: {}", market_keys.vault_signer_pk);
-
-    ix.push(Instruction {
+    let ix = Instruction {
         program_id: dca::ID,
         accounts: vec![
-            AccountMeta::new_readonly(authority_pubkey, false),
-            AccountMeta::new_readonly(clock::ID, false),
+            AccountMeta::new_readonly(authority, false),
             AccountMeta::new_readonly(anchor_spl::dex::ID, false),
-            AccountMeta::new(manager_pubkey, false),
             AccountMeta::new(client.payer_pubkey(), true),
             AccountMeta::new_readonly(market_keys.pc_mint_pk, false),
             AccountMeta::new(market_keys.pc_wallet_key.pubkey(), false),
-            AccountMeta::new_readonly(cronos_scheduler::ID, false),
+            AccountMeta::new(queue, false),
+            AccountMeta::new_readonly(clockwork_scheduler::ID, false),
             AccountMeta::new_readonly(system_program::ID, false),
+            AccountMeta::new(task, false),
             AccountMeta::new_readonly(token::ID, false),
             // Extra Accounts
-            AccountMeta::new(swap_fee_pk, false),
-            AccountMeta::new(swap_queue_pk, false),
-            AccountMeta::new(swap_task_pk, false),
             AccountMeta::new(market_keys.market_pk, false),
             AccountMeta::new(market_keys.coin_vault_pk, false),
             AccountMeta::new(market_keys.pc_vault_pk, false),
@@ -354,12 +304,12 @@ fn auto_swap(
             AccountMeta::new(market_keys.event_q_pk, false),
             AccountMeta::new(market_keys.bids_pk, false),
             AccountMeta::new(market_keys.asks_pk, false),
-            AccountMeta::new(orders_pubkey, false),
+            AccountMeta::new(orders, false),
         ],
-        data: dca::instruction::AutoSwap {}.data(),
-    });
+        data: dca::instruction::CreateTask {}.data(),
+    };
 
-    sign_send_and_confirm_tx(client, ix, None, "auto_swap".to_string())?;
+    sign_send_and_confirm_tx(client, [ix].to_vec(), None, "create_task".to_string())?;
 
     Ok(())
 }

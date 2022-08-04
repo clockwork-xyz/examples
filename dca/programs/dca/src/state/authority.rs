@@ -12,7 +12,6 @@ pub const SEED_AUTHORITY: &[u8] = b"authority";
 #[account]
 #[derive(Debug)]
 pub struct Authority {
-    pub manager: Pubkey,
     pub payer: Pubkey,
 }
 
@@ -34,12 +33,11 @@ impl TryFrom<Vec<u8>> for Authority {
  */
 
 pub trait AuthorityAccount {
-    fn new(&mut self, manager: Pubkey, payer: Pubkey) -> Result<()>;
+    fn new(&mut self, payer: Pubkey) -> Result<()>;
 }
 
 impl AuthorityAccount for Account<'_, Authority> {
-    fn new(&mut self, manager: Pubkey, payer: Pubkey) -> Result<()> {
-        self.manager = manager;
+    fn new(&mut self, payer: Pubkey) -> Result<()> {
         self.payer = payer;
         Ok(())
     }

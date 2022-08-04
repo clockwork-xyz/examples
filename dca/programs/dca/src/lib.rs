@@ -14,14 +14,14 @@ pub mod dca {
     use super::*;
 
     /*
-     * initialize clockworks related accounts
+     * create clockwork queue
      */
-    pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Result<()> {
-        initialize::handler(ctx)
+    pub fn create_queue<'info>(ctx: Context<'_, '_, '_, 'info, CreateQueue<'info>>) -> Result<()> {
+        create_queue::handler(ctx)
     }
 
     /*
-     * delegate funds to manager (clockworks owned account) that will enable for automated swaps
+     * delegate funds to Authority (DCA owned account) that will enable for automated swaps
      */
     pub fn delegate_funds<'info>(
         ctx: Context<'_, '_, '_, 'info, DelegateFunds<'info>>,
@@ -32,17 +32,17 @@ pub mod dca {
     /*
      * makes cpi to serum dex to init open order account
      */
-    pub fn init_orders_acct<'info>(
-        ctx: Context<'_, '_, '_, 'info, InitOrdersAcct<'info>>,
+    pub fn create_orders<'info>(
+        ctx: Context<'_, '_, '_, 'info, CreateOrders<'info>>,
     ) -> Result<()> {
-        init_orders_acct::handler(ctx)
+        create_orders::handler(ctx)
     }
 
     /*
-     * clockworks automation ix for auto swapping on serum dex
+     * create clockwork task to then automate swapping on serum dex
      */
-    pub fn auto_swap<'info>(ctx: Context<'_, '_, '_, 'info, AutoSwap<'info>>) -> Result<()> {
-        auto_swap::handler(ctx)
+    pub fn create_task<'info>(ctx: Context<'_, '_, '_, 'info, CreateTask<'info>>) -> Result<()> {
+        create_task::handler(ctx)
     }
 
     /*

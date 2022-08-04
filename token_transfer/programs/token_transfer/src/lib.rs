@@ -13,26 +13,26 @@ use instructions::*;
 pub mod token_transfer {
     use super::*;
 
-    pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Result<()> {
-        initialize::handler(ctx)
+    pub fn create_queue<'info>(ctx: Context<'_, '_, '_, 'info, CreateQueue<'info>>) -> Result<()> {
+        create_queue::handler(ctx)
     }
 
-    pub fn create(ctx: Context<Create>) -> Result<()> {
-        create::handler(ctx)
-    }
-
-    pub fn deposit<'info>(
-        ctx: Context<'_, '_, '_, 'info, Deposit<'info>>,
+    pub fn create_escrow(
+        ctx: Context<CreateEscrow>,
         amount: u64,
         transfer_rate: u64,
     ) -> Result<()> {
-        deposit::handler(ctx, amount, transfer_rate)
+        create_escrow::handler(ctx, amount, transfer_rate)
     }
 
-    pub fn auto_disburse<'info>(
-        ctx: Context<'_, '_, '_, 'info, AutoDisburse<'info>>,
+    pub fn deposit_funds<'info>(
+        ctx: Context<'_, '_, '_, 'info, DepositFunds<'info>>,
     ) -> Result<()> {
-        auto_disburse::handler(ctx)
+        deposit_funds::handler(ctx)
+    }
+
+    pub fn create_task<'info>(ctx: Context<'_, '_, '_, 'info, CreateTask<'info>>) -> Result<()> {
+        create_task::handler(ctx)
     }
 
     pub fn disburse_payment(ctx: Context<'_, '_, '_, '_, DisbursePayment<'_>>) -> Result<()> {

@@ -8,7 +8,7 @@ use {
 };
 
 #[derive(Accounts)]
-pub struct InitOrdersAcct<'info> {
+pub struct CreateOrders<'info> {
     #[account( 
         seeds = [SEED_AUTHORITY, authority.payer.as_ref()],
         bump
@@ -28,7 +28,7 @@ pub struct InitOrdersAcct<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, InitOrdersAcct<'info>>) -> Result<()> {
+pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CreateOrders<'info>>) -> Result<()> {
     // Get accounts
     let authority = &ctx.accounts.authority;
     let dex_program = &ctx.accounts.dex_program;

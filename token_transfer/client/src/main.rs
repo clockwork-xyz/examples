@@ -13,265 +13,201 @@ use {
 };
 
 fn main() -> ClientResult<()> {
-    let amount = LAMPORTS_PER_SOL;
-    let transfer_rate = 10000;
-
     // Create Client
     let client = RpcClient::new("https://api.devnet.solana.com");
     let payer = Keypair::new();
     let client = Client { client, payer };
-    client.airdrop(&client.payer_pubkey(), amount)?;
+    client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
 
     // Derive PDAs
-    let recipient = Keypair::new();
-    let recipient_pubkey = recipient.pubkey();
-    let authority_pubkey = token_transfer::state::Authority::pda().0;
-    let escrow_pubkey =
-        token_transfer::state::Escrow::pda(client.payer_pubkey(), recipient_pubkey).0;
-    let manager_pubkey = cronos_scheduler::state::Manager::pda(authority_pubkey).0;
+    let recipient = Keypair::new().pubkey();
+    let authority = token_transfer::state::Authority::pubkey();
+    let queue =
+        clockwork_scheduler::state::Queue::pubkey(authority, "token_transfer_queue".to_string());
+    let task = clockwork_scheduler::state::Task::pubkey(queue, 0);
+    let escrow = token_transfer::state::Escrow::pda(client.payer_pubkey(), recipient).0;
 
     // create token mint
-    let mint = client.create_token_mint(&client.payer_pubkey(), 9)?;
+    let mint = client
+        .create_token_mint(&client.payer_pubkey(), 9)
+        .unwrap()
+        .pubkey();
 
     // Create ATAs
-    let sender_token_account_pubkey = client.create_associated_token_account(
-        &client.payer(),
-        &client.payer_pubkey(),
-        &mint.pubkey(),
-    )?;
-    let recipient_token_account_pubkey = client.create_associated_token_account(
-        &client.payer(),
-        &recipient_pubkey,
-        &mint.pubkey(),
-    )?;
+    let sender_token_account =
+        client.create_associated_token_account(&client.payer(), &client.payer_pubkey(), &mint)?;
+    let recipient_token_account =
+        client.create_associated_token_account(&client.payer(), &recipient, &mint)?;
 
     // get vault associated token address
-    let vault_pubkey =
-        anchor_spl::associated_token::get_associated_token_address(&escrow_pubkey, &mint.pubkey());
+    let vault = anchor_spl::associated_token::get_associated_token_address(&escrow, &mint);
 
-    initialize(&client, authority_pubkey, manager_pubkey)?;
+    create_queue(&client, authority, queue)?;
 
-    create(
+    create_escrow(&client, authority, escrow, mint, recipient, queue)?;
+
+    deposit_funds(
         &client,
-        escrow_pubkey,
-        manager_pubkey,
-        mint.pubkey(),
-        recipient_pubkey,
+        escrow,
+        mint,
+        recipient,
+        sender_token_account,
+        vault,
     )?;
 
-    deposit(
+    create_task(
         &client,
-        amount,
-        escrow_pubkey,
-        mint.pubkey(),
-        recipient_pubkey,
-        sender_token_account_pubkey,
-        transfer_rate,
-        vault_pubkey,
-    )?;
-
-    auto_withdraw(
-        &client,
-        authority_pubkey,
-        escrow_pubkey,
-        manager_pubkey,
-        recipient_pubkey,
-        recipient_token_account_pubkey,
-        vault_pubkey,
+        authority,
+        escrow,
+        queue,
+        task,
+        recipient,
+        recipient_token_account,
+        vault,
     )?;
 
     Ok(())
 }
 
-fn initialize(
-    client: &Client,
-    authority_pubkey: Pubkey,
-    manager_pubkey: Pubkey,
-) -> ClientResult<()> {
-    // create ix for initialize ix
-    let initialize_ix = Instruction {
+fn create_queue(client: &Client, authority: Pubkey, queue: Pubkey) -> ClientResult<()> {
+    // create ix
+    let ix = Instruction {
         program_id: token_transfer::ID,
         accounts: vec![
-            AccountMeta::new(authority_pubkey, false),
+            AccountMeta::new(authority, false),
             AccountMeta::new(client.payer_pubkey(), true),
-            AccountMeta::new_readonly(cronos_scheduler::ID, false),
+            AccountMeta::new(queue, false),
+            AccountMeta::new_readonly(clockwork_scheduler::ID, false),
             AccountMeta::new_readonly(system_program::ID, false),
-            // Extra accounts
-            AccountMeta::new(manager_pubkey, false),
         ],
-        data: token_transfer::instruction::Initialize {}.data(),
+        data: token_transfer::instruction::CreateQueue {}.data(),
     };
 
-    // Create tx for initialize ix
-    let mut tx = Transaction::new_with_payer(&[initialize_ix], Some(&client.payer_pubkey()));
-    tx.sign(&[client.payer()], client.latest_blockhash().unwrap());
-
-    // Send and confirm initialize tx
-    match client.send_and_confirm_transaction(&tx) {
-        Ok(sig) => println!(
-            "Initialize ix: ✅ https://explorer.solana.com/tx/{}?cluster=devnet",
-            sig
-        ),
-        Err(err) => println!("Initialize ix: ❌ {:#?}", err),
-    }
+    send_and_confirm_tx(client, ix, "create_queue".to_string())?;
 
     Ok(())
 }
 
-fn create(
+fn create_escrow(
     client: &Client,
-    escrow_pubkey: Pubkey,
-    manager_pubkey: Pubkey,
-    mint_pubkey: Pubkey,
-    recipient_pubkey: Pubkey,
+    authority: Pubkey,
+    escrow: Pubkey,
+    mint: Pubkey,
+    recipient: Pubkey,
+    queue: Pubkey,
 ) -> ClientResult<()> {
-    // Derive PDAs
-    let disburse_queue_pubkey = cronos_scheduler::state::Queue::pda(manager_pubkey, 0).0;
-
-    // create deposit ix
-    let create_payment_ix = Instruction {
+    // create ix
+    let ix = Instruction {
         program_id: token_transfer::ID,
         accounts: vec![
-            AccountMeta::new(escrow_pubkey, false),
-            AccountMeta::new_readonly(mint_pubkey, false),
-            AccountMeta::new_readonly(recipient_pubkey, false),
-            AccountMeta::new_readonly(cronos_scheduler::ID, false),
+            AccountMeta::new_readonly(authority, false),
+            AccountMeta::new(escrow, false),
+            AccountMeta::new_readonly(mint, false),
+            AccountMeta::new_readonly(queue, false),
+            AccountMeta::new_readonly(recipient, false),
+            AccountMeta::new_readonly(clockwork_scheduler::ID, false),
             AccountMeta::new(client.payer_pubkey(), true),
             AccountMeta::new_readonly(system_program::ID, false),
-            // Extra Accounts
-            AccountMeta::new(disburse_queue_pubkey, false),
         ],
-        data: token_transfer::instruction::Create {}.data(),
-    };
-
-    // Create deposit tx
-    let mut tx = Transaction::new_with_payer(&[create_payment_ix], Some(&client.payer_pubkey()));
-    tx.sign(&[client.payer()], client.latest_blockhash().unwrap());
-
-    // Send and confirm deposit tx
-    match client.send_and_confirm_transaction(&tx) {
-        Ok(sig) => println!(
-            "create ix: ✅ https://explorer.solana.com/tx/{}?cluster=devnet",
-            sig
-        ),
-        Err(err) => println!("create ix: ❌ {:#?}", err),
-    }
-
-    Ok(())
-}
-
-fn deposit(
-    client: &Client,
-    amount: u64,
-    escrow_pubkey: Pubkey,
-    mint_pubkey: Pubkey,
-    recipient_pubkey: Pubkey,
-    sender_token_account_pubkey: Pubkey,
-    transfer_rate: u64,
-    vault_pubkey: Pubkey,
-) -> ClientResult<()> {
-    // Derive PDAs
-
-    // mint to sender's associated token account
-    client.mint_to(
-        &client.payer(),
-        &mint_pubkey,
-        &sender_token_account_pubkey,
-        amount,
-        9,
-    )?;
-
-    // create deposit ix
-    let create_payment_ix = Instruction {
-        program_id: token_transfer::ID,
-        accounts: vec![
-            AccountMeta::new_readonly(associated_token::ID, false),
-            AccountMeta::new(escrow_pubkey, false),
-            AccountMeta::new_readonly(mint_pubkey, false),
-            AccountMeta::new_readonly(recipient_pubkey, false),
-            AccountMeta::new_readonly(sysvar::rent::ID, false),
-            AccountMeta::new_readonly(cronos_scheduler::ID, false),
-            AccountMeta::new(client.payer_pubkey(), true),
-            AccountMeta::new(sender_token_account_pubkey, false),
-            AccountMeta::new_readonly(system_program::ID, false),
-            AccountMeta::new_readonly(token::ID, false),
-            AccountMeta::new(vault_pubkey, false),
-        ],
-        data: token_transfer::instruction::Deposit {
-            amount,
-            transfer_rate,
+        data: token_transfer::instruction::CreateEscrow {
+            amount: LAMPORTS_PER_SOL,
+            transfer_rate: 10000,
         }
         .data(),
     };
 
-    println!(
-        "vault: https://explorer.solana.com/address/{}?cluster=devnet",
-        vault_pubkey
-    );
-
-    // Create deposit tx
-    let mut tx = Transaction::new_with_payer(&[create_payment_ix], Some(&client.payer_pubkey()));
-    tx.sign(&[client.payer()], client.latest_blockhash().unwrap());
-
-    // Send and confirm deposit tx
-    match client.send_and_confirm_transaction(&tx) {
-        Ok(sig) => println!(
-            "deposit ix: ✅ https://explorer.solana.com/tx/{}?cluster=devnet",
-            sig
-        ),
-        Err(err) => println!("deposit ix: ❌ {:#?}", err),
-    }
+    send_and_confirm_tx(client, ix, "create_escrow".to_string())?;
 
     Ok(())
 }
 
-fn auto_withdraw(
+fn deposit_funds(
     client: &Client,
-    authority_pubkey: Pubkey,
-    escrow_pubkey: Pubkey,
-    manager_pubkey: Pubkey,
-    recipient_pubkey: Pubkey,
-    recipient_token_account_pubkey: Pubkey,
-    vault_pubkey: Pubkey,
+    escrow: Pubkey,
+    mint: Pubkey,
+    recipient: Pubkey,
+    sender_token_account: Pubkey,
+    vault: Pubkey,
 ) -> ClientResult<()> {
-    // Derive PDAs
-    let disburse_queue_pubkey = cronos_scheduler::state::Queue::pda(manager_pubkey, 0).0;
-    let disburse_fee_pubkey = cronos_scheduler::state::Fee::pda(disburse_queue_pubkey).0;
-    let disburse_task_pubkey = cronos_scheduler::state::Task::pda(disburse_queue_pubkey, 0).0;
+    // mint to sender's associated token account
+    client.mint_to(
+        &client.payer(),
+        &mint,
+        &sender_token_account,
+        LAMPORTS_PER_SOL,
+        9,
+    )?;
 
-    let auto_withdraw_ix = Instruction {
+    // create ix
+    let ix = Instruction {
         program_id: token_transfer::ID,
         accounts: vec![
             AccountMeta::new_readonly(associated_token::ID, false),
-            AccountMeta::new(authority_pubkey, false),
-            AccountMeta::new_readonly(sysvar::clock::ID, false),
-            AccountMeta::new_readonly(escrow_pubkey, false),
-            AccountMeta::new(manager_pubkey, false),
-            AccountMeta::new_readonly(recipient_pubkey, false),
-            AccountMeta::new_readonly(recipient_token_account_pubkey, false),
-            AccountMeta::new_readonly(cronos_scheduler::ID, false),
+            AccountMeta::new(escrow, false),
+            AccountMeta::new_readonly(mint, false),
+            AccountMeta::new_readonly(recipient, false),
+            AccountMeta::new_readonly(sysvar::rent::ID, false),
+            AccountMeta::new_readonly(clockwork_scheduler::ID, false),
             AccountMeta::new(client.payer_pubkey(), true),
+            AccountMeta::new(sender_token_account, false),
             AccountMeta::new_readonly(system_program::ID, false),
             AccountMeta::new_readonly(token::ID, false),
-            AccountMeta::new_readonly(vault_pubkey, false),
-            // Extra accounts
-            AccountMeta::new(disburse_fee_pubkey, false),
-            AccountMeta::new(disburse_queue_pubkey, false),
-            AccountMeta::new(disburse_task_pubkey, false),
+            AccountMeta::new(vault, false),
         ],
-        data: token_transfer::instruction::AutoDisburse {}.data(),
+        data: token_transfer::instruction::DepositFunds {}.data(),
     };
 
-    let mut tx = Transaction::new_with_payer(&[auto_withdraw_ix], Some(&client.payer_pubkey()));
+    send_and_confirm_tx(client, ix, "deposit_funds".to_string())?;
+
+    Ok(())
+}
+
+fn create_task(
+    client: &Client,
+    authority: Pubkey,
+    escrow: Pubkey,
+    queue: Pubkey,
+    task: Pubkey,
+    recipient: Pubkey,
+    recipient_token_account: Pubkey,
+    vault: Pubkey,
+) -> ClientResult<()> {
+    let ix = Instruction {
+        program_id: token_transfer::ID,
+        accounts: vec![
+            AccountMeta::new_readonly(associated_token::ID, false),
+            AccountMeta::new(authority, false),
+            AccountMeta::new_readonly(escrow, false),
+            AccountMeta::new(queue, false),
+            AccountMeta::new_readonly(recipient, false),
+            AccountMeta::new_readonly(recipient_token_account, false),
+            AccountMeta::new_readonly(clockwork_scheduler::ID, false),
+            AccountMeta::new(client.payer_pubkey(), true),
+            AccountMeta::new_readonly(system_program::ID, false),
+            AccountMeta::new(task, false),
+            AccountMeta::new_readonly(token::ID, false),
+            AccountMeta::new_readonly(vault, false),
+        ],
+        data: token_transfer::instruction::CreateTask {}.data(),
+    };
+
+    send_and_confirm_tx(client, ix, "create_task".to_string())?;
+
+    Ok(())
+}
+
+fn send_and_confirm_tx(client: &Client, ix: Instruction, label: String) -> ClientResult<()> {
+    // Create tx
+    let mut tx = Transaction::new_with_payer(&[ix], Some(&client.payer_pubkey()));
     tx.sign(&[client.payer()], client.latest_blockhash().unwrap());
 
-    // Send and confirm deposit tx
+    // Send and confirm tx
     match client.send_and_confirm_transaction(&tx) {
         Ok(sig) => println!(
-            "auto_withdraw ix: ✅ https://explorer.solana.com/tx/{}?cluster=devnet",
-            sig
+            "{} tx: ✅ https://explorer.solana.com/tx/{}?cluster=devnet",
+            label, sig
         ),
-        Err(err) => println!("auto_withdraw ix: ❌ {:#?}", err),
+        Err(err) => println!("{} tx: ❌ {:#?}", label, err),
     }
 
     Ok(())

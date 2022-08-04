@@ -10,7 +10,7 @@ pub fn sign_send_and_confirm_tx(
     client: &Client,
     ix: Vec<Instruction>,
     signers: Option<Vec<&Keypair>>,
-    tx_label: String,
+    label: String,
 ) -> ClientResult<()> {
     let mut tx;
 
@@ -33,10 +33,10 @@ pub fn sign_send_and_confirm_tx(
     // Send and confirm initialize tx
     match client.send_and_confirm_transaction(&tx) {
         Ok(sig) => println!(
-            "{} tx: ✅ https://explorer.solana.com/tx/{}?cluster=devnet",
-            tx_label, sig
+            "{} tx: ✅ https://explorer.solana.com/tx/{}?cluster=custom",
+            label, sig
         ),
-        Err(err) => println!("{} tx: ❌ {:#?}", tx_label, err),
+        Err(err) => println!("{} tx: ❌ {:#?}", label, err),
     }
     Ok(())
 }

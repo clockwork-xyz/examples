@@ -11,8 +11,7 @@ use {
 };
 
 #[derive(Accounts)]
-#[instruction(amount: u64, transfer_rate: u64)]
-pub struct Deposit<'info> {
+pub struct DepositFunds<'info> {
     #[account(address = anchor_spl::associated_token::ID)]
     pub associated_token_program: Program<'info, AssociatedToken>,
 
@@ -31,8 +30,8 @@ pub struct Deposit<'info> {
     #[account(address = sysvar::rent::ID)]
     pub rent: Sysvar<'info, Rent>,
 
-    #[account(address = cronos_scheduler::ID)]
-    pub scheduler_program: Program<'info, cronos_scheduler::program::CronosScheduler>,
+    #[account(address = clockwork_scheduler::ID)]
+    pub scheduler_program: Program<'info, clockwork_scheduler::program::ClockworkScheduler>,
 
     #[account(mut)]
     pub sender: Signer<'info>,
@@ -59,21 +58,13 @@ pub struct Deposit<'info> {
     pub vault: Account<'info, TokenAccount>,
 }
 
-pub fn handler<'info>(
-    ctx: Context<'_, '_, '_, 'info, Deposit<'info>>,
-    amount: u64,
-    transfer_rate: u64,
-) -> Result<()> {
+pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, DepositFunds<'info>>) -> Result<()> {
     // Get accounts
     let escrow = &mut ctx.accounts.escrow;
     let sender = &mut ctx.accounts.sender;
     let sender_token_account = &ctx.accounts.sender_token_account;
     let token_program = &ctx.accounts.token_program;
     let vault = &ctx.accounts.vault;
-
-    // update escrow
-    escrow.amount = amount;
-    escrow.transfer_rate = transfer_rate;
 
     // deposit funds from sender's token account to vault token account
     token::transfer(

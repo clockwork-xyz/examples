@@ -14,20 +14,17 @@ use {
         },
         token::{Mint, Token, TokenAccount},
     },
-    cronos_scheduler::state::Manager,
+    clockwork_scheduler::state::Queue,
     std::num::NonZeroU64,
 };
 
 #[derive(Accounts)]
 pub struct Swap<'info> {
-    #[account(seeds = [SEED_AUTHORITY, authority.payer.as_ref()], bump, has_one = manager)]
+    #[account(seeds = [SEED_AUTHORITY, authority.payer.as_ref()], bump)]
     pub authority: Account<'info, Authority>,
 
     #[account(address = anchor_spl::dex::ID)]
     pub dex_program: Program<'info, anchor_spl::dex::Dex>,
-
-    #[account(signer, has_one = authority)]
-    pub manager: Account<'info, Manager>,
 
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -38,14 +35,17 @@ pub struct Swap<'info> {
     #[account(mut, token::authority = authority, token::mint = pc_mint)]
     pub pc_wallet: Account<'info, TokenAccount>,
 
-    #[account(address = anchor_spl::token::ID)]
-    pub token_program: Program<'info, Token>,
+    #[account(signer, has_one = authority)]
+    pub queue: Account<'info, Queue>,
 
     #[account(address = sysvar::rent::ID)]
     pub rent: Sysvar<'info, Rent>,
 
     #[account(address = system_program::ID)]
     pub system_program: Program<'info, System>,
+
+    #[account(address = anchor_spl::token::ID)]
+    pub token_program: Program<'info, Token>,
 }
 
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<()> {
