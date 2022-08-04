@@ -3,7 +3,7 @@ use {
     anchor_lang::{
         prelude::*,
         solana_program::{
-            instruction::Instruction, system_program, sysvar,
+            instruction::Instruction, system_program,
         },
     },
     clockwork_scheduler::state::{SEED_TASK, SEED_QUEUE, Queue},
@@ -60,7 +60,6 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CreateTask<'info>>) -> Res
         accounts: vec![
             AccountMeta::new_readonly(authority.key(), false),
             AccountMeta::new_readonly(queue.key(), true),
-            AccountMeta::new_readonly(sysvar::clock::ID, false),
         ],
         data: clockwork_scheduler::anchor::sighash("hello_world").to_vec(),
     };

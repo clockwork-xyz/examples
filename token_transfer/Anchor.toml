@@ -1,7 +1,11 @@
 [features]
 seeds = false
+
 [programs.devnet]
-token_transfer = "HSPN2LP6yxiQfZfSnYDwTjwFEF7dbbhrYoidkoc61Gno"
+token_transfer = "12tW8jpxqAbKgbcRa4uCKtCUcvpzfr7YpJy9zTVosVWK"
+
+[programs.localnet]
+token_transfer = "12tW8jpxqAbKgbcRa4uCKtCUcvpzfr7YpJy9zTVosVWK"
 
 [registry]
 url = "https://anchor.projectserum.com"

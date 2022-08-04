@@ -2,13 +2,14 @@ use {
     crate::state::*,
     anchor_lang::{ 
         prelude::*,
-        solana_program::{instruction::Instruction, system_program, sysvar},
+        solana_program::{instruction::Instruction, system_program},
     },
     anchor_spl::{token::TokenAccount, associated_token::{self, AssociatedToken}},
+    clockwork_scheduler::state::{SEED_TASK, SEED_QUEUE, Queue}
 };
 
 #[derive(Accounts)]
-pub struct AutoDisburse<'info> {
+pub struct CreateTask<'info> {
     #[account(address = anchor_spl::associated_token::ID)]
     pub associated_token_program: Program<'info, AssociatedToken>,
 
@@ -18,17 +19,19 @@ pub struct AutoDisburse<'info> {
     )]
     pub authority: Account<'info, Authority>,
 
-    #[account(address = sysvar::clock::ID)]
-    pub clock: Sysvar<'info, Clock>,
-
     #[account(
         seeds = [SEED_ESCROW, sender.key().as_ref(), recipient.key().as_ref()],
-        bump
+        bump,
+        has_one = recipient
     )]
     pub escrow: Account<'info, Escrow>,
 
-    #[account(has_one = authority)]
-    pub manager: Account<'info, cronos_scheduler::state::Manager>,
+    #[account(
+      seeds = [SEED_QUEUE, authority.key().as_ref(), "token_transfer_queue".as_ref()], 
+      seeds::program = clockwork_scheduler::ID, 
+      bump,
+    )]
+    pub queue: Account<'info, Queue>,
 
     #[account()]
     pub recipient: AccountInfo<'info>,
@@ -39,14 +42,21 @@ pub struct AutoDisburse<'info> {
     )]
     pub recipient_token_account: Box<Account<'info, TokenAccount>>,
 
-    #[account(address = cronos_scheduler::ID)]
-    pub scheduler_program: Program<'info, cronos_scheduler::program::CronosScheduler>,
+    #[account(address = clockwork_scheduler::ID)]
+    pub scheduler_program: Program<'info, clockwork_scheduler::program::ClockworkScheduler>,
 
     #[account(mut)]
     pub sender: Signer<'info>,
 
     #[account(address = system_program::ID)]
     pub system_program: Program<'info, System>,
+
+    #[account(
+        seeds = [SEED_TASK, queue.key().as_ref(), (0 as u64).to_be_bytes().as_ref()], 
+        seeds::program = clockwork_scheduler::ID, 
+        bump
+	)]
+	pub task: SystemAccount<'info>,
 
     #[account(address = anchor_spl::token::ID)]
     pub token_program: Program<'info, anchor_spl::token::Token>,
@@ -59,80 +69,55 @@ pub struct AutoDisburse<'info> {
 }
 
 pub fn handler<'info> (
-  ctx: Context<'_, '_, '_, 'info, AutoDisburse<'info>>
+  ctx: Context<'_, '_, '_, 'info, CreateTask<'info>>
 ) -> Result<()> {
     // Get Accounts
     let authority = &ctx.accounts.authority;
-    let clock = &ctx.accounts.clock;
     let escrow = &ctx.accounts.escrow;
-    let manager = &ctx.accounts.manager;
+    let queue = &ctx.accounts.queue;
     let recipient_token_account = &ctx.accounts.recipient_token_account;
     let scheduler_program = &ctx.accounts.scheduler_program;
     let sender = &ctx.accounts.sender;
     let system_program = &ctx.accounts.system_program;
+    let task = &ctx.accounts.task;
     let token_program = &ctx.accounts.token_program;
     let vault = &ctx.accounts.vault;    
 
-    // Get remaining Accounts
-    let disburse_fee = ctx.remaining_accounts.get(0).unwrap();
-    let disburse_queue = ctx.remaining_accounts.get(1).unwrap();
-    let disburse_task = ctx.remaining_accounts.get(2).unwrap();
-
-
     // get authority bump
     let bump = *ctx.bumps.get("authority").unwrap();
-
-    // Create queue
-    cronos_scheduler::cpi::queue_new(
-        CpiContext::new_with_signer(
-            scheduler_program.to_account_info(),
-            cronos_scheduler::cpi::accounts::QueueNew {
-                authority: authority.to_account_info(),
-                clock: clock.to_account_info(),
-                fee: disburse_fee.to_account_info(),
-                manager: manager.to_account_info(),
-                payer: sender.to_account_info(),
-                queue: disburse_queue.to_account_info(),
-                system_program: system_program.to_account_info(),
-            },
-            &[&[SEED_AUTHORITY, &[bump]]],
-        ),
-        "*/30 * * * * * *".into(),
-    )?;
     
     // create disburse ix
-    let disburse_ix = Instruction {
+    let disburse_payment_ix = Instruction {
         program_id: crate::ID,
         accounts: vec![
             AccountMeta::new_readonly(associated_token::ID, false),
             AccountMeta::new_readonly(authority.key(), false),
-            AccountMeta::new(escrow.key(), false),
-            AccountMeta::new_readonly(manager.key(), true),
+            AccountMeta::new_readonly(escrow.key(), false),
             AccountMeta::new_readonly(escrow.mint.key(), false),
+            AccountMeta::new_readonly(queue.key(), true),
             AccountMeta::new_readonly(escrow.recipient.key(), false),
             AccountMeta::new(recipient_token_account.key(), false),
             AccountMeta::new_readonly(escrow.sender.key(), false),
             AccountMeta::new(vault.key(), false),
             AccountMeta::new_readonly(token_program.key(), false),
         ],
-        data: cronos_scheduler::anchor::sighash("disburse_payment").into(),
+        data: clockwork_scheduler::anchor::sighash("disburse_payment").into(),
     };
 
     // Create task with the disburse ix and add it to the queue
-    cronos_scheduler::cpi::task_new(
+    clockwork_scheduler::cpi::task_new(
         CpiContext::new_with_signer(
             scheduler_program.to_account_info(),
-            cronos_scheduler::cpi::accounts::TaskNew {
+            clockwork_scheduler::cpi::accounts::TaskNew {
                 authority: authority.to_account_info(),
-                manager: manager.to_account_info(),
                 payer: sender.to_account_info(),
-                queue: disburse_queue.to_account_info(),
+                queue: queue.to_account_info(),
                 system_program: system_program.to_account_info(),
-                task: disburse_task.to_account_info(),
+                task: task.to_account_info(),
             },
             &[&[SEED_AUTHORITY, &[bump]]],
         ),
-        vec![disburse_ix.into()],
+        vec![disburse_payment_ix.into()],
     )?;
 
   Ok(())

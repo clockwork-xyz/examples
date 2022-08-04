@@ -19,6 +19,6 @@ default = []
 overflow-checks = true
 
 [dependencies]
-anchor-spl = { version = "0.24.2", features = ["token"] }
-anchor-lang = "0.24.2" 
-cronos-scheduler = { version = "0.2.0", features = ["cpi"] }
+anchor-spl = { version = "0.25.0", features = ["token"] }
+anchor-lang = "0.25.0" 
+clockwork-scheduler = { version = "1.0.1", features = ["cpi"] }
