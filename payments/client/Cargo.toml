@@ -1,10 +1,10 @@
 [package]
-name = "client"
+name = "client-payments-program"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-token-transfer = { path = "../programs/token_transfer", features = ["no-entrypoint"], version = "0.1.0" }
+payments-program = { path = "../programs/payments", features = ["no-entrypoint"], version = "0.1.0" }
 clockwork-scheduler = { version = "1.0.1", features = ["cpi"] }
 anchor-spl = "0.25.0"
 anchor-lang = "0.25.0"
