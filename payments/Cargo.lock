@@ -772,16 +772,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "client"
+name = "client-payments-program"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
  "clockwork-scheduler",
+ "payments-program",
  "solana-client",
  "solana-client-helpers",
  "solana-sdk",
- "token-transfer",
 ]
 
 [[package]]
@@ -2267,6 +2267,15 @@ dependencies = [
  "redox_syscall",
  "smallvec",
  "windows-sys",
+]
+
+[[package]]
+name = "payments-program"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "clockwork-scheduler",
 ]
 
 [[package]]
@@ -4126,15 +4135,6 @@ name = "tinyvec_macros"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
-
-[[package]]
-name = "token-transfer"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "clockwork-scheduler",
-]
 
 [[package]]
 name = "tokio"

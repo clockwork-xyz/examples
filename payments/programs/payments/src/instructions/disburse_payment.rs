@@ -14,24 +14,26 @@ pub struct DisbursePayment<'info> {
     pub associated_token_program: Program<'info, AssociatedToken>,
 
     #[account(
-        seeds = [SEED_AUTHORITY], 
-        bump
+        mut,
+        associated_token::authority = payment,
+        associated_token::mint = payment.mint,
     )]
-    pub authority: Account<'info, Authority>,
+    pub escrow: Account<'info, TokenAccount>,
+
+    #[account(address = payment.mint)]
+    pub mint: Account<'info, Mint>,
 
     #[account(
-        seeds = [SEED_ESCROW, sender.key().as_ref(), recipient.key().as_ref()],
+        mut,
+        seeds = [SEED_PAYMENT, payment.sender.key().as_ref(), payment.recipient.key().as_ref(), payment.mint.as_ref()],
         bump,
         has_one = sender,
         has_one = recipient,
         has_one = mint,
     )]
-    pub escrow: Account<'info, Escrow>,
+    pub payment: Account<'info, Payment>,
 
-    #[account(address = escrow.mint)]
-    pub mint: Account<'info, Mint>,
-
-    #[account(signer, has_one = authority)]
+    #[account(signer, constraint = queue.authority == payment.key())]
     pub queue: Account<'info, Queue>,
 
     #[account()]
@@ -39,20 +41,13 @@ pub struct DisbursePayment<'info> {
 
     #[account( 
         mut,
-        associated_token::authority = recipient,
-        associated_token::mint = mint,
+        associated_token::authority = payment.recipient,
+        associated_token::mint = payment.mint,
     )]
     pub recipient_token_account: Account<'info, TokenAccount>,
 
     #[account()]
     pub sender: AccountInfo<'info>,
-
-    #[account(
-        mut,
-        associated_token::authority = escrow,
-        associated_token::mint = mint,
-    )]
-    pub vault: Account<'info, TokenAccount>,
 
     #[account(address = anchor_spl::token::ID)]
     pub token_program: Program<'info, anchor_spl::token::Token>,
@@ -61,22 +56,26 @@ pub struct DisbursePayment<'info> {
 pub fn handler(ctx: Context<'_, '_, '_, '_, DisbursePayment<'_>>) -> Result<()> {
     // Get accounts
     let escrow = &ctx.accounts.escrow;
-    let vault = &ctx.accounts.vault;
+    let payment = &mut ctx.accounts.payment;
     let recipient_token_account = &ctx.accounts.recipient_token_account;
     let token_program = &ctx.accounts.token_program;
 
-    let bump = *ctx.bumps.get("escrow").unwrap();
+    let bump = *ctx.bumps.get("payment").unwrap();
 
-    // transfer from vault to recipient's token account
+    // update balance of payment account
+    payment.balance = payment.balance.checked_sub(payment.disbursement_amount).unwrap();
+
+    // transfer from escrow to recipient's token account
     token::transfer(
         CpiContext::new_with_signer(
             token_program.to_account_info(), 
             Transfer {
-                from: vault.to_account_info().clone(),
-                to: recipient_token_account.to_account_info().clone(),
-                authority: escrow.to_account_info().clone(),
-            }, &[&[SEED_ESCROW, &escrow.sender.to_bytes(), &escrow.recipient.to_bytes(), &[bump]]]),
-        escrow.transfer_rate,
+                from: escrow.to_account_info(),
+                to: recipient_token_account.to_account_info(),
+                authority: payment.to_account_info(),
+            },             
+            &[&[SEED_PAYMENT, payment.sender.as_ref(), payment.recipient.as_ref(), payment.mint.as_ref(), &[bump]]]),
+        payment.disbursement_amount,
     )?;
 
     Ok(())
