@@ -4,5 +4,5 @@ This repo is meant to help developers with basic code integrations with the [clo
 
 Examples:
 - [Hello Clockwork](https://github.com/clockwork-xyz/examples/tree/main/hello_clockwork)
-- [Token Transfer](https://github.com/clockwork-xyz/examples/tree/main/token_transfer)
+- [Payments Program](https://github.com/clockwork-xyz/examples/tree/main/payments)
 - [Dollar Cost Averaging](https://github.com/clockwork-xyz/examples/tree/main/dca)
