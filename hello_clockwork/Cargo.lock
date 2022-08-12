@@ -773,8 +773,7 @@ dependencies = [
 [[package]]
 name = "clockwork-cron"
 version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5def41c0c3ff855873b984cbcbeacdf9a924e272ba9e71e7e4a101da8316e082"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=nick/localnet-3#de72a5fff107fc21c4b74645e47a579aa26cbc02"
 dependencies = [
  "chrono",
  "nom",
@@ -784,8 +783,7 @@ dependencies = [
 [[package]]
 name = "clockwork-pool"
 version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d1f4d542e97b799f0c78307661f9b7a248264c98315d972dd3c3aba58df3f56f"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=nick/localnet-3#de72a5fff107fc21c4b74645e47a579aa26cbc02"
 dependencies = [
  "anchor-lang",
 ]
@@ -793,8 +791,7 @@ dependencies = [
 [[package]]
 name = "clockwork-scheduler"
 version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7bdd57b72730708f5dc94d80d383fd93f5ed20fb9a6b35fe4fa6d61d7d3f4fb8"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=nick/localnet-3#de72a5fff107fc21c4b74645e47a579aa26cbc02"
 dependencies = [
  "anchor-lang",
  "chrono",

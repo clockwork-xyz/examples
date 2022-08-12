@@ -3,3 +3,6 @@ members = [
     "client",
     "programs/*"
 ]
+
+[patch.crates-io]
+clockwork-scheduler = { git = "https://github.com/clockwork-xyz/clockwork", branch = "nick/localnet-3" }

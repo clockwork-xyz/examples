@@ -14,7 +14,7 @@ use {
 
 fn main() -> ClientResult<()> {
     // Create Client
-    let client = RpcClient::new("https://api.devnet.solana.com");
+    let client = RpcClient::new("http://localhost:8899");
     let payer = Keypair::new();
     let client = Client { client, payer };
     client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
@@ -24,8 +24,8 @@ fn main() -> ClientResult<()> {
     let queue = clockwork_scheduler::state::Queue::pubkey(authority, "hello_queue".to_string());
     let task = clockwork_scheduler::state::Task::pubkey(queue, 0);
 
+    // Create queue and task
     create_queue(&client, authority, queue)?;
-
     create_task(&client, authority, task, queue)?;
 
     Ok(())
@@ -82,10 +82,7 @@ fn send_and_confirm_tx(client: &Client, ix: Instruction, label: String) -> Clien
 
     // Send and confirm tx
     match client.send_and_confirm_transaction(&tx) {
-        Ok(sig) => println!(
-            "{} tx: ✅ https://explorer.solana.com/tx/{}?cluster=devnet",
-            label, sig
-        ),
+        Ok(sig) => println!("{} tx: ✅ https://explorer.solana.com/tx/{}", label, sig),
         Err(err) => println!("{} tx: ❌ {:#?}", label, err),
     }
 
