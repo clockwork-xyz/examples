@@ -792,7 +792,7 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "clockwork-scheduler",
- "dca",
+ "investments-program",
  "serum-common",
  "solana-client",
  "solana-client-helpers",
@@ -802,8 +802,6 @@ dependencies = [
 [[package]]
 name = "clockwork-cron"
 version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5def41c0c3ff855873b984cbcbeacdf9a924e272ba9e71e7e4a101da8316e082"
 dependencies = [
  "chrono",
  "nom",
@@ -813,8 +811,6 @@ dependencies = [
 [[package]]
 name = "clockwork-pool"
 version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d1f4d542e97b799f0c78307661f9b7a248264c98315d972dd3c3aba58df3f56f"
 dependencies = [
  "anchor-lang",
 ]
@@ -822,8 +818,6 @@ dependencies = [
 [[package]]
 name = "clockwork-scheduler"
 version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7bdd57b72730708f5dc94d80d383fd93f5ed20fb9a6b35fe4fa6d61d7d3f4fb8"
 dependencies = [
  "anchor-lang",
  "chrono",
@@ -1021,15 +1015,6 @@ name = "data-encoding"
 version = "2.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3ee2393c4a91429dffb4bedf19f4d6abf27d8a732c8ce4980305d782e5426d57"
-
-[[package]]
-name = "dca"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "clockwork-scheduler",
-]
 
 [[package]]
 name = "der"
@@ -1763,6 +1748,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a5bbe824c507c5da5956355e86a746d82e0e1464f65d862cc5e71da70e94b2c"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "investments-program"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "clockwork-scheduler",
 ]
 
 [[package]]

@@ -53,7 +53,7 @@ pub fn gen_listing_params(
     let (event_q_key, create_event_q) = create_dex_account(client, program_id, payer, 1 << 20)?;
     let (bids_key, create_bids) = create_dex_account(client, program_id, payer, 1 << 16)?;
     let (asks_key, create_asks) = create_dex_account(client, program_id, payer, 1 << 16)?;
-    let (vault_signer_nonce, vault_signer_pk) = {
+    let (vault_signer_nonce, vault_signer) = {
         let mut i = 0;
         loop {
             assert!(i < 100);
@@ -73,7 +73,7 @@ pub fn gen_listing_params(
         event_q_key,
         bids_key,
         asks_key,
-        vault_signer_pk,
+        vault_signer,
         vault_signer_nonce,
     };
     let instructions = vec![
@@ -110,22 +110,22 @@ pub struct ListingKeys {
     pub event_q_key: Keypair,
     pub bids_key: Keypair,
     pub asks_key: Keypair,
-    pub vault_signer_pk: Pubkey,
+    pub vault_signer: Pubkey,
     pub vault_signer_nonce: u64,
 }
 
 #[derive(Debug)]
 pub struct MarketKeys {
-    pub market_pk: Pubkey,
-    pub req_q_pk: Pubkey,
-    pub event_q_pk: Pubkey,
-    pub bids_pk: Pubkey,
-    pub asks_pk: Pubkey,
-    pub coin_mint_pk: Pubkey,
-    pub coin_vault_pk: Pubkey,
+    pub market: Pubkey,
+    pub req_q: Pubkey,
+    pub event_q: Pubkey,
+    pub bids: Pubkey,
+    pub asks: Pubkey,
+    pub coin_mint: Pubkey,
+    pub coin_vault: Pubkey,
     pub coin_wallet_key: Keypair,
-    pub pc_mint_pk: Pubkey,
-    pub pc_vault_pk: Pubkey,
+    pub pc_mint: Pubkey,
+    pub pc_vault: Pubkey,
     pub pc_wallet_key: Keypair,
-    pub vault_signer_pk: Pubkey,
+    pub vault_signer: Pubkey,
 }

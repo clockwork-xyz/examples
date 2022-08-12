@@ -1,12 +1,12 @@
 [package]
-name = "dca"
+name = "investments-program"
 version = "0.1.0"
 description = "Created with Anchor"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "dca"
+name = "investments_program"
 
 [features]
 no-entrypoint = []
@@ -19,6 +19,8 @@ default = []
 overflow-checks = true
 
 [dependencies]
-anchor-spl = { version = "0.25.0", features = ["dex", "devnet"] }
+anchor-spl = { version = "0.25.0", features = ["dex"] }
 anchor-lang = "0.25.0"
-clockwork-scheduler = { version = "1.0.1", features = ["cpi"] }
+# clockwork-scheduler = { version = "1.0.1", features = ["cpi"] }
+clockwork-scheduler = { path = "../../../../clockwork/programs/scheduler", features = ["cpi"] }
+
