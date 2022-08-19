@@ -756,7 +756,7 @@ dependencies = [
 [[package]]
 name = "clockwork-crank"
 version = "1.0.3"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=nick/crank-program#f5dc2fa71d8f5994ca1c17d071556d375ffa1e88"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=nick/crank-program#0dbe27cb38231f59fee7a50f21bd9795017ce1cc"
 dependencies = [
  "anchor-lang",
  "chrono",
@@ -767,7 +767,7 @@ dependencies = [
 [[package]]
 name = "clockwork-cron"
 version = "1.0.3"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=nick/crank-program#f5dc2fa71d8f5994ca1c17d071556d375ffa1e88"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=nick/crank-program#0dbe27cb38231f59fee7a50f21bd9795017ce1cc"
 dependencies = [
  "chrono",
  "nom",
@@ -777,7 +777,7 @@ dependencies = [
 [[package]]
 name = "clockwork-pool"
 version = "1.0.3"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=nick/crank-program#f5dc2fa71d8f5994ca1c17d071556d375ffa1e88"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=nick/crank-program#0dbe27cb38231f59fee7a50f21bd9795017ce1cc"
 dependencies = [
  "anchor-lang",
 ]

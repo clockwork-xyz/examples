@@ -20,7 +20,7 @@ pub struct HelloWorld<'info> {
         bump,
         has_one = authority
     )]
-    pub snapshot_queue: Account<'info, Queue>,
+    pub hello_queue: Account<'info, Queue>,
 }
 
 pub fn handler(_ctx: Context<HelloWorld>) -> Result<CrankResponse> {
