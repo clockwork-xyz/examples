@@ -5,7 +5,7 @@ use {
         associated_token::AssociatedToken,
         token::{self, Mint, TokenAccount, Transfer}
     },
-    clockwork_scheduler::state::Queue,
+    clockwork_crank::state::{Queue, CrankResponse},
 };
 
 #[derive(Accounts)]
@@ -53,7 +53,7 @@ pub struct DisbursePayment<'info> {
     pub token_program: Program<'info, anchor_spl::token::Token>,
 }
 
-pub fn handler(ctx: Context<'_, '_, '_, '_, DisbursePayment<'_>>) -> Result<()> {
+pub fn handler(ctx: Context<'_, '_, '_, '_, DisbursePayment<'_>>) -> Result<CrankResponse> {
     // Get accounts
     let escrow = &ctx.accounts.escrow;
     let payment = &mut ctx.accounts.payment;
@@ -78,5 +78,5 @@ pub fn handler(ctx: Context<'_, '_, '_, '_, DisbursePayment<'_>>) -> Result<()> 
         payment.disbursement_amount,
     )?;
 
-    Ok(())
+    Ok(CrankResponse{ next_instruction: None })
 }

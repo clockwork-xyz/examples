@@ -777,7 +777,7 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
- "clockwork-scheduler",
+ "clockwork-crank",
  "payments-program",
  "solana-client",
  "solana-client-helpers",
@@ -785,10 +785,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "clockwork-crank"
+version = "1.0.3"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=nick/crank-program#f5dc2fa71d8f5994ca1c17d071556d375ffa1e88"
+dependencies = [
+ "anchor-lang",
+ "chrono",
+ "clockwork-cron",
+ "clockwork-pool",
+]
+
+[[package]]
 name = "clockwork-cron"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5def41c0c3ff855873b984cbcbeacdf9a924e272ba9e71e7e4a101da8316e082"
+version = "1.0.3"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=nick/crank-program#f5dc2fa71d8f5994ca1c17d071556d375ffa1e88"
 dependencies = [
  "chrono",
  "nom",
@@ -797,23 +807,10 @@ dependencies = [
 
 [[package]]
 name = "clockwork-pool"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d1f4d542e97b799f0c78307661f9b7a248264c98315d972dd3c3aba58df3f56f"
+version = "1.0.3"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=nick/crank-program#f5dc2fa71d8f5994ca1c17d071556d375ffa1e88"
 dependencies = [
  "anchor-lang",
-]
-
-[[package]]
-name = "clockwork-scheduler"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7bdd57b72730708f5dc94d80d383fd93f5ed20fb9a6b35fe4fa6d61d7d3f4fb8"
-dependencies = [
- "anchor-lang",
- "chrono",
- "clockwork-cron",
- "clockwork-pool",
 ]
 
 [[package]]
@@ -2275,7 +2272,7 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
- "clockwork-scheduler",
+ "clockwork-crank",
 ]
 
 [[package]]

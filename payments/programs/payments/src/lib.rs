@@ -27,17 +27,18 @@ pub mod payments_program {
         top_up_payment::handler(ctx, amount)
     }
 
-    pub fn update_payment<'info>(
-        ctx: Context<'_, '_, '_, 'info, UpdatePayment<'info>>,
-        disbursement_amount: Option<u64>,
-        schedule: Option<String>,
-    ) -> Result<()> {
-        update_payment::handler(ctx, disbursement_amount, schedule)
-    }
+    // TODO: Queue update interface not ready yet
+    // pub fn update_payment<'info>(
+    //     ctx: Context<'_, '_, '_, 'info, UpdatePayment<'info>>,
+    //     disbursement_amount: Option<u64>,
+    //     schedule: Option<String>,
+    // ) -> Result<()> {
+    //     update_payment::handler(ctx, disbursement_amount, schedule)
+    // }
 
     pub fn disburse_payment<'info>(
         ctx: Context<'_, '_, '_, 'info, DisbursePayment<'info>>,
-    ) -> Result<()> {
+    ) -> Result<clockwork_crank::state::CrankResponse> {
         disburse_payment::handler(ctx)
     }
 }
