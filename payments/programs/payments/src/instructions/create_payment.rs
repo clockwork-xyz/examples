@@ -130,6 +130,8 @@ pub fn handler<'info>(
         data: clockwork_crank::anchor::sighash("disburse_payment").into(),
     };
 
+    msg!("payment: {:#?}", payment);
+
     // Create queue
     clockwork_crank::cpi::queue_create(
         CpiContext::new_with_signer(
@@ -152,7 +154,7 @@ pub fn handler<'info>(
         disburse_payment_ix.into(),
         "payment".into(),
         Trigger::Cron {
-            schedule: payment.schedule.clone()
+            schedule: payment.schedule.to_string()
         },
     )?;
 

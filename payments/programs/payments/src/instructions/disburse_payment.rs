@@ -5,7 +5,7 @@ use {
         associated_token::AssociatedToken,
         token::{self, Mint, TokenAccount, Transfer}
     },
-    clockwork_crank::state::{Queue, CrankResponse},
+    clockwork_crank::state::{Queue, SEED_QUEUE, CrankResponse},
 };
 
 #[derive(Accounts)]
@@ -18,10 +18,10 @@ pub struct DisbursePayment<'info> {
         associated_token::authority = payment,
         associated_token::mint = payment.mint,
     )]
-    pub escrow: Account<'info, TokenAccount>,
+    pub escrow: Box<Account<'info, TokenAccount>>,
 
     #[account(address = payment.mint)]
-    pub mint: Account<'info, Mint>,
+    pub mint: Box<Account<'info, Mint>>,
 
     #[account(
         mut,
@@ -31,10 +31,19 @@ pub struct DisbursePayment<'info> {
         has_one = recipient,
         has_one = mint,
     )]
-    pub payment: Account<'info, Payment>,
+    pub payment: Box<Account<'info, Payment>>,
 
-    #[account(signer, constraint = queue.authority == payment.key())]
-    pub queue: Account<'info, Queue>,
+    #[account(
+        signer, 
+        seeds = [
+            SEED_QUEUE, 
+            payment.key().as_ref(), 
+            "payment".as_bytes()
+        ], 
+        seeds::program = clockwork_crank::ID,
+        bump,
+    )]
+    pub payment_queue: Box<Account<'info, Queue>>,
 
     #[account()]
     pub recipient: AccountInfo<'info>,
@@ -44,7 +53,7 @@ pub struct DisbursePayment<'info> {
         associated_token::authority = payment.recipient,
         associated_token::mint = payment.mint,
     )]
-    pub recipient_token_account: Account<'info, TokenAccount>,
+    pub recipient_token_account: Box<Account<'info, TokenAccount>>,
 
     #[account()]
     pub sender: AccountInfo<'info>,

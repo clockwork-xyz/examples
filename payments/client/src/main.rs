@@ -158,7 +158,6 @@ fn create_payment_with_top_up(
 //         }
 //         .data(),
 //     };
-
 //     send_and_confirm_tx(client, &[update_queue_ix], "update_queue".to_string())?;
 //     Ok(())
 // }
