@@ -41,9 +41,6 @@ pub struct TopUpPayment<'info> {
     #[account(address = sysvar::rent::ID)]
     pub rent: Sysvar<'info, Rent>,
 
-    #[account(address = clockwork_scheduler::ID)]
-    pub scheduler_program: Program<'info, clockwork_scheduler::program::ClockworkScheduler>,
-
     #[account(mut)]
     pub sender: Signer<'info>,
 
