@@ -3,9 +3,11 @@ seeds = false
 
 [programs.localnet]
 investments_program = "4W4J57gPvUsmwbNtaR5ddsnx7u46jwJ3iqiD5H97eeXP"
+serum_crank = "4W4J57gPvUsmwbNtaR5ddsnx7u46jwJ3iqiD5H97eeXP"
 
 [programs.devnet]
 investments_program = "4W4J57gPvUsmwbNtaR5ddsnx7u46jwJ3iqiD5H97eeXP"
+serum_crank = "4W4J57gPvUsmwbNtaR5ddsnx7u46jwJ3iqiD5H97eeXP"
 
 [registry]
 url = "https://anchor.projectserum.com"

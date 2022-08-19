@@ -1,12 +1,12 @@
 [package]
-name = "investments-program"
+name = "serum-crank"
 version = "0.1.0"
 description = "Created with Anchor"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "investments_program"
+name = "serum_crank"
 
 [features]
 no-entrypoint = []
@@ -21,3 +21,4 @@ overflow-checks = true
 [dependencies]
 anchor-spl = { version = "0.25.0", features = ["dex"] }
 anchor-lang = "0.25.0"
+clockwork-crank = { git = "https://github.com/clockwork-xyz/clockwork", branch = "nick/crank-program", features = ["cpi"] }
