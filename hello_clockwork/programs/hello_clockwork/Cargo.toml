@@ -20,5 +20,4 @@ overflow-checks = true
 
 [dependencies]
 anchor-lang = "0.25.0"
-clockwork-scheduler = { version = "1.0.1", features = ["cpi"] }
-
+clockwork-crank = { git = "https://github.com/clockwork-xyz/clockwork", branch = "nick/crank-program", features = ["cpi"] }

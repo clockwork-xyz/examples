@@ -2,16 +2,16 @@
 seeds = false
 
 [programs.devnet]
-hello_clockwork = "CBZ9JBKaPTi1f1LEBeeCuMQUbuGBrMNZAXL2HH2GfkhZ"
+hello_clockwork = "EGdyrcP3mm4u2M7c2igJaj82qYbKFXkJ69uQ6M8yjJT2"
 
 [programs.localnet]
-hello_clockwork = "CBZ9JBKaPTi1f1LEBeeCuMQUbuGBrMNZAXL2HH2GfkhZ"
+hello_clockwork = "EGdyrcP3mm4u2M7c2igJaj82qYbKFXkJ69uQ6M8yjJT2"
 
 [registry]
 url = "https://anchor.projectserum.com"
 
 [provider]
-cluster = "devnet"
+cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
