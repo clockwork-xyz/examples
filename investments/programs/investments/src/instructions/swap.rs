@@ -104,7 +104,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<()
     let bump = *ctx.bumps.get("investment").unwrap();
 
     // place order on serum dex
-    anchor_spl::dex:: new_order_v3(
+    anchor_spl::dex::new_order_v3(
         CpiContext::new_with_signer(
             dex_program.to_account_info(),
             NewOrderV3 {
