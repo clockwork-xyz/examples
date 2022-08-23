@@ -13,22 +13,23 @@ use {
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
-    #[account(
-        init,
-        seeds = [SEED_AUTHORITY],
-        bump,
-        payer = payer,
-        space = 8 + size_of::<Authority>(),
-    )]
-    pub authority: Account<'info, Authority>,
-
+    
     #[account(address = clockwork_crank::ID)]
     pub clockwork_program: Program<'info, ClockworkCrank>,
+    
+    #[account(
+        init,
+        seeds = [SEED_CRANK],
+        bump,
+        payer = payer,
+        space = 8 + size_of::<Crank>(),
+    )]
+    pub crank: Account<'info, Crank>,
 
     #[account(
         seeds = [
             SEED_QUEUE, 
-            authority.key().as_ref(), 
+            crank.key().as_ref(), 
             "crank".as_bytes()
         ], 
         seeds::program = clockwork_crank::ID,
@@ -45,14 +46,17 @@ pub struct Initialize<'info> {
 
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Result<()> {
     // Get accounts
-    let authority = &mut ctx.accounts.authority;
-    let payer = &ctx.accounts.payer;
-    let crank_queue = &ctx.accounts.crank_queue;
     let clockwork_program = &ctx.accounts.clockwork_program;
+    let crank = &mut ctx.accounts.crank;
+    let crank_queue = &ctx.accounts.crank_queue;
+    let payer = &ctx.accounts.payer;
     let system_program = &ctx.accounts.system_program;
 
     // Get extra accounts
-    let event_q = *ctx.remaining_accounts.get(0).unwrap();
+    let event_q = ctx.remaining_accounts.get(0).unwrap();
+
+    // initialize crank account
+    crank.new()?;
 
     // get authorit bump
     let bump = *ctx.bumps.get("authority").unwrap();
@@ -61,12 +65,12 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Res
     let crank_events_ix = Instruction {
         program_id: crate::ID,
         accounts: vec![ 
-            AccountMeta::new_readonly(authority.key(), false),
+            AccountMeta::new_readonly(crank.key(), false),
             AccountMeta::new_readonly(crank_queue.key(), true),
             // Extra Accounts
             AccountMeta::new_readonly(event_q.key(), false)
         ],
-        data: clockwork_crank::anchor::sighash("crank_events").to_vec(),
+        data: clockwork_crank::anchor::sighash("read_events").to_vec(),
     };
 
     // initialize queue
@@ -74,18 +78,18 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Res
         CpiContext::new_with_signer(
             clockwork_program.to_account_info(),
             clockwork_crank::cpi::accounts::QueueCreate {
-                authority: authority.to_account_info(),
+                authority: crank.to_account_info(),
                 payer: payer.to_account_info(),
                 queue: crank_queue.to_account_info(),
                 system_program: system_program.to_account_info(),
             },
-            &[&[SEED_AUTHORITY, &[bump]]],
+            &[&[SEED_CRANK, &[bump]]],
         ),
         LAMPORTS_PER_SOL,
         crank_events_ix.into(),
         "crank".into(),
         Trigger::Cron {
-            schedule: "*/10 * * * * * *".into(),
+            schedule: "*/15 * * * * * *".into(),
         },
     )?;
 
