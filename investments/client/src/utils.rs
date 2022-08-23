@@ -41,6 +41,16 @@ pub fn sign_send_and_confirm_tx(
     Ok(())
 }
 
+pub fn print_explorer_link(address: Pubkey, label: String) -> ClientResult<()> {
+    println!(
+        "{}: https://explorer.solana.com/address/{}?cluster=custom",
+        label.to_string(),
+        address
+    );
+
+    Ok(())
+}
+
 pub fn gen_listing_params(
     client: &Client,
     program_id: &Pubkey,

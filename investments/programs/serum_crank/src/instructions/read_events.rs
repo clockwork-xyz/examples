@@ -11,7 +11,7 @@ use {
 
 #[derive(Accounts)]
 pub struct ReadEvents<'info> {
-    #[account(seeds = [SEED_CRANK], bump)]
+    #[account(mut, seeds = [SEED_CRANK], bump)]
     pub crank: Account<'info, Crank>,
 
     #[account(
@@ -45,6 +45,12 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, ReadEvents<'info>>) -> Res
     let mint_b_vault = ctx.remaining_accounts.get(2).unwrap();
     let event_queue = ctx.remaining_accounts.get(3).unwrap();
 
+    let mut next_ix_accounts = vec![];
+    next_ix_accounts.push(AccountMeta::new_readonly(crank.key(), false));
+    next_ix_accounts.push(AccountMeta::new_readonly(crank_queue.key(), true));
+    next_ix_accounts.push(AccountMeta::new_readonly(dex_program.key(), false));
+    next_ix_accounts.push(AccountMeta::new_readonly(system_program::ID, false));
+
     // deserialize event queue
     let mut open_orders = Vec::new(); 
 
@@ -60,28 +66,24 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, ReadEvents<'info>>) -> Res
         msg!("owner: {}", owner.to_string());
         msg!("     {:?},", event.as_view().unwrap());
         open_orders.push(owner);
+        next_ix_accounts.push(AccountMeta::new(owner, false));
     }
     msg!("]");
     
     // write event queue data to crank account
     crank.index(open_orders)?; 
+
+    next_ix_accounts.push(AccountMeta::new(market.key(), false));
+    next_ix_accounts.push(AccountMeta::new(mint_a_vault.key(), false));
+    next_ix_accounts.push(AccountMeta::new(mint_b_vault.key(), false));
+    next_ix_accounts.push(AccountMeta::new(event_queue.key(), false));
   
     // return event queue ix to read and write to crank account for next consume events invocation
     Ok(CrankResponse { 
         next_instruction: Some(
             Instruction {
                 program_id: crate::ID,
-                accounts: vec![
-                AccountMeta::new_readonly(crank.key(), false),
-                AccountMeta::new_readonly(crank_queue.key(), true),
-                AccountMeta::new_readonly(dex_program.key(), false),
-                AccountMeta::new_readonly(system_program::ID, false),
-                // Extra Accounts
-                AccountMeta::new(market.key(), false),
-                AccountMeta::new(mint_a_vault.key(), false),
-                AccountMeta::new(mint_b_vault.key(), false),
-                AccountMeta::new(event_queue.key(), false),
-                ],
+                accounts: next_ix_accounts,
                 data: clockwork_crank::anchor::sighash("consume_events").into(),
             }
             .into()

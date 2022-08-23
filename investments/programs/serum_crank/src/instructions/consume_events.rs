@@ -1,4 +1,5 @@
 
+
 use {
     crate::state::*,
     anchor_lang::{
@@ -43,10 +44,10 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, ConsumeEvents<'info>>) -> 
     let dex_program = &ctx.accounts.dex_program;
 
     // Get remaining accounts
-    let market = ctx.remaining_accounts.get(0).unwrap();
-    let mint_a_vault = ctx.remaining_accounts.get(1).unwrap();
-    let mint_b_vault = ctx.remaining_accounts.get(2).unwrap();
-    let event_queue = ctx.remaining_accounts.get(3).unwrap();
+    let market = ctx.remaining_accounts.get(ctx.remaining_accounts.len() - 4).unwrap();
+    let mint_a_vault = ctx.remaining_accounts.get(ctx.remaining_accounts.len() - 3).unwrap();
+    let mint_b_vault = ctx.remaining_accounts.get(ctx.remaining_accounts.len() - 2).unwrap();
+    let event_queue = ctx.remaining_accounts.get(ctx.remaining_accounts.len() - 1).unwrap();
 
     // get crank bump
     let bump = *ctx.bumps.get("crank").unwrap();
@@ -66,16 +67,13 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, ConsumeEvents<'info>>) -> 
                 &mint_a_vault.key(), 
                 std::u16::MAX).unwrap();
 
-        let account_infos = &[
-            dex_program.to_account_info(), 
-            market.to_account_info(), 
-            event_queue.to_account_info(),
-            mint_b_vault.to_account_info(), 
-            mint_a_vault.to_account_info()
-        ];
+        let mut cpi_account_infos = ctx.remaining_accounts.clone().to_vec();
+        cpi_account_infos.push(dex_program.to_account_info());
+
+        msg!("Account infos: {}", cpi_account_infos.len());
 
         // invoke crank events ix
-        invoke_signed(&consume_events_ix,account_infos,&[&[SEED_CRANK, &[bump]]])?;
+        invoke_signed(&consume_events_ix, &cpi_account_infos,&[&[SEED_CRANK, &[bump]]])?;
     }
 
     // return read events ix
@@ -84,8 +82,8 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, ConsumeEvents<'info>>) -> 
             Instruction {
                 program_id: crate::ID,
                 accounts: vec![
-                    AccountMeta::new_readonly(crank.key(), false),
-                    AccountMeta::new(crank_queue.key(), true),
+                    AccountMeta::new(crank.key(), false),
+                    AccountMeta::new_readonly(crank_queue.key(), true),
                     AccountMeta::new_readonly(dex_program.key(), false),
                     AccountMeta::new_readonly(system_program::ID, false),
                     // Extra Accounts

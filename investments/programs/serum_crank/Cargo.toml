@@ -21,5 +21,5 @@ overflow-checks = true
 [dependencies]
 anchor-spl = { version = "0.25.0", features = ["dex"] }
 anchor-lang = "0.25.0"
-clockwork-crank = { git = "https://github.com/clockwork-xyz/clockwork", branch = "nick/crank-program", features = ["cpi"] }
+clockwork-crank = { git = "https://github.com/clockwork-xyz/clockwork", branch = "main", features = ["cpi"] }
 safe-transmute = "0.11.0"

@@ -1,4 +1,4 @@
-use std::{num::NonZeroU64, str::FromStr};
+use std::num::NonZeroU64;
 
 use anchor_spl::dex::serum_dex::{
     instruction::{NewOrderInstructionV3, SelfTradeBehavior},
@@ -10,7 +10,6 @@ mod utils;
 use {
     anchor_lang::{prelude::*, solana_program::sysvar, system_program, InstructionData},
     anchor_spl::{
-        associated_token,
         dex::serum_dex::{instruction::initialize_market, state::OpenOrders},
         token,
     },
@@ -29,7 +28,7 @@ fn main() -> ClientResult<()> {
     let client = RpcClient::new("http://localhost:8899");
     // let client = RpcClient::new("https://api.devnet.solana.com");
     let payer = Keypair::new();
-    let payer2 = Keypair::new();
+    let bob = Keypair::new();
     let client = Client { client, payer };
 
     // airdrop a bunch bc it's expensive to setup a dex market and for all of the txs lol
@@ -39,137 +38,161 @@ fn main() -> ClientResult<()> {
     client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
     client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
     client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
-    client.airdrop(&payer2.pubkey(), 2 * LAMPORTS_PER_SOL)?;
-
-    // airdrop to personal wallet address so you can
-    // crank events from the already built serum explorer web client
-    client.airdrop(
-        &Pubkey::from_str("598DeBxA99bamHPhxD8aLfsHJuvqsCsoUcDpM5WjHAXY").unwrap(),
-        2 * LAMPORTS_PER_SOL,
-    )?;
+    client.airdrop(&bob.pubkey(), 2 * LAMPORTS_PER_SOL)?;
 
     // setup market
     let market_keys = setup_market(&client)?;
 
-    // create wallets to then mint to
+    // Derive PDAsCx#5K4wY8yn
+    let crank = serum_crank::state::Crank::pubkey();
+    let crank_queue = clockwork_crank::state::Queue::pubkey(crank, "crank".to_string());
+
+    print_explorer_link(crank_queue, "queue".to_string())?;
+
+    initialize_serum_crank(&client, crank, crank_queue, &market_keys)?;
+
+    // create second party wallets to then mint to
     let coin_wallet_key_2 = mint_to_new_account(
         &client,
-        &payer2,
+        &bob,
         &client.payer(),
         &market_keys.coin_mint,
         1_000_000_000_000_000,
     )
     .unwrap();
 
-    let _pc_wallet_key_2 = mint_to_new_account(
+    let pc_wallet_key_2 = mint_to_new_account(
         &client,
-        &payer2,
+        &client.payer(),
         &client.payer(),
         &market_keys.pc_mint,
         1_000_000_000_000_000,
     )
     .unwrap();
 
-    println!("serum explorer: https://serum-explorer.vercel.app/market/{}?network=custom&customRPC=http%3A%2F%2Flocalhost%3A8899", market_keys.market);
-    println!(
-        " coin_vault: https://explorer.solana.com/address/{}?cluster=custom",
-        market_keys.coin_vault
-    );
-    println!(
-        "coin_wallet: https://explorer.solana.com/address/{}?cluster=custom",
-        market_keys.pc_wallet_key.pubkey()
-    );
-    println!(
-        "  coin_mint: https://explorer.solana.com/address/{}?cluster=custom",
-        market_keys.pc_mint
-    );
-    println!(
-        "   pc_vault: https://explorer.solana.com/address/{}?cluster=custom",
-        market_keys.pc_vault
-    );
-    println!(
-        "  pc_wallet: https://explorer.solana.com/address/{}?cluster=custom",
-        market_keys.pc_wallet_key.pubkey()
-    );
-    println!(
-        "    pc_mint: https://explorer.solana.com/address/{}?cluster=custom",
-        market_keys.pc_mint
-    );
+    // println!("serum explorer: https://serum-explorer.vercel.app/market/{}?network=custom&customRPC=http%3A%2F%2Flocalhost%3A8899", market_keys.market);
+    // println!(
+    //     " coin_vault: https://explorer.solana.com/address/{}?cluster=custom",
+    //     market_keys.coin_vault
+    // );
+    // println!(
+    //     "coin_wallet: https://explorer.solana.com/address/{}?cluster=custom",
+    //     market_keys.pc_wallet_key.pubkey()
+    // );
+    // println!(
+    //     "  coin_mint: https://explorer.solana.com/address/{}?cluster=custom",
+    //     market_keys.pc_mint
+    // );
+    // println!(
+    //     "   pc_vault: https://explorer.solana.com/address/{}?cluster=custom",
+    //     market_keys.pc_vault
+    // );
+    // println!(
+    //     "  pc_wallet: https://explorer.solana.com/address/{}?cluster=custom",
+    //     market_keys.pc_wallet_key.pubkey()
+    // );
+    // println!(
+    //     "    pc_mint: https://explorer.solana.com/address/{}?cluster=custom",
+    //     market_keys.pc_mint
+    // );
 
-    let mut oo_account_2 = None;
+    let mut oo_account_bob = None;
 
-    init_open_orders(
+    init_open_orders_account(
         &client,
         &anchor_spl::dex::ID,
-        &payer2,
+        &bob,
         &market_keys,
-        &mut oo_account_2,
+        &mut oo_account_bob,
     )?;
 
-    // Derive PDAs
-    let investment = investments_program::state::Investment::pubkey(
-        client.payer_pubkey(),
-        market_keys.pc_mint,
-        market_keys.coin_mint,
-    );
-    let queue =
-        clockwork_scheduler::state::Queue::pubkey(investment, "investment_queue".to_string());
-    let task = clockwork_scheduler::state::Task::pubkey(queue, 0);
+    let mut oo_account_alice = None;
+
+    init_open_orders_account(
+        &client,
+        &anchor_spl::dex::ID,
+        &client.payer(),
+        &market_keys,
+        &mut oo_account_alice,
+    )?;
 
     // open orders account
-    let mut orders = None;
+    // let mut orders = None;
 
     // Derive ATA pubkeys
-    let payer_mint_a_token_account = anchor_spl::associated_token::get_associated_token_address(
-        &client.payer_pubkey(),
-        &market_keys.pc_mint,
-    );
-    let payer_mint_b_token_account = anchor_spl::associated_token::get_associated_token_address(
-        &client.payer_pubkey(),
-        &market_keys.coin_mint,
-    );
-    let investment_mint_a_token_account =
-        anchor_spl::associated_token::get_associated_token_address(
-            &investment,
-            &market_keys.pc_mint,
-        );
-    let investment_mint_b_token_account =
-        anchor_spl::associated_token::get_associated_token_address(
-            &investment,
-            &market_keys.coin_mint,
-        );
+    // let payer_mint_a_token_account = anchor_spl::associated_token::get_associated_token_address(
+    //     &client.payer_pubkey(),
+    //     &market_keys.pc_mint,
+    // );
+    // let payer_mint_b_token_account = anchor_spl::associated_token::get_associated_token_address(
+    //     &client.payer_pubkey(),
+    //     &market_keys.coin_mint,
+    // );
+    // let investment_mint_a_token_account =
+    //     anchor_spl::associated_token::get_associated_token_address(
+    //         &investment,
+    //         &market_keys.pc_mint,
+    //     );
+    // let investment_mint_b_token_account =
+    //     anchor_spl::associated_token::get_associated_token_address(
+    //         &investment,
+    //         &market_keys.coin_mint,
+    //     );
 
-    place_order(
-        &client,
-        &anchor_spl::dex::ID,
-        &payer2,
-        &coin_wallet_key_2.pubkey(),
-        &market_keys,
-        &mut oo_account_2,
-        NewOrderInstructionV3 {
-            side: Side::Ask,
-            limit_price: NonZeroU64::new(500).unwrap(),
-            max_coin_qty: NonZeroU64::new(1_000).unwrap(),
-            max_native_pc_qty_including_fees: NonZeroU64::new(500_000).unwrap(),
-            order_type: OrderType::Limit,
-            client_order_id: 019269,
-            self_trade_behavior: SelfTradeBehavior::DecrementTake,
-            limit: std::u16::MAX,
-        },
-    )?;
+    for _ in 0..2 {
+        place_order(
+            &client,
+            &anchor_spl::dex::ID,
+            &bob,
+            &coin_wallet_key_2.pubkey(),
+            &market_keys,
+            &mut oo_account_bob,
+            NewOrderInstructionV3 {
+                side: Side::Ask,
+                limit_price: NonZeroU64::new(500).unwrap(),
+                max_coin_qty: NonZeroU64::new(1_000).unwrap(),
+                max_native_pc_qty_including_fees: NonZeroU64::new(500_000).unwrap(),
+                order_type: OrderType::Limit,
+                client_order_id: 019269,
+                self_trade_behavior: SelfTradeBehavior::DecrementTake,
+                limit: std::u16::MAX,
+            },
+        )?;
+    }
 
-    create_investment_and_deposit(
-        &client,
-        investment,
-        investment_mint_a_token_account,
-        investment_mint_b_token_account,
-        &market_keys,
-        &mut orders,
-        payer_mint_a_token_account,
-        payer_mint_b_token_account,
-        queue,
-        task,
-    )?;
+    for _ in 0..2 {
+        place_order(
+            &client,
+            &anchor_spl::dex::ID,
+            &client.payer(),
+            &pc_wallet_key_2.pubkey(),
+            &market_keys,
+            &mut oo_account_alice,
+            NewOrderInstructionV3 {
+                side: Side::Bid,
+                limit_price: NonZeroU64::new(500).unwrap(),
+                max_coin_qty: NonZeroU64::new(1_000).unwrap(),
+                max_native_pc_qty_including_fees: NonZeroU64::new(500_000).unwrap(),
+                order_type: OrderType::Limit,
+                client_order_id: 019269,
+                self_trade_behavior: SelfTradeBehavior::DecrementTake,
+                limit: std::u16::MAX,
+            },
+        )?;
+    }
+
+    // create_investment_and_deposit(
+    //     &client,
+    //     investment,
+    //     investment_mint_a_token_account,
+    //     investment_mint_b_token_account,
+    //     &market_keys,
+    //     &mut orders,
+    //     payer_mint_a_token_account,
+    //     payer_mint_b_token_account,
+    //     queue,
+    //     task,
+    // )?;
 
     Ok(())
 }
@@ -288,136 +311,172 @@ fn setup_market(client: &Client) -> ClientResult<MarketKeys> {
     })
 }
 
-fn create_investment_and_deposit(
+fn initialize_serum_crank(
     client: &Client,
-    investment: Pubkey,
-    investment_mint_a_token_account: Pubkey,
-    investment_mint_b_token_account: Pubkey,
+    crank: Pubkey,
+    crank_queue: Pubkey,
     market_keys: &MarketKeys,
-    orders: &mut Option<Pubkey>,
-    payer_mint_a_token_account: Pubkey,
-    payer_mint_b_token_account: Pubkey,
-    queue: Pubkey,
-    task: Pubkey,
 ) -> ClientResult<()> {
-    init_dex_account(client, orders)?;
-
-    let create_investment_ix = Instruction {
-        program_id: investments_program::ID,
+    let initialize_ix = Instruction {
+        program_id: serum_crank::ID,
         accounts: vec![
-            AccountMeta::new_readonly(associated_token::ID, false),
+            AccountMeta::new_readonly(clockwork_crank::ID, false),
+            AccountMeta::new(crank, false),
+            AccountMeta::new(crank_queue, false),
             AccountMeta::new_readonly(anchor_spl::dex::ID, false),
-            AccountMeta::new(investment, false),
-            AccountMeta::new(investment_mint_a_token_account, false),
-            AccountMeta::new(investment_mint_b_token_account, false),
-            AccountMeta::new_readonly(market_keys.pc_mint, false),
-            AccountMeta::new_readonly(market_keys.coin_mint, false),
             AccountMeta::new(client.payer_pubkey(), true),
-            AccountMeta::new(payer_mint_a_token_account, false),
-            AccountMeta::new(payer_mint_b_token_account, false),
-            AccountMeta::new(queue, false),
-            AccountMeta::new_readonly(sysvar::rent::ID, false),
-            AccountMeta::new_readonly(clockwork_scheduler::ID, false),
             AccountMeta::new_readonly(system_program::ID, false),
-            AccountMeta::new(task, false),
-            AccountMeta::new_readonly(token::ID, false),
-            // Extra accounts
+            // Extra Accounts
             AccountMeta::new(market_keys.market, false),
-            AccountMeta::new(market_keys.coin_vault, false),
             AccountMeta::new(market_keys.pc_vault, false),
-            AccountMeta::new(market_keys.req_q, false),
+            AccountMeta::new(market_keys.coin_vault, false),
             AccountMeta::new(market_keys.event_q, false),
-            AccountMeta::new(market_keys.bids, false),
-            AccountMeta::new(market_keys.asks, false),
-            AccountMeta::new(orders.unwrap(), false),
-            AccountMeta::new(market_keys.vault_signer, false),
-            AccountMeta::new(market_keys.pc_wallet_key.pubkey(), false),
-            AccountMeta::new(market_keys.coin_wallet_key.pubkey(), false),
         ],
-        data: investments_program::instruction::CreateInvestment {
-            swap_amount: 10_000_000,
-        }
-        .data(),
-    };
-
-    let create_orders_ix = Instruction {
-        program_id: investments_program::ID,
-        accounts: vec![
-            AccountMeta::new_readonly(anchor_spl::dex::ID, false),
-            AccountMeta::new_readonly(investment, false),
-            AccountMeta::new(client.payer_pubkey(), true),
-            AccountMeta::new_readonly(sysvar::rent::ID, false),
-            AccountMeta::new_readonly(system_program::ID, false),
-            // Extra accounts
-            AccountMeta::new_readonly(market_keys.market, false),
-            AccountMeta::new(orders.unwrap(), false),
-        ],
-        data: investments_program::instruction::CreateOrders {}.data(),
+        data: serum_crank::instruction::Initialize.data(),
     };
 
     sign_send_and_confirm_tx(
         &client,
-        [create_investment_ix, create_orders_ix].to_vec(),
+        [initialize_ix].to_vec(),
         None,
-        "create_investment_and_orders".to_string(),
+        "initialize_serum_crank".to_string(),
     )?;
 
-    println!("payer: {}", client.payer_pubkey());
-    println!("investment: {}", investment);
-    println!("mint_a: {}", market_keys.pc_mint);
-    println!(
-        "investment_mint_a_token_account: {}",
-        investment_mint_a_token_account
-    );
-    println!(
-        "investment_mint_b_token_account: {}",
-        investment_mint_b_token_account
-    );
-    println!("payer_mint_a_token_account: {}", payer_mint_a_token_account);
-    println!("payer_mint_b_token_account: {}", payer_mint_b_token_account);
-    println!("queue: {}", queue);
-    println!("mint_a_vault: {}", market_keys.pc_vault);
-    println!("mint_b_vault: {}", market_keys.coin_vault);
-
-    // mint to payer's mint A ATA
-    client.mint_to(
-        &client.payer(),
-        &market_keys.pc_mint,
-        &payer_mint_a_token_account,
-        2 * LAMPORTS_PER_SOL,
-        9,
-    )?;
-
-    let deposit_ix = Instruction {
-        program_id: investments_program::ID,
-        accounts: vec![
-            AccountMeta::new_readonly(associated_token::ID, false),
-            AccountMeta::new_readonly(investment, false),
-            AccountMeta::new(investment_mint_a_token_account, false),
-            AccountMeta::new_readonly(market_keys.pc_mint, false),
-            AccountMeta::new(client.payer_pubkey(), true),
-            AccountMeta::new(payer_mint_a_token_account, false),
-            AccountMeta::new_readonly(sysvar::rent::ID, false),
-            AccountMeta::new_readonly(system_program::ID, false),
-            AccountMeta::new_readonly(token::ID, false),
-        ],
-        data: investments_program::instruction::Deposit {
-            amount: 2 * LAMPORTS_PER_SOL,
-        }
-        .data(),
-    };
-
-    sign_send_and_confirm_tx(
-        &client,
-        [deposit_ix].to_vec(),
-        None,
-        "deposit_ix".to_string(),
-    )?;
+    client.airdrop(&crank_queue, LAMPORTS_PER_SOL)?;
 
     Ok(())
 }
 
-fn init_dex_account(client: &Client, orders: &mut Option<Pubkey>) -> ClientResult<()> {
+// fn _create_investment_and_deposit(
+//     client: &Client,
+//     investment: Pubkey,
+//     investment_mint_a_token_account: Pubkey,
+//     investment_mint_b_token_account: Pubkey,
+//     market_keys: &MarketKeys,
+//     orders: &mut Option<Pubkey>,
+//     payer_mint_a_token_account: Pubkey,
+//     payer_mint_b_token_account: Pubkey,
+//     queue: Pubkey,
+//     task: Pubkey,
+// ) -> ClientResult<()> {
+//     init_dex_account(client, orders)?;
+
+//     let create_investment_ix = Instruction {
+//         program_id: investments_program::ID,
+//         accounts: vec![
+//             AccountMeta::new_readonly(associated_token::ID, false),
+//             AccountMeta::new_readonly(anchor_spl::dex::ID, false),
+//             AccountMeta::new(investment, false),
+//             AccountMeta::new(investment_mint_a_token_account, false),
+//             AccountMeta::new(investment_mint_b_token_account, false),
+//             AccountMeta::new_readonly(market_keys.pc_mint, false),
+//             AccountMeta::new_readonly(market_keys.coin_mint, false),
+//             AccountMeta::new(client.payer_pubkey(), true),
+//             AccountMeta::new(payer_mint_a_token_account, false),
+//             AccountMeta::new(payer_mint_b_token_account, false),
+//             AccountMeta::new(queue, false),
+//             AccountMeta::new_readonly(sysvar::rent::ID, false),
+//             AccountMeta::new_readonly(clockwork_scheduler::ID, false),
+//             AccountMeta::new_readonly(system_program::ID, false),
+//             AccountMeta::new(task, false),
+//             AccountMeta::new_readonly(token::ID, false),
+//             // Extra accounts
+//             AccountMeta::new(market_keys.market, false),
+//             AccountMeta::new(market_keys.coin_vault, false),
+//             AccountMeta::new(market_keys.pc_vault, false),
+//             AccountMeta::new(market_keys.req_q, false),
+//             AccountMeta::new(market_keys.event_q, false),
+//             AccountMeta::new(market_keys.bids, false),
+//             AccountMeta::new(market_keys.asks, false),
+//             AccountMeta::new(orders.unwrap(), false),
+//             AccountMeta::new(market_keys.vault_signer, false),
+//             AccountMeta::new(market_keys.pc_wallet_key.pubkey(), false),
+//             AccountMeta::new(market_keys.coin_wallet_key.pubkey(), false),
+//         ],
+//         data: investments_program::instruction::CreateInvestment {
+//             swap_amount: 10_000_000,
+//         }
+//         .data(),
+//     };
+
+//     let create_orders_ix = Instruction {
+//         program_id: investments_program::ID,
+//         accounts: vec![
+//             AccountMeta::new_readonly(anchor_spl::dex::ID, false),
+//             AccountMeta::new_readonly(investment, false),
+//             AccountMeta::new(client.payer_pubkey(), true),
+//             AccountMeta::new_readonly(sysvar::rent::ID, false),
+//             AccountMeta::new_readonly(system_program::ID, false),
+//             // Extra accounts
+//             AccountMeta::new_readonly(market_keys.market, false),
+//             AccountMeta::new(orders.unwrap(), false),
+//         ],
+//         data: investments_program::instruction::CreateOrders {}.data(),
+//     };
+
+//     sign_send_and_confirm_tx(
+//         &client,
+//         [create_investment_ix, create_orders_ix].to_vec(),
+//         None,
+//         "create_investment_and_orders".to_string(),
+//     )?;
+
+//     println!("payer: {}", client.payer_pubkey());
+//     println!("investment: {}", investment);
+//     println!("mint_a: {}", market_keys.pc_mint);
+//     println!(
+//         "investment_mint_a_token_account: {}",
+//         investment_mint_a_token_account
+//     );
+//     println!(
+//         "investment_mint_b_token_account: {}",
+//         investment_mint_b_token_account
+//     );
+//     println!("payer_mint_a_token_account: {}", payer_mint_a_token_account);
+//     println!("payer_mint_b_token_account: {}", payer_mint_b_token_account);
+//     println!("queue: {}", queue);
+//     println!("mint_a_vault: {}", market_keys.pc_vault);
+//     println!("mint_b_vault: {}", market_keys.coin_vault);
+
+//     // mint to payer's mint A ATA
+//     client.mint_to(
+//         &client.payer(),
+//         &market_keys.pc_mint,
+//         &payer_mint_a_token_account,
+//         2 * LAMPORTS_PER_SOL,
+//         9,
+//     )?;
+
+//     let deposit_ix = Instruction {
+//         program_id: investments_program::ID,
+//         accounts: vec![
+//             AccountMeta::new_readonly(associated_token::ID, false),
+//             AccountMeta::new_readonly(investment, false),
+//             AccountMeta::new(investment_mint_a_token_account, false),
+//             AccountMeta::new_readonly(market_keys.pc_mint, false),
+//             AccountMeta::new(client.payer_pubkey(), true),
+//             AccountMeta::new(payer_mint_a_token_account, false),
+//             AccountMeta::new_readonly(sysvar::rent::ID, false),
+//             AccountMeta::new_readonly(system_program::ID, false),
+//             AccountMeta::new_readonly(token::ID, false),
+//         ],
+//         data: investments_program::instruction::Deposit {
+//             amount: 2 * LAMPORTS_PER_SOL,
+//         }
+//         .data(),
+//     };
+
+//     sign_send_and_confirm_tx(
+//         &client,
+//         [deposit_ix].to_vec(),
+//         None,
+//         "deposit_ix".to_string(),
+//     )?;
+
+//     Ok(())
+// }
+
+fn _init_dex_account(client: &Client, orders: &mut Option<Pubkey>) -> ClientResult<()> {
     let orders_keypair;
     let mut ix = Vec::new();
     let mut signers = Vec::new();
@@ -447,7 +506,7 @@ fn init_dex_account(client: &Client, orders: &mut Option<Pubkey>) -> ClientResul
     Ok(())
 }
 
-pub fn init_open_orders(
+pub fn init_open_orders_account(
     client: &Client,
     program_id: &Pubkey,
     owner: &Keypair,
@@ -492,7 +551,7 @@ pub fn init_open_orders(
         client,
         ix,
         Some(signers),
-        "create selling party oo account".into(),
+        "create open orders account".into(),
     )?;
 
     Ok(())
