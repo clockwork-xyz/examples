@@ -1,0 +1,20 @@
+[features]
+seeds = false
+
+[programs.localnet]
+investments_program = "4W4J57gPvUsmwbNtaR5ddsnx7u46jwJ3iqiD5H97eeXP"
+serum_crank = "4GWPNbv2vrPsXzDT2wET11KhWazv455YBh8961Qj5p2t"
+
+[programs.devnet]
+investments_program = "4W4J57gPvUsmwbNtaR5ddsnx7u46jwJ3iqiD5H97eeXP"
+serum_crank = "4GWPNbv2vrPsXzDT2wET11KhWazv455YBh8961Qj5p2t"
+
+[registry]
+url = "https://anchor.projectserum.com"
+
+[provider]
+cluster = "devnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

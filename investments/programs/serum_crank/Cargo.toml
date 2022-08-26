@@ -1,0 +1,25 @@
+[package]
+name = "serum-crank"
+version = "0.1.0"
+description = "Created with Anchor"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "serum_crank"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+[profile.release]
+overflow-checks = true
+
+[dependencies]
+anchor-spl = { version = "0.25.0", features = ["dex"] }
+anchor-lang = "0.25.0"
+clockwork-crank = { git = "https://github.com/clockwork-xyz/clockwork", branch = "main", features = ["cpi"] }
+safe-transmute = "0.11.0"
