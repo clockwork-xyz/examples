@@ -44,31 +44,33 @@ fn main() -> ClientResult<()> {
     let market_keys = setup_market(&client)?;
 
     // Derive PDAsCx#5K4wY8yn
-    let crank = serum_crank::state::Crank::pubkey();
-    let crank_queue = clockwork_crank::state::Queue::pubkey(crank, "crank".to_string());
+    // let crank = serum_crank::state::Crank::pubkey();
+    // let crank_queue = clockwork_crank::state::Queue::pubkey(crank, "crank".to_string());
 
-    print_explorer_link(crank_queue, "queue".to_string())?;
+    print_explorer_link(market_keys.market, "market".to_string())?;
+    print_explorer_link(market_keys.event_q, "event_queue".to_string())?;
+    // print_explorer_link(crank_queue, "queue".to_string())?;
 
-    initialize_serum_crank(&client, crank, crank_queue, &market_keys)?;
+    // initialize_serum_crank(&client, crank, crank_queue, &market_keys)?;
 
-    // create second party wallets to then mint to
-    let coin_wallet_key_2 = mint_to_new_account(
-        &client,
-        &bob,
-        &client.payer(),
-        &market_keys.coin_mint,
-        1_000_000_000_000_000,
-    )
-    .unwrap();
+    // // create second party wallets to then mint to
+    // let coin_wallet_key_2 = mint_to_new_account(
+    //     &client,
+    //     &bob,
+    //     &client.payer(),
+    //     &market_keys.coin_mint,
+    //     1_000_000_000_000_000,
+    // )
+    // .unwrap();
 
-    let pc_wallet_key_2 = mint_to_new_account(
-        &client,
-        &client.payer(),
-        &client.payer(),
-        &market_keys.pc_mint,
-        1_000_000_000_000_000,
-    )
-    .unwrap();
+    // let pc_wallet_key_2 = mint_to_new_account(
+    //     &client,
+    //     &client.payer(),
+    //     &client.payer(),
+    //     &market_keys.pc_mint,
+    //     1_000_000_000_000_000,
+    // )
+    // .unwrap();
 
     // println!("serum explorer: https://serum-explorer.vercel.app/market/{}?network=custom&customRPC=http%3A%2F%2Flocalhost%3A8899", market_keys.market);
     // println!(
@@ -96,25 +98,25 @@ fn main() -> ClientResult<()> {
     //     market_keys.pc_mint
     // );
 
-    let mut oo_account_bob = None;
+    // let mut oo_account_bob = None;
 
-    init_open_orders_account(
-        &client,
-        &anchor_spl::dex::ID,
-        &bob,
-        &market_keys,
-        &mut oo_account_bob,
-    )?;
+    // init_open_orders_account(
+    //     &client,
+    //     &anchor_spl::dex::ID,
+    //     &bob,
+    //     &market_keys,
+    //     &mut oo_account_bob,
+    // )?;
 
-    let mut oo_account_alice = None;
+    // let mut oo_account_alice = None;
 
-    init_open_orders_account(
-        &client,
-        &anchor_spl::dex::ID,
-        &client.payer(),
-        &market_keys,
-        &mut oo_account_alice,
-    )?;
+    // init_open_orders_account(
+    //     &client,
+    //     &anchor_spl::dex::ID,
+    //     &client.payer(),
+    //     &market_keys,
+    //     &mut oo_account_alice,
+    // )?;
 
     // open orders account
     // let mut orders = None;
@@ -139,47 +141,47 @@ fn main() -> ClientResult<()> {
     //         &market_keys.coin_mint,
     //     );
 
-    for _ in 0..2 {
-        place_order(
-            &client,
-            &anchor_spl::dex::ID,
-            &bob,
-            &coin_wallet_key_2.pubkey(),
-            &market_keys,
-            &mut oo_account_bob,
-            NewOrderInstructionV3 {
-                side: Side::Ask,
-                limit_price: NonZeroU64::new(500).unwrap(),
-                max_coin_qty: NonZeroU64::new(1_000).unwrap(),
-                max_native_pc_qty_including_fees: NonZeroU64::new(500_000).unwrap(),
-                order_type: OrderType::Limit,
-                client_order_id: 019269,
-                self_trade_behavior: SelfTradeBehavior::DecrementTake,
-                limit: std::u16::MAX,
-            },
-        )?;
-    }
+    // for _ in 0..2 {
+    //     place_order(
+    //         &client,
+    //         &anchor_spl::dex::ID,
+    //         &bob,
+    //         &coin_wallet_key_2.pubkey(),
+    //         &market_keys,
+    //         &mut oo_account_bob,
+    //         NewOrderInstructionV3 {
+    //             side: Side::Ask,
+    //             limit_price: NonZeroU64::new(500).unwrap(),
+    //             max_coin_qty: NonZeroU64::new(1_000).unwrap(),
+    //             max_native_pc_qty_including_fees: NonZeroU64::new(500_000).unwrap(),
+    //             order_type: OrderType::Limit,
+    //             client_order_id: 019269,
+    //             self_trade_behavior: SelfTradeBehavior::DecrementTake,
+    //             limit: std::u16::MAX,
+    //         },
+    //     )?;
+    // }
 
-    for _ in 0..2 {
-        place_order(
-            &client,
-            &anchor_spl::dex::ID,
-            &client.payer(),
-            &pc_wallet_key_2.pubkey(),
-            &market_keys,
-            &mut oo_account_alice,
-            NewOrderInstructionV3 {
-                side: Side::Bid,
-                limit_price: NonZeroU64::new(500).unwrap(),
-                max_coin_qty: NonZeroU64::new(1_000).unwrap(),
-                max_native_pc_qty_including_fees: NonZeroU64::new(500_000).unwrap(),
-                order_type: OrderType::Limit,
-                client_order_id: 019269,
-                self_trade_behavior: SelfTradeBehavior::DecrementTake,
-                limit: std::u16::MAX,
-            },
-        )?;
-    }
+    // for _ in 0..2 {
+    //     place_order(
+    //         &client,
+    //         &anchor_spl::dex::ID,
+    //         &client.payer(),
+    //         &pc_wallet_key_2.pubkey(),
+    //         &market_keys,
+    //         &mut oo_account_alice,
+    //         NewOrderInstructionV3 {
+    //             side: Side::Bid,
+    //             limit_price: NonZeroU64::new(500).unwrap(),
+    //             max_coin_qty: NonZeroU64::new(1_000).unwrap(),
+    //             max_native_pc_qty_including_fees: NonZeroU64::new(500_000).unwrap(),
+    //             order_type: OrderType::Limit,
+    //             client_order_id: 019269,
+    //             self_trade_behavior: SelfTradeBehavior::DecrementTake,
+    //             limit: std::u16::MAX,
+    //         },
+    //     )?;
+    // }
 
     // create_investment_and_deposit(
     //     &client,
@@ -311,41 +313,41 @@ fn setup_market(client: &Client) -> ClientResult<MarketKeys> {
     })
 }
 
-fn initialize_serum_crank(
-    client: &Client,
-    crank: Pubkey,
-    crank_queue: Pubkey,
-    market_keys: &MarketKeys,
-) -> ClientResult<()> {
-    let initialize_ix = Instruction {
-        program_id: serum_crank::ID,
-        accounts: vec![
-            AccountMeta::new_readonly(clockwork_crank::ID, false),
-            AccountMeta::new(crank, false),
-            AccountMeta::new(crank_queue, false),
-            AccountMeta::new_readonly(anchor_spl::dex::ID, false),
-            AccountMeta::new(client.payer_pubkey(), true),
-            AccountMeta::new_readonly(system_program::ID, false),
-            // Extra Accounts
-            AccountMeta::new(market_keys.market, false),
-            AccountMeta::new(market_keys.pc_vault, false),
-            AccountMeta::new(market_keys.coin_vault, false),
-            AccountMeta::new(market_keys.event_q, false),
-        ],
-        data: serum_crank::instruction::Initialize.data(),
-    };
+// fn initialize_serum_crank(
+//     client: &Client,
+//     crank: Pubkey,
+//     crank_queue: Pubkey,
+//     market_keys: &MarketKeys,
+// ) -> ClientResult<()> {
+//     let initialize_ix = Instruction {
+//         program_id: serum_crank::ID,
+//         accounts: vec![
+//             AccountMeta::new_readonly(clockwork_crank::ID, false),
+//             AccountMeta::new(crank, false),
+//             AccountMeta::new(crank_queue, false),
+//             AccountMeta::new_readonly(anchor_spl::dex::ID, false),
+//             AccountMeta::new(client.payer_pubkey(), true),
+//             AccountMeta::new_readonly(system_program::ID, false),
+//             // Extra Accounts
+//             AccountMeta::new(market_keys.market, false),
+//             AccountMeta::new(market_keys.pc_vault, false),
+//             AccountMeta::new(market_keys.coin_vault, false),
+//             AccountMeta::new(market_keys.event_q, false),
+//         ],
+//         data: serum_crank::instruction::Initialize.data(),
+//     };
 
-    sign_send_and_confirm_tx(
-        &client,
-        [initialize_ix].to_vec(),
-        None,
-        "initialize_serum_crank".to_string(),
-    )?;
+//     sign_send_and_confirm_tx(
+//         &client,
+//         [initialize_ix].to_vec(),
+//         None,
+//         "initialize_serum_crank".to_string(),
+//     )?;
 
-    client.airdrop(&crank_queue, LAMPORTS_PER_SOL)?;
+//     client.airdrop(&crank_queue, LAMPORTS_PER_SOL)?;
 
-    Ok(())
-}
+//     Ok(())
+// }
 
 // fn _create_investment_and_deposit(
 //     client: &Client,
