@@ -795,23 +795,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "client"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "clockwork-crank",
- "serum-common",
- "serum-crank",
- "solana-client",
- "solana-client-helpers",
- "solana-sdk",
-]
-
-[[package]]
 name = "clockwork-crank"
 version = "1.0.3"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#c9b63107d9734e3d202a63e0b21648b28841314a"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#22c81826a1fd3b18957512e1131346cbef20dee7"
 dependencies = [
  "anchor-lang",
  "chrono",
@@ -822,7 +808,7 @@ dependencies = [
 [[package]]
 name = "clockwork-cron"
 version = "1.0.3"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#c9b63107d9734e3d202a63e0b21648b28841314a"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#22c81826a1fd3b18957512e1131346cbef20dee7"
 dependencies = [
  "chrono",
  "nom",
@@ -832,7 +818,7 @@ dependencies = [
 [[package]]
 name = "clockwork-pool"
 version = "1.0.3"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#c9b63107d9734e3d202a63e0b21648b28841314a"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#22c81826a1fd3b18957512e1131346cbef20dee7"
 dependencies = [
  "anchor-lang",
 ]
@@ -1752,6 +1738,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a5bbe824c507c5da5956355e86a746d82e0e1464f65d862cc5e71da70e94b2c"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "investments-client"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "clockwork-crank",
+ "serum-common",
+ "solana-client",
+ "solana-client-helpers",
+ "solana-sdk",
 ]
 
 [[package]]
@@ -3096,6 +3095,20 @@ dependencies = [
  "anchor-spl",
  "clockwork-crank",
  "safe-transmute",
+]
+
+[[package]]
+name = "serum-crank-client"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "clockwork-crank",
+ "serum-common",
+ "serum-crank",
+ "solana-client",
+ "solana-client-helpers",
+ "solana-sdk",
 ]
 
 [[package]]

@@ -29,7 +29,7 @@ pub mod serum_crank {
     }
 
     /*
-     * crank events that have been read from the event queue
+     * crank events event queue
      */
     pub fn consume_events<'info>(
         ctx: Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,

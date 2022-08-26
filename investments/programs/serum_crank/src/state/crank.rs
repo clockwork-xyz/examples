@@ -13,11 +13,16 @@ pub const SEED_CRANK: &[u8] = b"crank";
 #[derive(Debug)]
 pub struct Crank {
     pub open_orders: Vec<Pubkey>,
+    pub market: Pubkey,
+    pub event_queue: Pubkey,
+    pub mint_a_vault: Pubkey,
+    pub mint_b_vault: Pubkey,
+    pub limit: u16,
 }
 
 impl Crank {
-    pub fn pubkey() -> Pubkey {
-        Pubkey::find_program_address(&[SEED_CRANK], &crate::ID).0
+    pub fn pubkey(market: Pubkey) -> Pubkey {
+        Pubkey::find_program_address(&[SEED_CRANK, market.as_ref()], &crate::ID).0
     }
 }
 
@@ -33,18 +38,31 @@ impl TryFrom<Vec<u8>> for Crank {
  */
 
 pub trait CrankAccount {
-    fn new(&mut self) -> Result<()>;
-    fn index(&mut self, open_orders: Vec<Pubkey>) -> Result<()>;
+    fn new(
+        &mut self,
+        market: Pubkey,
+        event_queue: Pubkey,
+        mint_a_vault: Pubkey,
+        mint_b_vault: Pubkey,
+        limit: u16,
+    ) -> Result<()>;
 }
 
 impl CrankAccount for Account<'_, Crank> {
-    fn new(&mut self) -> Result<()> {
+    fn new(
+        &mut self,
+        market: Pubkey,
+        event_queue: Pubkey,
+        mint_a_vault: Pubkey,
+        mint_b_vault: Pubkey,
+        limit: u16,
+    ) -> Result<()> {
         self.open_orders = Vec::new();
-        Ok(())
-    }
-
-    fn index(&mut self, open_orders: Vec<Pubkey>) -> Result<()> {
-        self.open_orders = open_orders;
+        self.market = market;
+        self.event_queue = event_queue;
+        self.mint_a_vault = mint_a_vault;
+        self.mint_b_vault = mint_b_vault;
+        self.limit = limit;
         Ok(())
     }
 }
