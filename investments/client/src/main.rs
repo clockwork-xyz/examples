@@ -355,9 +355,6 @@ fn create_investment_and_deposit(
             AccountMeta::new(market_keys.bids, false),
             AccountMeta::new(market_keys.asks, false),
             AccountMeta::new(orders.unwrap(), false),
-            AccountMeta::new(market_keys.vault_signer, false),
-            AccountMeta::new(market_keys.pc_wallet_key.pubkey(), false),
-            AccountMeta::new(market_keys.coin_wallet_key.pubkey(), false),
         ],
         data: investments_program::instruction::CreateInvestment {
             swap_amount: 500_000,
