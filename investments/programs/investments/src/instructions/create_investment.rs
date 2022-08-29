@@ -101,7 +101,6 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CreateInvestment<'info>>, 
     let dex_program = &ctx.accounts.dex_program;
     let investment = &mut ctx.accounts.investment;
     let investment_mint_a_token_account = &ctx.accounts.investment_mint_a_token_account;
-    let investment_mint_b_token_account = &ctx.accounts.investment_mint_b_token_account;
     let mint_a = &ctx.accounts.mint_a;
     let mint_b = &ctx.accounts.mint_b;
     let payer = &ctx.accounts.payer;
@@ -117,9 +116,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CreateInvestment<'info>>, 
     let market_bids = ctx.remaining_accounts.get(5).unwrap();
     let market_asks = ctx.remaining_accounts.get(6).unwrap();
     let open_orders = ctx.remaining_accounts.get(7).unwrap();
-    let vault_signer = ctx.remaining_accounts.get(8).unwrap();
-    let mint_a_wallet = ctx.remaining_accounts.get(9).unwrap();
-    let mint_b_wallet = ctx.remaining_accounts.get(10).unwrap();
+
     // get investment bump
     let bump = *ctx.bumps.get("investment").unwrap();
 
@@ -139,7 +136,6 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CreateInvestment<'info>>, 
             AccountMeta::new_readonly(dex_program.key(), false),
             AccountMeta::new_readonly(investment.key(), false),
             AccountMeta::new(investment_mint_a_token_account.key(), false),
-            AccountMeta::new(investment_mint_b_token_account.key(), false),
             AccountMeta::new_readonly(investment_queue.key(), false),
             AccountMeta::new(clockwork_crank::payer::ID, true),
             AccountMeta::new_readonly(sysvar::rent::ID, false),
@@ -154,9 +150,6 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CreateInvestment<'info>>, 
             AccountMeta::new(market_bids.key(), false),
             AccountMeta::new(market_asks.key(), false),
             AccountMeta::new(open_orders.key(), false),
-            AccountMeta::new(vault_signer.key(), false),
-            AccountMeta::new(mint_a_wallet.key(), false),
-            AccountMeta::new(mint_b_wallet.key(), false),
         ],
         data: clockwork_crank::anchor::sighash("swap").into(),
     };

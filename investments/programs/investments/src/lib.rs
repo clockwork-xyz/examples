@@ -66,13 +66,4 @@ pub mod investments_program {
     ) -> Result<clockwork_crank::state::CrankResponse> {
         swap::handler(ctx)
     }
-
-    /*
-     * settle funds
-     */
-    pub fn settle_funds<'info>(
-        ctx: Context<'_, '_, '_, 'info, SettleFunds<'info>>,
-    ) -> Result<clockwork_crank::state::CrankResponse> {
-        settle_funds::handler(ctx)
-    }
 }
