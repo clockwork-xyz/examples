@@ -2,25 +2,18 @@ use {
     crate::state::{Investment, SEED_INVESTMENT},
     anchor_lang::{
         prelude::*,
-        solana_program::{system_program, sysvar, instruction::Instruction},
+        solana_program::{instruction::Instruction, system_program, sysvar},
     },
-    anchor_spl::{ 
+    anchor_spl::{
         associated_token::{self, AssociatedToken},
-        dex::{
-            serum_dex::{
-                instruction::SelfTradeBehavior,
-                matching::{OrderType, Side},
-            },
-            NewOrderV3,
-        },
-        token::{self, Token, TokenAccount},
+        dex::SettleFunds as SerumDexSettleFunds,
+        token::{self, TokenAccount, Token},
     },
-    clockwork_crank::state::{Queue, SEED_QUEUE, CrankResponse},
-    std::num::NonZeroU64,
+    clockwork_crank::state::{CrankResponse, Queue, SEED_QUEUE},
 };
 
 #[derive(Accounts)]
-pub struct Swap<'info> {
+pub struct SettleFunds<'info> {    
     #[account(address = anchor_spl::associated_token::ID)]
     pub associated_token_program: Program<'info, AssociatedToken>,
 
@@ -39,12 +32,11 @@ pub struct Swap<'info> {
     pub investment: Box<Account<'info, Investment>>,
 
     #[account(
-        mut, 
         associated_token::authority = investment, 
         associated_token::mint = investment.mint_a
     )]
     pub investment_mint_a_token_account: Box<Account<'info, TokenAccount>>,
-    
+
     #[account(
         associated_token::authority = investment, 
         associated_token::mint = investment.mint_b
@@ -68,19 +60,17 @@ pub struct Swap<'info> {
     pub system_program: Program<'info, System>,
 
     #[account(address = anchor_spl::token::ID)]
-    pub token_program: Program<'info, Token>,
-}
+    pub token_program: Program<'info, Token>,}
 
-pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<CrankResponse> {
+pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, SettleFunds<'info>>) -> Result<CrankResponse> {
     // get accounts
     let dex_program = &ctx.accounts.dex_program;
     let investment = &ctx.accounts.investment;
-    let investment_mint_a_token_account = &mut ctx.accounts.investment_mint_a_token_account;
-    let investment_mint_b_token_account= &ctx.accounts.investment_mint_b_token_account;   
+    let investment_mint_a_token_account = &ctx.accounts.investment_mint_a_token_account;
+    let investment_mint_b_token_account = &ctx.accounts.investment_mint_b_token_account;
     let investment_queue = &ctx.accounts.investment_queue;
-    let rent = &ctx.accounts.rent;
     let token_program = &ctx.accounts.token_program;
-
+    
     // get remaining accounts
     let market = ctx.remaining_accounts.get(0).unwrap();
     let mint_a_vault = ctx.remaining_accounts.get(1).unwrap();
@@ -93,56 +83,43 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<Cr
     let vault_signer = ctx.remaining_accounts.get(8).unwrap();
     let mint_a_wallet = ctx.remaining_accounts.get(9).unwrap();
     let mint_b_wallet = ctx.remaining_accounts.get(10).unwrap();
-    
+
     // get investment bump
     let bump = *ctx.bumps.get("investment").unwrap();
 
-    // place order on serum dex
-    anchor_spl::dex::new_order_v3(
-        CpiContext::new_with_signer(
-            dex_program.to_account_info(),
-            NewOrderV3 {
-                market: market.to_account_info(),
-                coin_vault: mint_b_vault.to_account_info(),
-                pc_vault: mint_a_vault.to_account_info(),
-                request_queue: request_queue.to_account_info(),
-                event_queue: event_queue.to_account_info(),
-                market_bids: market_bids.to_account_info(),
-                market_asks: market_asks.to_account_info(),
-                open_orders: open_orders.to_account_info(),
-                order_payer_token_account: investment_mint_a_token_account.to_account_info(),
-                open_orders_authority: investment.to_account_info(),
-                token_program: token_program.to_account_info(),
-                rent: rent.to_account_info(),
-            },
-            &[&[
-                SEED_INVESTMENT,
-                investment.payer.as_ref(),
-                investment.mint_a.as_ref(),
-                investment.mint_b.as_ref(),
-                &[bump],
-            ]],
-        ),
-        Side::Bid,
-        NonZeroU64::new(500).unwrap(),
-        NonZeroU64::new(1_000).unwrap(),
-        NonZeroU64::new(investment.swap_amount).unwrap(),
-        SelfTradeBehavior::DecrementTake,
-        OrderType::Limit,
-        019269,
-        std::u16::MAX,
-    )?;
+    // settle funds cpi
+    anchor_spl::dex::settle_funds(CpiContext::new_with_signer(
+        dex_program.to_account_info(),
+        SerumDexSettleFunds {
+            market: market.to_account_info(),
+            open_orders: open_orders.to_account_info(),
+            open_orders_authority: investment.to_account_info(),
+            coin_vault: mint_b_vault.to_account_info(),
+            pc_vault: mint_a_vault.to_account_info(),
+            coin_wallet: mint_b_wallet.to_account_info(),
+            pc_wallet: mint_a_wallet.to_account_info(),
+            vault_signer: vault_signer.to_account_info(),
+            token_program: token_program.to_account_info(),
+        },
+        &[&[
+            SEED_INVESTMENT,
+            investment.payer.as_ref(),
+            investment.mint_a.as_ref(),
+            investment.mint_b.as_ref(),
+            &[bump],
+        ]],
+    ))?;
 
-    // return settle funds ix
-    Ok(CrankResponse { 
+    // return swap ix
+    Ok(CrankResponse {
         next_instruction: Some(
             Instruction {
                 program_id: crate::ID,
-                accounts: vec![
+                accounts: vec![ 
                     AccountMeta::new_readonly(associated_token::ID, false),
                     AccountMeta::new_readonly(dex_program.key(), false),
                     AccountMeta::new_readonly(investment.key(), false),
-                    AccountMeta::new_readonly(investment_mint_a_token_account.key(), false),
+                    AccountMeta::new(investment_mint_a_token_account.key(), false),
                     AccountMeta::new_readonly(investment_mint_b_token_account.key(), false),
                     AccountMeta::new(investment_queue.key(), true),
                     AccountMeta::new(clockwork_crank::payer::ID, true),
@@ -162,9 +139,9 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<Cr
                     AccountMeta::new(mint_a_wallet.key(), false),
                     AccountMeta::new(mint_b_wallet.key(), false)
                 ],
-                data: clockwork_crank::anchor::sighash("settle_funds").into(),
+                data: clockwork_crank::anchor::sighash("swap").into(),
             }
-            .into()
-        )
-    }) 
+            .into(),
+        ),
+    })
 }

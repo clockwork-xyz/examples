@@ -13,7 +13,7 @@ pub mod investments_program {
     use super::*;
 
     /*
-     * makes cpi to serum dex to init open order account
+     * initialize open orders account
      */
     pub fn create_orders<'info>(
         ctx: Context<'_, '_, '_, 'info, CreateOrders<'info>>,
@@ -22,7 +22,7 @@ pub mod investments_program {
     }
 
     /*
-     * create investments account and init queue/task accounts
+     * create investments account and initialize clockwork queue account
      */
     pub fn create_investment<'info>(
         ctx: Context<'_, '_, '_, 'info, CreateInvestment<'info>>,
@@ -32,7 +32,7 @@ pub mod investments_program {
     }
 
     /*
-     * deposit into investor account mint A token account
+     * deposit into investment mint A token account
      */
     pub fn deposit<'info>(
         ctx: Context<'_, '_, '_, 'info, Deposit<'info>>,
@@ -42,7 +42,7 @@ pub mod investments_program {
     }
 
     /*
-     * withdraw from investor account mint A token account
+     * withdraw from investment mint A token account
      */
     pub fn withdraw<'info>(
         ctx: Context<'_, '_, '_, 'info, Withdraw<'info>>,
@@ -52,16 +52,27 @@ pub mod investments_program {
     }
 
     /*
-     * withdraw from investor account mint B token account to payer's mint B token account
+     * withdraw from investment mint B token account
      */
     pub fn claim<'info>(ctx: Context<'_, '_, '_, 'info, Claim<'info>>, amount: u64) -> Result<()> {
         claim::handler(ctx, amount)
     }
 
     /*
-     * swap ix
+     * swap
      */
-    pub fn swap<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<()> {
+    pub fn swap<'info>(
+        ctx: Context<'_, '_, '_, 'info, Swap<'info>>,
+    ) -> Result<clockwork_crank::state::CrankResponse> {
         swap::handler(ctx)
+    }
+
+    /*
+     * settle funds
+     */
+    pub fn settle_funds<'info>(
+        ctx: Context<'_, '_, '_, 'info, SettleFunds<'info>>,
+    ) -> Result<clockwork_crank::state::CrankResponse> {
+        settle_funds::handler(ctx)
     }
 }

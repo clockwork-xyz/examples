@@ -3,11 +3,11 @@ use {
     anchor_lang::{
         prelude::*,
         solana_program::{
-            native_token::LAMPORTS_PER_SOL, system_program, sysvar, instruction::Instruction
+            system_program, sysvar, instruction::Instruction
         },
     },
     anchor_spl::{token::{self, Mint, TokenAccount},associated_token::{self,AssociatedToken}},
-    clockwork_scheduler::{state::{SEED_QUEUE, SEED_TASK}, program::ClockworkScheduler},
+    clockwork_crank::{state::{SEED_QUEUE, Trigger}, program::ClockworkCrank},
     std::mem::size_of,
 };
 
@@ -16,6 +16,9 @@ use {
 pub struct CreateInvestment<'info> {
     #[account(address = anchor_spl::associated_token::ID)]
     pub associated_token_program: Program<'info, AssociatedToken>,
+
+    #[account(address = clockwork_crank::ID)]
+    pub clockwork_program: Program<'info, ClockworkCrank>,
 
     #[account(address = anchor_spl::dex::ID)]
     pub dex_program: Program<'info, anchor_spl::dex::Dex>,
@@ -49,6 +52,13 @@ pub struct CreateInvestment<'info> {
         associated_token::mint = mint_b
     )]
     pub investment_mint_b_token_account: Box<Account<'info, TokenAccount>>,
+
+    #[account(
+        seeds = [SEED_QUEUE, investment.key().as_ref(), "investment".as_bytes()], 
+        seeds::program = clockwork_crank::ID, 
+        bump,
+	)]
+    pub investment_queue: SystemAccount<'info>,
     
     #[account()]
     pub mint_a: Box<Account<'info, Mint>>,
@@ -75,28 +85,11 @@ pub struct CreateInvestment<'info> {
     )]
     pub payer_mint_b_token_account: Box<Account<'info, TokenAccount>>,
 
-    #[account(
-        seeds = [SEED_QUEUE, investment.key().as_ref(), "investment_queue".as_bytes()], 
-        seeds::program = clockwork_scheduler::ID, 
-        bump,
-	)]
-    pub queue: SystemAccount<'info>,
-
     #[account(address = sysvar::rent::ID)]
     pub rent: Sysvar<'info, Rent>,
 
-    #[account(address = clockwork_scheduler::ID)]
-    pub scheduler_program: Program<'info, ClockworkScheduler>,
-
     #[account(address = system_program::ID)]
     pub system_program: Program<'info, System>,
-
-    #[account(
-        seeds = [SEED_TASK, queue.key().as_ref(), (0 as u64).to_be_bytes().as_ref()], 
-        seeds::program = clockwork_scheduler::ID, 
-        bump
-	)]
-	pub task: SystemAccount<'info>,
 
     #[account(address = anchor_spl::token::ID)]
     pub token_program: Program<'info, anchor_spl::token::Token>,
@@ -104,6 +97,7 @@ pub struct CreateInvestment<'info> {
 
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CreateInvestment<'info>>, swap_amount: u64) -> Result<()> {
     // Get accounts
+    let clockwork_program = &ctx.accounts.clockwork_program;
     let dex_program = &ctx.accounts.dex_program;
     let investment = &mut ctx.accounts.investment;
     let investment_mint_a_token_account = &ctx.accounts.investment_mint_a_token_account;
@@ -111,15 +105,13 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CreateInvestment<'info>>, 
     let mint_a = &ctx.accounts.mint_a;
     let mint_b = &ctx.accounts.mint_b;
     let payer = &ctx.accounts.payer;
-    let queue = &mut ctx.accounts.queue;
-    let scheduler_program = &ctx.accounts.scheduler_program;
+    let investment_queue = &mut ctx.accounts.investment_queue;
     let system_program = &ctx.accounts.system_program;
-    let task = &mut ctx.accounts.task;
 
     // Get remaining accounts
     let market = ctx.remaining_accounts.get(0).unwrap();
-    let coin_vault = ctx.remaining_accounts.get(1).unwrap();
-    let pc_vault = ctx.remaining_accounts.get(2).unwrap();
+    let mint_a_vault = ctx.remaining_accounts.get(1).unwrap();
+    let mint_b_vault = ctx.remaining_accounts.get(2).unwrap();
     let request_queue = ctx.remaining_accounts.get(3).unwrap();
     let event_queue = ctx.remaining_accounts.get(4).unwrap();
     let market_bids = ctx.remaining_accounts.get(5).unwrap();
@@ -139,23 +131,6 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CreateInvestment<'info>>, 
     swap_amount
     )?;
 
-    // Create queue
-    clockwork_scheduler::cpi::queue_new(
-        CpiContext::new_with_signer(
-            scheduler_program.to_account_info(),
-            clockwork_scheduler::cpi::accounts::QueueNew {
-                authority: investment.to_account_info(),
-                payer: payer.to_account_info(),
-                queue: queue.to_account_info(),
-                system_program: system_program.to_account_info(),
-            },
-            &[&[SEED_INVESTMENT, investment.payer.as_ref(), investment.mint_a.as_ref(), investment.mint_b.as_ref(), &[bump]]],
-        ),
-        LAMPORTS_PER_SOL,
-        "investment_queue".to_string(),
-        "*/15 * * * * * *".into(),
-    )?;
-
     // create swap ix
     let swap_ix = Instruction {
         program_id: crate::ID,
@@ -165,16 +140,15 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CreateInvestment<'info>>, 
             AccountMeta::new_readonly(investment.key(), false),
             AccountMeta::new(investment_mint_a_token_account.key(), false),
             AccountMeta::new(investment_mint_b_token_account.key(), false),
-            AccountMeta::new_readonly(investment.mint_a, false),
-            AccountMeta::new(clockwork_scheduler::payer::ID, true),
-            AccountMeta::new(queue.key(), true),
+            AccountMeta::new_readonly(investment_queue.key(), false),
+            AccountMeta::new(clockwork_crank::payer::ID, true),
             AccountMeta::new_readonly(sysvar::rent::ID, false),
             AccountMeta::new_readonly(system_program::ID, false),
             AccountMeta::new_readonly(token::ID, false),
             // Extra Accounts
             AccountMeta::new(market.key(), false),
-            AccountMeta::new(pc_vault.key(), false),
-            AccountMeta::new(coin_vault.key(), false),
+            AccountMeta::new(mint_a_vault.key(), false),
+            AccountMeta::new(mint_b_vault.key(), false),
             AccountMeta::new(request_queue.key(), false),
             AccountMeta::new(event_queue.key(), false),
             AccountMeta::new(market_bids.key(), false),
@@ -184,23 +158,26 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CreateInvestment<'info>>, 
             AccountMeta::new(mint_a_wallet.key(), false),
             AccountMeta::new(mint_b_wallet.key(), false),
         ],
-        data: clockwork_scheduler::anchor::sighash("swap").into(),
+        data: clockwork_crank::anchor::sighash("swap").into(),
     };
 
-    // Create task with the swap ix and add it to the queue
-    clockwork_scheduler::cpi::task_new(
+    // Create queue
+    clockwork_crank::cpi::queue_create(
         CpiContext::new_with_signer(
-            scheduler_program.to_account_info(),
-            clockwork_scheduler::cpi::accounts::TaskNew {
+            clockwork_program.to_account_info(),
+            clockwork_crank::cpi::accounts::QueueCreate {
                 authority: investment.to_account_info(),
                 payer: payer.to_account_info(),
-                queue: queue.to_account_info(),
+                queue: investment_queue.to_account_info(),
                 system_program: system_program.to_account_info(),
-                task: task.to_account_info(),
             },
             &[&[SEED_INVESTMENT, investment.payer.as_ref(), investment.mint_a.as_ref(), investment.mint_b.as_ref(), &[bump]]],
         ),
-        vec![swap_ix.into()],
+        swap_ix.into(),
+        "investment".into(),
+        Trigger::Cron { 
+            schedule: "*/15 * * * * * *".into() 
+        }    
     )?;
 
     Ok(())
