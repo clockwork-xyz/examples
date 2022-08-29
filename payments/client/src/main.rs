@@ -31,6 +31,9 @@ fn main() -> ClientResult<()> {
     let payment = payments_program::state::Payment::pubkey(client.payer_pubkey(), recipient, mint);
     let payment_queue = clockwork_crank::state::Queue::pubkey(payment, "payment".into());
 
+    // airdrop to payment queue
+    client.airdrop(&payment_queue, LAMPORTS_PER_SOL)?;
+
     // Create ATAs
     let sender_token_account =
         client.create_associated_token_account(&client.payer(), &client.payer_pubkey(), &mint)?;

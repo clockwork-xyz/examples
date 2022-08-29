@@ -22,6 +22,9 @@ fn main() -> ClientResult<()> {
     let authority = hello_clockwork::state::Authority::pubkey();
     let hello_queue = clockwork_crank::state::Queue::pubkey(authority, "hello".to_string());
 
+    // airdrop to hello queue
+    client.airdrop(&hello_queue, LAMPORTS_PER_SOL)?;
+
     // Create ix
     let initialize_ix = Instruction {
         program_id: hello_clockwork::ID,

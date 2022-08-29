@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-# investments-program = { path = "../programs/investments", features = ["no-entrypoint"], version = "0.1.0" }
-# serum-crank = { path = "../programs/serum_crank", features = ["no-entrypoint"], version = "0.1.0" }
+investments-program = { path = "../programs/investments", features = ["no-entrypoint"], version = "0.1.0" }
+serum-crank = { path = "../../serum_crank/programs/serum_crank", features = ["no-entrypoint"], version = "0.1.0" }
 clockwork-crank = { git = "https://github.com/clockwork-xyz/clockwork", branch = "main"}
 anchor-spl = { version = "0.25.0", features = ["dex"] }
 anchor-lang = "0.25.0"

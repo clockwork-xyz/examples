@@ -45,6 +45,7 @@ pub struct DisbursePayment<'info> {
     )]
     pub payment_queue: Box<Account<'info, Queue>>,
 
+    /// CHECK: the recipient is validated by the payment account
     #[account()]
     pub recipient: AccountInfo<'info>,
 
@@ -55,6 +56,7 @@ pub struct DisbursePayment<'info> {
     )]
     pub recipient_token_account: Box<Account<'info, TokenAccount>>,
 
+    /// CHECK: the sender is validated by the payment account
     #[account()]
     pub sender: AccountInfo<'info>,
 

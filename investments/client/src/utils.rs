@@ -1,5 +1,5 @@
 use {
-    anchor_lang::prelude::*,
+    anchor_lang::{prelude::*, solana_program::sysvar},
     solana_client_helpers::{Client, ClientResult},
     solana_sdk::{
         instruction::Instruction, signature::Keypair, signer::Signer, transaction::Transaction,
@@ -38,6 +38,41 @@ pub fn sign_send_and_confirm_tx(
         ),
         Err(err) => println!("{} tx: ❌ {:#?}", label, err),
     }
+    Ok(())
+}
+
+pub fn print_market_keys(market_keys: &MarketKeys) -> ClientResult<()> {
+    println!("serum explorer: https://serum-explorer.vercel.app/market/{}?network=custom&customRPC=http%3A%2F%2Flocalhost%3A8899", market_keys.market);
+    println!(
+        "{}: https://explorer.solana.com/address/{}?cluster=custom",
+        "market".to_string(),
+        market_keys.market
+    );
+    println!(
+        "{}: https://explorer.solana.com/address/{}?cluster=custom",
+        "event_queue".to_string(),
+        market_keys.event_q
+    );
+    println!(
+        "{}: https://explorer.solana.com/address/{}?cluster=custom",
+        "mint_a_vault".to_string(),
+        market_keys.coin_vault
+    );
+    println!(
+        "{}: https://explorer.solana.com/address/{}?cluster=custom",
+        "mint_a_wallet".to_string(),
+        market_keys.pc_wallet_key.pubkey()
+    );
+    println!(
+        "{}: https://explorer.solana.com/address/{}?cluster=custom",
+        "mint_b_vault".to_string(),
+        market_keys.pc_vault
+    );
+    println!(
+        "{}: https://explorer.solana.com/address/{}?cluster=custom",
+        "mint_b_wallet".to_string(),
+        market_keys.coin_wallet_key.pubkey()
+    );
     Ok(())
 }
 
@@ -112,6 +147,26 @@ pub fn create_dex_account(
         program_id,
     );
     Ok((key, create_account_instr))
+}
+
+pub fn init_open_orders_ix(
+    program_id: &Pubkey,
+    open_orders: &Pubkey,
+    owner: &Pubkey,
+    market: &Pubkey,
+) -> ClientResult<Instruction> {
+    let data = anchor_spl::dex::serum_dex::instruction::MarketInstruction::InitOpenOrders.pack();
+    let accounts: Vec<AccountMeta> = vec![
+        AccountMeta::new(*open_orders, false),
+        AccountMeta::new_readonly(*owner, true),
+        AccountMeta::new_readonly(*market, false),
+        AccountMeta::new_readonly(sysvar::rent::ID, false),
+    ];
+    Ok(Instruction {
+        program_id: *program_id,
+        data,
+        accounts,
+    })
 }
 
 pub struct ListingKeys {

@@ -3,7 +3,7 @@ use {
     anchor_lang::{
         prelude::*,
         solana_program::{
-            instruction::Instruction, native_token::LAMPORTS_PER_SOL, system_program, sysvar,
+            instruction::Instruction, system_program, sysvar,
         },
     },
     anchor_spl::{
@@ -61,6 +61,7 @@ pub struct CreatePayment<'info> {
     )]
     pub payment_queue: SystemAccount<'info>,
 
+    /// CHECK: the recipient is validated by the seeds of the payment account
     #[account()]
     pub recipient: AccountInfo<'info>,
 
@@ -150,7 +151,6 @@ pub fn handler<'info>(
                 &[bump],
             ]],
         ),
-        LAMPORTS_PER_SOL,
         disburse_payment_ix.into(),
         "payment".into(),
         Trigger::Cron {

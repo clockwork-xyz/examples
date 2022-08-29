@@ -2,11 +2,11 @@
 seeds = false
 
 [programs.localnet]
-investments_program = "4W4J57gPvUsmwbNtaR5ddsnx7u46jwJ3iqiD5H97eeXP"
+investments_program = "472667jjSrvesAWhBJ383RHqw66KME8JF6WEofXjRZ3q"
 serum_crank = "4GWPNbv2vrPsXzDT2wET11KhWazv455YBh8961Qj5p2t"
 
 [programs.devnet]
-investments_program = "4W4J57gPvUsmwbNtaR5ddsnx7u46jwJ3iqiD5H97eeXP"
+investments_program = "472667jjSrvesAWhBJ383RHqw66KME8JF6WEofXjRZ3q"
 serum_crank = "4GWPNbv2vrPsXzDT2wET11KhWazv455YBh8961Qj5p2t"
 
 [registry]

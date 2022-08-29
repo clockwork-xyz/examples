@@ -2,7 +2,7 @@ use {
     crate::state::*,
     anchor_lang::{
         prelude::*,
-        solana_program::{native_token::LAMPORTS_PER_SOL, system_program, instruction::Instruction},
+        solana_program::{system_program, instruction::Instruction},
     },
     clockwork_crank::{
         program::ClockworkCrank,
@@ -76,7 +76,6 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Res
             },
             &[&[SEED_AUTHORITY, &[bump]]],
         ),
-        LAMPORTS_PER_SOL,
         hello_clowckwork_ix.into(),
         "hello".into(),
         Trigger::Cron {

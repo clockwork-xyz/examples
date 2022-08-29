@@ -4,4 +4,6 @@ This repo is meant to help developers with basic code integrations with the [clo
 
 Examples:
 - [Hello Clockwork](https://github.com/clockwork-xyz/examples/tree/main/hello_clockwork)
-- [Payments Program](https://github.com/clockwork-xyz/examples/tree/main/payments)
+- [Investments](https://github.com/clockwork-xyz/examples/tree/main/investments)
+- [Payments](https://github.com/clockwork-xyz/examples/tree/main/payments)
+- [Serum Crank](https://github.com/clockwork-xyz/examples/tree/main/serum_crank)
