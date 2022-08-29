@@ -35,12 +35,14 @@ pub struct TopUpPayment<'info> {
 
     pub mint: Account<'info, Mint>,
 
+    /// CHECK: the recipient is validated by the payment account
     #[account()]
     pub recipient: AccountInfo<'info>,
 
     #[account(address = sysvar::rent::ID)]
     pub rent: Sysvar<'info, Rent>,
 
+    /// CHECK: the sender is validated by the payment account
     #[account(mut)]
     pub sender: Signer<'info>,
 
