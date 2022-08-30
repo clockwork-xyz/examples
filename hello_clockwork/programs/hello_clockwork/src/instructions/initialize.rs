@@ -51,9 +51,6 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Res
     let clockwork_program = &ctx.accounts.clockwork_program;
     let system_program = &ctx.accounts.system_program;
 
-    // get authorit bump
-    let bump = *ctx.bumps.get("authority").unwrap();
-
     // define ix
     let hello_clowckwork_ix = Instruction {
         program_id: crate::ID,
@@ -65,6 +62,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Res
     };
 
     // initialize queue
+    let bump = *ctx.bumps.get("authority").unwrap();
     clockwork_crank::cpi::queue_create(
         CpiContext::new_with_signer(
             clockwork_program.to_account_info(),
