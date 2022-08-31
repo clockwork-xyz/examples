@@ -1,0 +1,104 @@
+use {
+    crate::state::*,
+    anchor_lang::{
+        prelude::*,
+        solana_program::{system_program, sysvar},
+    },
+    anchor_spl::{
+        associated_token::AssociatedToken,
+        token::{self, Mint, MintTo, TokenAccount},
+    },
+    clockwork_crank::{
+        program::ClockworkCrank,
+        state::{SEED_QUEUE, Queue, CrankResponse},
+    },
+};
+
+#[derive(Accounts)]
+#[instruction(mint_amount: u64)]
+pub struct MintToken<'info> {
+    /// CHECK: manually validated against distributor account and recipient's token account
+    pub admin: AccountInfo<'info>, 
+
+    #[account(address = anchor_spl::associated_token::ID)]
+    pub associated_token_program: Program<'info, AssociatedToken>,
+
+    #[account(address = clockwork_crank::ID)]
+    pub clockwork_program: Program<'info, ClockworkCrank>,
+
+    #[account(
+        seeds = [SEED_DISTRIBUTOR, distributor.mint.as_ref(), distributor.admin.as_ref()],
+        bump,
+        has_one = mint,
+        has_one = recipient,
+        has_one = admin
+    )]
+    pub distributor: Account<'info, Distributor>,
+
+    #[account(
+        signer,
+        seeds = [
+            SEED_QUEUE, 
+            distributor.key().as_ref(), 
+            "distributor".as_bytes()
+        ], 
+        seeds::program = clockwork_crank::ID,
+        bump
+     )]
+    pub distributor_queue: Box<Account<'info, Queue>>,
+    
+    /// CHECK: manually validated against distributor account and recipient's token account
+    pub mint: Account<'info, Mint>,
+
+    #[account(mut)]
+    pub payer: Signer<'info>,
+
+    /// CHECK: manually validated against distributor account and recipient's token account
+    pub recipient: AccountInfo<'info>,
+
+    #[account(
+        init_if_needed,
+        payer = payer,
+        associated_token::mint = mint,
+        associated_token::authority = recipient
+    )]
+    pub recipient_token_account: Account<'info, TokenAccount>,
+
+    #[account(address = sysvar::rent::ID)]
+    pub rent: Sysvar<'info, Rent>,
+
+    #[account(address = system_program::ID)]
+    pub system_program: Program<'info, System>,
+
+    #[account(address = anchor_spl::token::ID)]
+    pub token_program: Program<'info, anchor_spl::token::Token>,
+}
+
+pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, MintToken<'info>>, mint_amount: u64) -> Result<CrankResponse> {
+    // get accounts
+    let distributor = &ctx.accounts.distributor;
+    let mint = &ctx.accounts.mint;
+    let recipient_token_account = &mut ctx.accounts.recipient_token_account;
+    let token_program = &ctx.accounts.token_program;
+
+    // get distributor bump
+    let bump = *ctx.bumps.get("distributor").unwrap();
+
+    // mint to recipient' token account
+    token::mint_to(
+        CpiContext::new_with_signer(
+        token_program.to_account_info(), 
+        MintTo {
+            authority: distributor.to_account_info(), 
+            mint: mint.to_account_info(), 
+            to: recipient_token_account.to_account_info()
+        },             
+        &[&[SEED_DISTRIBUTOR, distributor.admin.as_ref(), distributor.mint.as_ref(), &[bump]]],
+        ), 
+        mint_amount
+    )?;
+    
+    Ok(CrankResponse {
+        next_instruction: None
+    })
+}
