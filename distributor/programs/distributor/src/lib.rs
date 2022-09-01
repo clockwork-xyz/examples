@@ -23,7 +23,7 @@ pub mod distributor {
     }
 
     /*
-     * Mint and distribute tokens to recipient
+     * mint to recipient's ATA
      */
     pub fn mint_token<'info>(
         ctx: Context<'_, '_, '_, 'info, MintToken<'info>>,
