@@ -9,16 +9,16 @@ pub const SEED_DISTRIBUTOR: &[u8] = b"distributor";
 #[account]
 #[derive(Debug)]
 pub struct Distributor {
-    pub admin: Pubkey,
+    pub authority: Pubkey,
     pub mint: Pubkey,
     pub recipient: Pubkey,
     pub mint_amount: u64,
 }
 
 impl Distributor {
-    pub fn pubkey(mint: Pubkey, admin: Pubkey) -> Pubkey {
+    pub fn pubkey(mint: Pubkey, authority: Pubkey) -> Pubkey {
         Pubkey::find_program_address(
-            &[SEED_DISTRIBUTOR, mint.as_ref(), admin.as_ref()],
+            &[SEED_DISTRIBUTOR, mint.as_ref(), authority.as_ref()],
             &crate::ID,
         )
         .0
@@ -39,7 +39,7 @@ impl TryFrom<Vec<u8>> for Distributor {
 pub trait DistributorAccount {
     fn new(
         &mut self,
-        admin: Pubkey,
+        authority: Pubkey,
         recipient: Pubkey,
         mint: Pubkey,
         mint_amount: u64,
@@ -49,12 +49,12 @@ pub trait DistributorAccount {
 impl DistributorAccount for Account<'_, Distributor> {
     fn new(
         &mut self,
-        admin: Pubkey,
+        authority: Pubkey,
         recipient: Pubkey,
         mint: Pubkey,
         mint_amount: u64,
     ) -> Result<()> {
-        self.admin = admin;
+        self.authority = authority;
         self.recipient = recipient;
         self.mint = mint;
         self.mint_amount = mint_amount;

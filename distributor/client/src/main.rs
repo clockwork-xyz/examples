@@ -56,7 +56,7 @@ fn main() -> ClientResult<()> {
         bobs_token_account,
     )?;
 
-    set_recipient(&client, distributor, distributor_queue, mint, bob, charlie)?;
+    set_recipient(&client, distributor, distributor_queue, mint, charlie)?;
 
     Ok(())
 }
@@ -103,7 +103,6 @@ fn set_recipient(
     distributor: Pubkey,
     distributor_queue: Pubkey,
     mint: Pubkey,
-    bob: Pubkey,
     charlie: Pubkey,
 ) -> ClientResult<()> {
     let set_recipient_ix = Instruction {
@@ -111,7 +110,6 @@ fn set_recipient(
         accounts: vec![
             AccountMeta::new(client.payer_pubkey(), true),
             AccountMeta::new_readonly(clockwork_crank::ID, false),
-            AccountMeta::new_readonly(bob, false),
             AccountMeta::new(distributor, false),
             AccountMeta::new(distributor_queue, false),
             AccountMeta::new_readonly(mint, false),

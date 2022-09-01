@@ -15,18 +15,14 @@ use {
 
 #[derive(Accounts)]
 pub struct MintToken<'info> {
-    /// CHECK: manually validated against distributor account and recipient's token account
-    pub admin: AccountInfo<'info>, 
-
     #[account(address = anchor_spl::associated_token::ID)]
     pub associated_token_program: Program<'info, AssociatedToken>,
 
     #[account(
-        seeds = [SEED_DISTRIBUTOR, distributor.mint.as_ref(), distributor.admin.as_ref()],
+        seeds = [SEED_DISTRIBUTOR, distributor.mint.as_ref(), distributor.authority.as_ref()],
         bump,
         has_one = mint,
         has_one = recipient,
-        has_one = admin
     )]
     pub distributor: Account<'info, Distributor>,
 
@@ -42,7 +38,6 @@ pub struct MintToken<'info> {
      )]
     pub distributor_queue: Box<Account<'info, Queue>>,
     
-    /// CHECK: manually validated against distributor account and recipient's token account
     #[account(mut)]
     pub mint: Account<'info, Mint>,
 
@@ -89,7 +84,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, MintToken<'info>>) -> Resu
             mint: mint.to_account_info(), 
             to: recipient_token_account.to_account_info()
         },             
-            &[&[SEED_DISTRIBUTOR, distributor.mint.as_ref(), distributor.admin.as_ref(), &[bump]]],
+            &[&[SEED_DISTRIBUTOR, distributor.mint.as_ref(), distributor.authority.as_ref(), &[bump]]],
         ), 
         distributor.mint_amount
     )?;
