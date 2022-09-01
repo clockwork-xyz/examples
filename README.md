@@ -7,3 +7,4 @@ Examples:
 - [Investments](https://github.com/clockwork-xyz/examples/tree/main/investments)
 - [Payments](https://github.com/clockwork-xyz/examples/tree/main/payments)
 - [Serum Crank](https://github.com/clockwork-xyz/examples/tree/main/serum_crank)
+- [Distributor](https://github.com/clockwork-xyz/examples/tree/main/distributor)
