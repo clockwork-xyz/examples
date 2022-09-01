@@ -18,6 +18,7 @@ use {
 };
 
 #[derive(Accounts)]
+#[instruction(mint_amount: u64)]
 pub struct Initialize<'info> {
     #[account(mut)]
     pub admin: Signer<'info>, 
@@ -27,6 +28,10 @@ pub struct Initialize<'info> {
 
     #[account(address = clockwork_crank::ID)]
     pub clockwork_program: Program<'info, ClockworkCrank>,
+
+    /// CHECK: manually validated against distributor account and recipient's token account
+    #[account(mut)]
+    pub mint: Account<'info, Mint>,
 
     #[account(
         init,
@@ -47,10 +52,6 @@ pub struct Initialize<'info> {
         bump
      )]
     pub distributor_queue: SystemAccount<'info>,
-
-    /// CHECK: manually validated against distributor account and recipient's token account
-    #[account()]
-    pub mint: Account<'info, Mint>,
      
     /// CHECK: manually validated against recipient's token account
     #[account()]
@@ -74,20 +75,20 @@ pub struct Initialize<'info> {
     pub token_program: Program<'info, anchor_spl::token::Token>,
 }
 
-pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Result<()> {
+pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>, mint_amount: u64) -> Result<()> {
     // get accounts
     let admin = &ctx.accounts.admin;
     let clockwork_program = &ctx.accounts.clockwork_program;
     let distributor = &mut ctx.accounts.distributor;
     let distributor_queue = &mut ctx.accounts.distributor_queue;
-    let mint = &ctx.accounts.mint;
+    let mint = &mut ctx.accounts.mint;
     let recipient = &ctx.accounts.recipient;
     let recipient_token_account = &ctx.accounts.recipient_token_account;
     let system_program = &ctx.accounts.system_program;
     let token_program = &ctx.accounts.token_program;
 
     // initialize distributor account
-    distributor.new(admin.key(), recipient.key(), mint.key())?;
+    distributor.new(admin.key(), recipient.key(), mint.key(), mint_amount)?;
 
     // delegate mint authority from payer (admin) to distributor account
     token::set_authority(
@@ -97,7 +98,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Res
                     account_or_mint: mint.to_account_info(), 
                     current_authority: admin.to_account_info()
                 }), 
-        AuthorityType::AccountOwner,
+        AuthorityType::MintTokens,
         Some(distributor.key())
     )?;
 
@@ -112,7 +113,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Res
             AccountMeta::new_readonly(associated_token::ID, false),
             AccountMeta::new_readonly(distributor.key(), false),
             AccountMeta::new(distributor_queue.key(), true),
-            AccountMeta::new_readonly(mint.key(), false),
+            AccountMeta::new(mint.key(), false),
             AccountMeta::new(clockwork_crank::payer::ID, true),
             AccountMeta::new_readonly(recipient.key(), false),
             AccountMeta::new(recipient_token_account.key(), false),
@@ -134,12 +135,12 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Res
                 queue: distributor_queue.to_account_info(),
                 system_program: system_program.to_account_info(),
             },
-            &[&[SEED_DISTRIBUTOR, distributor.admin.as_ref(), distributor.mint.as_ref(), &[bump]]],
+            &[&[SEED_DISTRIBUTOR, distributor.mint.as_ref(), distributor.admin.as_ref(), &[bump]]],
         ),
         mint_token_ix.into(),
         "distributor".into(),
         Trigger::Cron {
-            schedule: "*/15 * * * * * *".into(),
+            schedule: "*/5 * * * * * *".into(),
         },
     )?;
 

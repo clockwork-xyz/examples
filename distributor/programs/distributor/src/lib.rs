@@ -15,8 +15,11 @@ pub mod distributor {
     /*
      * initialize clockwork queue
      */
-    pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Result<()> {
-        initialize::handler(ctx)
+    pub fn initialize<'info>(
+        ctx: Context<'_, '_, '_, 'info, Initialize<'info>>,
+        mint_amount: u64,
+    ) -> Result<()> {
+        initialize::handler(ctx, mint_amount)
     }
 
     /*
@@ -24,9 +27,8 @@ pub mod distributor {
      */
     pub fn mint_token<'info>(
         ctx: Context<'_, '_, '_, 'info, MintToken<'info>>,
-        mint_amount: u64,
     ) -> Result<clockwork_crank::state::CrankResponse> {
-        mint_token::handler(ctx, mint_amount)
+        mint_token::handler(ctx)
     }
 
     /*

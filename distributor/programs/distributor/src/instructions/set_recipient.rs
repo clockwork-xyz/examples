@@ -51,6 +51,9 @@ pub struct SetRecipient<'info> {
     
     /// CHECK: manually validated against distributor account and recipient's token account
     pub mint: Account<'info, Mint>,
+
+    #[account(address = system_program::ID)]
+    pub system_program: Program<'info, System>,
 }
 
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, SetRecipient<'info>>, new_recipient: Option<Pubkey>) -> Result<()> {
@@ -60,15 +63,20 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, SetRecipient<'info>>, new_
     let distributor = &mut ctx.accounts.distributor;
     let distributor_queue = &mut ctx.accounts.distributor_queue;
     let mint = &ctx.accounts.mint;
+    let system_program = &ctx.accounts.system_program;
+
+    // get distributor bump
+    let bump = *ctx.bumps.get("distributor").unwrap();
 
     // update distributor with new recipient
     if let Some(new_recipient) = new_recipient {
         distributor.recipient = new_recipient;
     }
 
+    // get recipient's ATA
     let recipient_token_account_pubkey = get_associated_token_address(&distributor.recipient, &distributor.mint);
 
-    // update queue with new ix data
+    // new ix data
     let mint_token_ix = Instruction {
         program_id: crate::ID,
         accounts: vec![
@@ -76,7 +84,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, SetRecipient<'info>>, new_
             AccountMeta::new_readonly(associated_token::ID, false),
             AccountMeta::new_readonly(distributor.key(), false),
             AccountMeta::new(distributor_queue.key(), true),
-            AccountMeta::new_readonly(mint.key(), false),
+            AccountMeta::new(mint.key(), false),
             AccountMeta::new(clockwork_crank::payer::ID, true),
             AccountMeta::new_readonly(distributor.recipient, false),
             AccountMeta::new(recipient_token_account_pubkey, false),
@@ -88,13 +96,17 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, SetRecipient<'info>>, new_
         data: clockwork_crank::anchor::sighash("mint_token").to_vec()
     };
 
+    // update distributor queue
     clockwork_crank::cpi::queue_update(
-    CpiContext::new(
+    CpiContext::new_with_signer(
     clockwork_program.to_account_info(),
         QueueUpdate {
-                    authority: admin.to_account_info(), 
-                    queue: distributor_queue.to_account_info()
-                }),
+                    authority: distributor.to_account_info(), 
+                    queue: distributor_queue.to_account_info(), 
+                    system_program: system_program.to_account_info()
+                },             
+        &[&[SEED_DISTRIBUTOR, distributor.mint.as_ref(), distributor.admin.as_ref(), &[bump]]],
+        ),
     Some(mint_token_ix.into()), 
     None
     )?;

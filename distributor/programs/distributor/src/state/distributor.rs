@@ -12,6 +12,7 @@ pub struct Distributor {
     pub admin: Pubkey,
     pub mint: Pubkey,
     pub recipient: Pubkey,
+    pub mint_amount: u64,
 }
 
 impl Distributor {
@@ -36,14 +37,27 @@ impl TryFrom<Vec<u8>> for Distributor {
  */
 
 pub trait DistributorAccount {
-    fn new(&mut self, admin: Pubkey, recipient: Pubkey, mint: Pubkey) -> Result<()>;
+    fn new(
+        &mut self,
+        admin: Pubkey,
+        recipient: Pubkey,
+        mint: Pubkey,
+        mint_amount: u64,
+    ) -> Result<()>;
 }
 
 impl DistributorAccount for Account<'_, Distributor> {
-    fn new(&mut self, admin: Pubkey, recipient: Pubkey, mint: Pubkey) -> Result<()> {
+    fn new(
+        &mut self,
+        admin: Pubkey,
+        recipient: Pubkey,
+        mint: Pubkey,
+        mint_amount: u64,
+    ) -> Result<()> {
         self.admin = admin;
         self.recipient = recipient;
         self.mint = mint;
+        self.mint_amount = mint_amount;
         Ok(())
     }
 }
