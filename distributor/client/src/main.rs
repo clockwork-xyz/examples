@@ -14,7 +14,10 @@ use {
 
 fn main() -> ClientResult<()> {
     // Create Client
-    let client = RpcClient::new("http://localhost:8899");
+    #[cfg(feature = "devnet")]
+    let client = RpcClient::new("https://api.devnet.solana.com");
+    #[cfg(not(feature = "devnet"))]
+    let client = RpcClient::new("http://localhost:8899");    
     let payer = Keypair::new();
     let client = Client { client, payer };
 

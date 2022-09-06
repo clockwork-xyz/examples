@@ -1,3 +1,3 @@
 use anchor_lang::prelude::declare_id;
 
-declare_id!("44KismN5u53sKPtbFSWhVFtt8kBQH74EvAKHbdSd9tZz");
+declare_id!("EGdyrcP3mm4u2M7c2igJaj82qYbKFXkJ69uQ6M8yjJT2");

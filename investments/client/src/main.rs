@@ -1,19 +1,14 @@
-use std::num::NonZeroU64;
-
-use anchor_spl::{
-    associated_token,
-    dex::serum_dex::{
-        instruction::{NewOrderInstructionV3, SelfTradeBehavior},
-        matching::{OrderType, Side},
-    },
-};
-
 mod utils;
 
 use {
     anchor_lang::{prelude::*, solana_program::sysvar, system_program, InstructionData},
     anchor_spl::{
-        dex::serum_dex::{instruction::initialize_market, state::OpenOrders},
+        associated_token,
+        dex::serum_dex::{
+            instruction::{initialize_market, NewOrderInstructionV3, SelfTradeBehavior},
+            matching::{OrderType, Side},
+            state::OpenOrders,
+        },
         token,
     },
     serum_common::client::rpc::mint_to_new_account,
@@ -22,7 +17,7 @@ use {
         instruction::Instruction, native_token::LAMPORTS_PER_SOL, signature::Keypair,
         signer::Signer,
     },
-    std::mem::size_of,
+    std::{mem::size_of, num::NonZeroU64},
     utils::*,
 };
 
