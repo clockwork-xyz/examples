@@ -14,8 +14,10 @@ use {
 
 fn main() -> ClientResult<()> {
     // Create Client
+    #[cfg(feature = "devnet")]
+    let client = RpcClient::new("https://api.devnet.solana.com");
+    #[cfg(not(feature = "devnet"))]
     let client = RpcClient::new("http://localhost:8899");
-    // let client = RpcClient::new("https://api.devnet.solana.com");
     let payer = Keypair::new();
     let client = Client { client, payer };
     client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;

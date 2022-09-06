@@ -1,81 +1,97 @@
-// use {
-//     crate::state::*,
-//     anchor_lang::{
-//         prelude::*,
-//         solana_program::system_program,
-//     },
-//     anchor_spl::token::Mint,
-//     clockwork_scheduler::{state::{SEED_QUEUE, Queue}, program::ClockworkScheduler},
-// };
+use {
+    crate::state::*,
+    anchor_lang::{prelude::*, solana_program::system_program},
+    anchor_spl::token::Mint,
+    clockwork_crank::{
+        program::ClockworkCrank,
+        state::{Queue, Trigger, SEED_QUEUE},
+    },
+};
 
-// #[derive(Accounts)]
-// #[instruction(disbursement_amount: Option<u64>, schedule: Option<String>)]
-// pub struct UpdatePayment<'info> {
-//     pub mint: Account<'info, Mint>,
+#[derive(Accounts)]
+#[instruction(disbursement_amount: Option<u64>, schedule: Option<Trigger>)]
+pub struct UpdatePayment<'info> {
+    #[account(address = clockwork_crank::ID)]
+    pub clockwork_program: Program<'info, ClockworkCrank>,
 
-//     #[account(
-//         mut,
-//         seeds = [SEED_PAYMENT, payment.sender.key().as_ref(), payment.recipient.key().as_ref(), payment.mint.as_ref()],
-//         bump,
-//         has_one = recipient,
-//         has_one = sender,
-//         has_one = mint
-//     )]
-//     pub payment: Account<'info, Payment>,
+    #[account()]
+    pub mint: Account<'info, Mint>,
 
-//     #[account(
-//         mut,
-//         seeds = [SEED_QUEUE, payment.key().as_ref(), "payment_queue".as_bytes()],
-//         seeds::program = clockwork_scheduler::ID,
-//         bump,
-// 	  )]
-//     pub queue: Account<'info, Queue>,
+    #[account(
+        mut,
+        seeds = [SEED_PAYMENT, payment.sender.key().as_ref(), payment.recipient.key().as_ref(), payment.mint.as_ref()],
+        bump,
+        has_one = recipient,
+        has_one = sender,
+        has_one = mint
+    )]
+    pub payment: Account<'info, Payment>,
 
-//     #[account()]
-//     pub recipient: AccountInfo<'info>,
+    #[account(
+        mut,
+        seeds = [
+            SEED_QUEUE, 
+            payment.key().as_ref(), 
+            "payment".as_bytes()
+        ],
+        seeds::program = clockwork_crank::ID,
+        bump,
+	  )]
+    pub payment_queue: Account<'info, Queue>,
 
-//     #[account(address = clockwork_scheduler::ID)]
-//     pub scheduler_program: Program<'info, ClockworkScheduler>,
+    /// CHECK: this account is validated against the payment account
+    #[account()]
+    pub recipient: AccountInfo<'info>,
 
-//     #[account(mut)]
-//     pub sender: Signer<'info>,
+    #[account(mut)]
+    pub sender: Signer<'info>,
 
-//     #[account(address = system_program::ID)]
-//     pub system_program: Program<'info, System>,
+    #[account(address = system_program::ID)]
+    pub system_program: Program<'info, System>,
+}
 
-// }
+pub fn handler<'info>(
+    ctx: Context<'_, '_, '_, 'info, UpdatePayment<'info>>,
+    disbursement_amount: Option<u64>,
+    schedule: Option<Trigger>,
+) -> Result<()> {
+    // Get accounts
+    let clockwork_program = &ctx.accounts.clockwork_program;
+    let payment = &mut ctx.accounts.payment;
+    let payment_queue = &mut ctx.accounts.payment_queue;
+    let system_program = &ctx.accounts.system_program;
 
-// pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, UpdatePayment<'info>>, disbursement_amount: Option<u64>, schedule: Option<String>) -> Result<()> {
-//     // Get accounts
-//     let payment = &mut ctx.accounts.payment;
-//     let queue = &mut ctx.accounts.queue;
-//     let scheduler_program = &ctx.accounts.scheduler_program;
+    // get payment bump
+    let bump = *ctx.bumps.get("payment").unwrap();
 
-//     // get payment bump
-//     let bump = *ctx.bumps.get("payment").unwrap();
+    // update disbursement amount
+    if let Some(disbursement_amount) = disbursement_amount {
+        payment.disbursement_amount = disbursement_amount;
+    }
 
-//     match disbursement_amount {
-//         Some(da) => payment.disbursement_amount = da,
-//         None => {}
-//     }
+    // update queue schedule
+    if let Some(schedule) = schedule {
+            // Update payment_queue schedule
+            clockwork_crank::cpi::queue_update(
+                CpiContext::new_with_signer(
+                    clockwork_program.to_account_info(),
+                    clockwork_crank::cpi::accounts::QueueUpdate {
+                        authority: payment.to_account_info(),
+                        queue: payment_queue.to_account_info(),
+                        system_program: system_program.to_account_info(),
+                    },
+                    &[&[
+                        SEED_PAYMENT,
+                        payment.sender.as_ref(),
+                        payment.recipient.as_ref(),
+                        payment.mint.as_ref(),
+                        &[bump],
+                    ]],
+                ),
+                None,
+                Some(schedule),
+            )?;
+    }
 
-//     match schedule {
-//       Some(s) => {
-//         // Update queue schedule
-//         clockwork_scheduler::cpi::queue_update(
-//             CpiContext::new_with_signer(
-//                 scheduler_program.to_account_info(),
-//                 clockwork_scheduler::cpi::accounts::QueueUpdate {
-//                     authority: payment.to_account_info(),
-//                     queue: queue.to_account_info(),
-//                 },
-//                 &[&[SEED_PAYMENT, payment.sender.as_ref(), payment.recipient.as_ref(), payment.mint.as_ref(), &[bump]]]
-//             ),
-//             s.to_string(),
-//         )?;
-//       },
-//       None => {}
-//     }
-
-//     Ok(())
-// }
+    Ok(())
+}
