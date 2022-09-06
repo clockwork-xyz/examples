@@ -52,7 +52,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Res
     let system_program = &ctx.accounts.system_program;
 
     // define ix
-    let hello_clowckwork_ix = Instruction {
+    let hello_clockwork_ix = Instruction {
         program_id: crate::ID,
         accounts: vec![ 
             AccountMeta::new_readonly(authority.key(), false),
@@ -74,7 +74,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Res
             },
             &[&[SEED_AUTHORITY, &[bump]]],
         ),
-        hello_clowckwork_ix.into(),
+        hello_clockwork_ix.into(),
         "hello".into(),
         Trigger::Cron {
             schedule: "*/15 * * * * * *".into(),
