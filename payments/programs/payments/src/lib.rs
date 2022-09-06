@@ -12,6 +12,9 @@ use instructions::*;
 pub mod payments_program {
     use super::*;
 
+    /*
+     * initialize relevant accounts and clockwork queue for automated payment flow
+     */
     pub fn create_payment<'info>(
         ctx: Context<'_, '_, '_, 'info, CreatePayment<'info>>,
         disbursement_amount: u64,
@@ -20,6 +23,18 @@ pub mod payments_program {
         create_payment::handler(ctx, disbursement_amount, schedule)
     }
 
+    /*
+     * disburse payment from program authority's ATA to recipient's ATA
+     */
+    pub fn disburse_payment<'info>(
+        ctx: Context<'_, '_, '_, 'info, DisbursePayment<'info>>,
+    ) -> Result<clockwork_crank::state::CrankResponse> {
+        disburse_payment::handler(ctx)
+    }
+
+    /*
+     * deposit into program authority's ATA
+     */
     pub fn top_up_payment<'info>(
         ctx: Context<'_, '_, '_, 'info, TopUpPayment<'info>>,
         amount: u64,
@@ -27,18 +42,14 @@ pub mod payments_program {
         top_up_payment::handler(ctx, amount)
     }
 
-    // TODO: Queue update interface not ready yet
-    // pub fn update_payment<'info>(
-    //     ctx: Context<'_, '_, '_, 'info, UpdatePayment<'info>>,
-    //     disbursement_amount: Option<u64>,
-    //     schedule: Option<String>,
-    // ) -> Result<()> {
-    //     update_payment::handler(ctx, disbursement_amount, schedule)
-    // }
-
-    pub fn disburse_payment<'info>(
-        ctx: Context<'_, '_, '_, 'info, DisbursePayment<'info>>,
-    ) -> Result<clockwork_crank::state::CrankResponse> {
-        disburse_payment::handler(ctx)
+    /*
+     * update disbursement amount and/or schedule
+     */
+    pub fn update_payment<'info>(
+        ctx: Context<'_, '_, '_, 'info, UpdatePayment<'info>>,
+        disbursement_amount: Option<u64>,
+        schedule: Option<clockwork_crank::state::Trigger>,
+    ) -> Result<()> {
+        update_payment::handler(ctx, disbursement_amount, schedule)
     }
 }
