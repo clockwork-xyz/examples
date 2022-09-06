@@ -4,6 +4,7 @@
 - Make sure you have both the [solana cli](https://docs.solana.com/cli/install-solana-cli-tools) and [anchor cli](https://project-serum.github.io/anchor/getting-started/installation.html#build-from-source-for-other-operating-systems) installed on your computer.
 - clone the [clockwork repo](https://github.com/clockwork-xyz/clockwork/) locally to your machine
 
+## Localnet
 ### Investments 
 - run `anchor build` in the root directory of `investments`
 - run `solana address -k target/deploy/investments-keypair.json` to get your program's ID
@@ -21,7 +22,6 @@
   ```bash
   clockwork localnet --bpf-program 9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin <PATH TO THIS FILE>/clockwork-xyz/examples/investments/dex/serum_dex.so --bpf-program <PATH TO THIS FILE>/clockwork-xyz/examples/investments/target/deploy/serum_crank-keypair.json <PATH TO THIS FILE>/clockwork-xyz/examples/investments/target/deploy/serum_crank.so --bpf-program <PATH TO THIS FILE>/clockwork-xyz/examples/investments/target/deploy/investments_program-keypair.json <PATH TO THIS FILE>/clockwork-xyz/examples/investments/target/deploy/investments_program.so
   ```
-
-## Invoking Investments Program
+### Client
 - navigate to the `client` directory
 - run `cargo run` 

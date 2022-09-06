@@ -4,7 +4,7 @@
 - Make sure you have both the [solana cli](https://docs.solana.com/cli/install-solana-cli-tools) and [anchor cli](https://project-serum.github.io/anchor/getting-started/installation.html#build-from-source-for-other-operating-systems) installed on your computer.
 - clone the [clockwork repo](https://github.com/clockwork-xyz/clockwork/) locally to your machine 
 
-## Deploying Serum Crank
+## Localnet
 - run `anchor build` in the root directory of `serum_crank`
 - run `solana address -k target/deploy/serum_crank-keypair.json` to get your program's ID
 - copy that ID and replace it with the Program ID in `id.rs`
@@ -14,7 +14,17 @@
   ```bash
   clockwork localnet --bpf-program 9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin <PATH TO THIS FILE>/clockwork-xyz/examples/serum_crank/dex/serum_dex.so --bpf-program <PATH TO THIS FILE>/clockwork-xyz/examples/serum_crank/target/deploy/serum_crank-keypair.json <PATH TO THIS FILE>/clockwork-xyz/examples/serum_crank/target/deploy/serum_crank.so
   ```
-
-## Invoking Serum Crank Program
 - navigate to the `client` directory
 - run `cargo run` 
+
+## Devnet
+- run `anchor build` in the root directory of `serum_crank`
+- run `solana address -k target/deploy/serum_crank-keypair.json` to get your program's ID
+- copy that ID and replace it with the Program ID in `id.rs`
+- run `anchor build` again
+- be sure to set your solana config to devnet with `solana config set --url https://api.devnet.solana.com`
+- make sure in your `Anchor.toml` file that your cluster is set to `devnet`
+- airdrop yourself a few times with `solana airdrop 2`
+- run `anchor deploy`
+- navigate to the `client` directory
+- run `cargo run --features devnet` 
