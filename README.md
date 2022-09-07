@@ -1,6 +1,6 @@
 # **Clockwork Examples**
 
-This repo is meant to help developers with basic code integrations with the [clockwork-crank](https://github.com/clockwork-xyz/clockwork/tree/main/programs/crank) program. 
+This repo is contains example programs build on the [Clockwork](https://clockwork.xyz) automation network.
 
 Examples:
 - [Hello Clockwork](https://github.com/clockwork-xyz/examples/tree/main/hello_clockwork)
