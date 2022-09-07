@@ -61,7 +61,7 @@ pub struct CreatePayment<'info> {
     )]
     pub payment_queue: SystemAccount<'info>,
 
-    /// CHECK: the recipient is validated by the seeds of the payment account
+    /// CHECK: The recipient can be any valid address
     #[account()]
     pub recipient: AccountInfo<'info>,
 
@@ -101,10 +101,7 @@ pub fn handler<'info>(
     let system_program = &ctx.accounts.system_program;
     let token_program = &ctx.accounts.token_program;
 
-    // get payment bump
-    let bump = *ctx.bumps.get("payment").unwrap();
-
-    // initialize payment account
+    // Initialize payment account
     payment.new(
         sender.key(),
         recipient.key(),
@@ -114,7 +111,7 @@ pub fn handler<'info>(
         schedule,
     )?;
 
-    // create ix
+    // Build disburse_payment ix
     let disburse_payment_ix = Instruction {
         program_id: crate::ID,
         accounts: vec![
@@ -123,17 +120,14 @@ pub fn handler<'info>(
             AccountMeta::new_readonly(payment.mint, false),
             AccountMeta::new(payment.key(), false),
             AccountMeta::new_readonly(payment_queue.key(), true),
-            AccountMeta::new_readonly(payment.recipient, false),
             AccountMeta::new(recipient_token_account.key(), false),
-            AccountMeta::new_readonly(payment.sender, false),
             AccountMeta::new_readonly(token_program.key(), false),
         ],
         data: clockwork_crank::anchor::sighash("disburse_payment").into(),
     };
 
-    msg!("payment: {:#?}", payment);
-
-    // Create queue
+    // Create queue to automate disburse_payment ix
+    let bump = *ctx.bumps.get("payment").unwrap();
     clockwork_crank::cpi::queue_create(
         CpiContext::new_with_signer(
             clockwork_program.to_account_info(),

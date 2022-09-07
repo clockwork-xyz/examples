@@ -16,7 +16,7 @@ pub struct DisbursePayment<'info> {
     #[account(
         mut,
         associated_token::authority = payment,
-        associated_token::mint = payment.mint,
+        associated_token::mint = mint,
     )]
     pub escrow: Box<Account<'info, TokenAccount>>,
 
@@ -27,9 +27,6 @@ pub struct DisbursePayment<'info> {
         mut,
         seeds = [SEED_PAYMENT, payment.sender.key().as_ref(), payment.recipient.key().as_ref(), payment.mint.as_ref()],
         bump,
-        has_one = sender,
-        has_one = recipient,
-        has_one = mint,
     )]
     pub payment: Box<Account<'info, Payment>>,
 
@@ -45,20 +42,12 @@ pub struct DisbursePayment<'info> {
     )]
     pub payment_queue: Box<Account<'info, Queue>>,
 
-    /// CHECK: the recipient is validated by the payment account
-    #[account()]
-    pub recipient: AccountInfo<'info>,
-
     #[account( 
         mut,
         associated_token::authority = payment.recipient,
         associated_token::mint = payment.mint,
     )]
     pub recipient_token_account: Box<Account<'info, TokenAccount>>,
-
-    /// CHECK: the sender is validated by the payment account
-    #[account()]
-    pub sender: AccountInfo<'info>,
 
     #[account(address = anchor_spl::token::ID)]
     pub token_program: Program<'info, anchor_spl::token::Token>,
@@ -71,12 +60,11 @@ pub fn handler(ctx: Context<'_, '_, '_, '_, DisbursePayment<'_>>) -> Result<Cran
     let recipient_token_account = &ctx.accounts.recipient_token_account;
     let token_program = &ctx.accounts.token_program;
 
-    let bump = *ctx.bumps.get("payment").unwrap();
-
-    // update balance of payment account
+    // Update balance of payment account
     payment.balance = payment.balance.checked_sub(payment.disbursement_amount).unwrap();
 
-    // transfer from escrow to recipient's token account
+    // Transfer from escrow to recipient's token account
+    let bump = *ctx.bumps.get("payment").unwrap();
     token::transfer(
         CpiContext::new_with_signer(
             token_program.to_account_info(), 
@@ -88,6 +76,6 @@ pub fn handler(ctx: Context<'_, '_, '_, '_, DisbursePayment<'_>>) -> Result<Cran
             &[&[SEED_PAYMENT, payment.sender.as_ref(), payment.recipient.as_ref(), payment.mint.as_ref(), &[bump]]]),
         payment.disbursement_amount,
     )?;
-
+        
     Ok(CrankResponse{ next_instruction: None })
 }
