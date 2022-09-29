@@ -4,10 +4,7 @@ use {
         prelude::*,
         solana_program::{system_program, instruction::Instruction},
     },
-    clockwork_crank::{
-        program::ClockworkCrank,
-        state::{Trigger, SEED_QUEUE},
-    },
+    clockwork_sdk::{state::{Trigger, SEED_QUEUE}, program::ClockworkCrank},
     std::mem::size_of,
 };
 
@@ -22,7 +19,7 @@ pub struct Initialize<'info> {
     )]
     pub authority: Account<'info, Authority>,
 
-    #[account(address = clockwork_crank::ID)]
+    #[account(address = clockwork_sdk::ID)]
     pub clockwork_program: Program<'info, ClockworkCrank>,
 
     #[account(
@@ -31,7 +28,7 @@ pub struct Initialize<'info> {
             authority.key().as_ref(), 
             "hello".as_bytes()
         ], 
-        seeds::program = clockwork_crank::ID,
+        seeds::program = clockwork_sdk::ID,
         bump
      )]
     pub hello_queue: SystemAccount<'info>,
@@ -58,15 +55,15 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Res
             AccountMeta::new_readonly(authority.key(), false),
             AccountMeta::new_readonly(hello_queue.key(), true)
         ],
-        data: clockwork_crank::anchor::sighash("hello_world").to_vec(),
+        data: clockwork_sdk::anchor::sighash("hello_world").to_vec(),
     };
 
     // initialize queue
     let bump = *ctx.bumps.get("authority").unwrap();
-    clockwork_crank::cpi::queue_create(
+    clockwork_sdk::cpi::queue_create(
         CpiContext::new_with_signer(
             clockwork_program.to_account_info(),
-            clockwork_crank::cpi::accounts::QueueCreate {
+            clockwork_sdk::cpi::accounts::QueueCreate {
                 authority: authority.to_account_info(),
                 payer: payer.to_account_info(),
                 queue: hello_queue.to_account_info(),
@@ -74,8 +71,8 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Res
             },
             &[&[SEED_AUTHORITY, &[bump]]],
         ),
-        hello_clockwork_ix.into(),
         "hello".into(),
+        hello_clockwork_ix.into(),
         Trigger::Cron {
             schedule: "*/15 * * * * * *".into(),
         },
