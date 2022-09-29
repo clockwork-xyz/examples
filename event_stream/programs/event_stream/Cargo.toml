@@ -17,3 +17,4 @@ default = []
 
 [dependencies]
 anchor-lang = "0.25.0"
+clockwork-sdk = { path = "../../../../clockwork/sdk", version = "1.0.6" }
