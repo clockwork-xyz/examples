@@ -4,7 +4,7 @@ use {
         solana_program::{system_program, sysvar},
         InstructionData,
     },
-    solana_client_helpers::{Client, ClientResult, RpcClient},
+    solana_client_helpers::{Client, ClientResult, RpcClient, SplToken},
     solana_sdk::{
         instruction::Instruction, native_token::LAMPORTS_PER_SOL, signature::Keypair,
         transaction::Transaction,
@@ -26,8 +26,8 @@ fn main() -> ClientResult<()> {
 
     // Ping a new event every second.
     for _ in 0..5 {
-        let one_sec = std::time::Duration::from_secs(1);
-        std::thread::sleep(one_sec);
+        let ten_sec = std::time::Duration::from_secs(10);
+        std::thread::sleep(ten_sec);
         ping(&client)?;
     }
 
