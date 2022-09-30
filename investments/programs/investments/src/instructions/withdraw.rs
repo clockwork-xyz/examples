@@ -41,8 +41,8 @@ pub struct Withdraw<'info> {
     #[account(address = sysvar::rent::ID)]
     pub rent: Sysvar<'info, Rent>,
 
-    #[account(address = clockwork_crank::ID)]
-    pub scheduler_program: Program<'info, clockwork_crank::program::ClockworkCrank>,
+    #[account(address = clockwork_sdk::queue_program::ID)]
+    pub scheduler_program: Program<'info, clockwork_sdk::queue_program::QueueProgram>,
 
     #[account(address = system_program::ID)]
     pub system_program: Program<'info, System>,

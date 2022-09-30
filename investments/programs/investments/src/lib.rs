@@ -63,7 +63,7 @@ pub mod investments_program {
      */
     pub fn swap<'info>(
         ctx: Context<'_, '_, '_, 'info, Swap<'info>>,
-    ) -> Result<clockwork_crank::state::CrankResponse> {
+    ) -> Result<clockwork_sdk::queue_program::state::CrankResponse> {
         swap::handler(ctx)
     }
 }

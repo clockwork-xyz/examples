@@ -15,7 +15,7 @@ use {
         },
         token::{Token, TokenAccount},
     },
-    clockwork_crank::state::{Queue, SEED_QUEUE, CrankResponse},
+    clockwork_sdk::queue_program::{self, state::{Queue, SEED_QUEUE, CrankResponse}},
     std::num::NonZeroU64,
 };
 
@@ -47,7 +47,7 @@ pub struct Swap<'info> {
 
     #[account(
       seeds = [SEED_QUEUE, investment.key().as_ref(), "investment".as_ref()], 
-      seeds::program = clockwork_crank::ID, 
+      seeds::program = queue_program::ID, 
       bump,
     )]
     pub investment_queue: Box<Account<'info, Queue>>,

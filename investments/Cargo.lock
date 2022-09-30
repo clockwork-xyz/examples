@@ -243,7 +243,7 @@ dependencies = [
  "arrayref",
  "base64 0.13.0",
  "bincode",
- "borsh 0.9.3",
+ "borsh",
  "bytemuck",
  "solana-program",
  "thiserror",
@@ -496,33 +496,12 @@ checksum = "8d696c370c750c948ada61c69a0ee2cbbb9c50b1019ddb86d9317157a99c2cae"
 
 [[package]]
 name = "borsh"
-version = "0.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b42b13fa9bf62be34702e5ee4526aff22530ae22fe34a0c4290d30d5e4e782e6"
-dependencies = [
- "borsh-derive 0.7.2",
-]
-
-[[package]]
-name = "borsh"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "15bf3650200d8bffa99015595e10f1fbd17de07abbc25bb067da79e769939bfa"
 dependencies = [
  "borsh-derive 0.9.3",
  "hashbrown 0.11.2",
-]
-
-[[package]]
-name = "borsh-derive"
-version = "0.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e6aaa45f8eec26e4bf71e7e5492cf53a91591af8f871f422d550e7cc43f6b927"
-dependencies = [
- "borsh-derive-internal 0.7.2",
- "borsh-schema-derive-internal 0.7.2",
- "proc-macro2 1.0.43",
- "syn 1.0.99",
 ]
 
 [[package]]
@@ -553,17 +532,6 @@ dependencies = [
 
 [[package]]
 name = "borsh-derive-internal"
-version = "0.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "61621b9d3cca65cc54e2583db84ef912d59ae60d2f04ba61bc0d7fc57556bda2"
-dependencies = [
- "proc-macro2 1.0.43",
- "quote 1.0.21",
- "syn 1.0.99",
-]
-
-[[package]]
-name = "borsh-derive-internal"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d2104c73179359431cc98e016998f2f23bc7a05bc53e79741bcba705f30047bc"
@@ -578,17 +546,6 @@ name = "borsh-derive-internal"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5449c28a7b352f2d1e592a8a28bf139bc71afb0764a14f3c02500935d8c44065"
-dependencies = [
- "proc-macro2 1.0.43",
- "quote 1.0.21",
- "syn 1.0.99",
-]
-
-[[package]]
-name = "borsh-schema-derive-internal"
-version = "0.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85b38abfda570837b0949c2c7ebd31417e15607861c23eacb2f668c69f6f3bf7"
 dependencies = [
  "proc-macro2 1.0.43",
  "quote 1.0.21",
@@ -795,22 +752,26 @@ dependencies = [
 ]
 
 [[package]]
-name = "clockwork-crank"
-version = "1.0.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69ecc6c9ab16584d4f4d743d9004f484357b1598529e10e9d74c0dff9333588a"
+name = "clockwork-client"
+version = "1.0.6"
 dependencies = [
  "anchor-lang",
- "chrono",
- "clockwork-cron",
- "clockwork-pool",
+ "anchor-spl",
+ "bincode",
+ "borsh",
+ "clockwork-network-program",
+ "clockwork-pool-program",
+ "clockwork-queue-program",
+ "clockwork-webhook-program",
+ "solana-client",
+ "solana-sdk",
+ "spl-associated-token-account",
+ "thiserror",
 ]
 
 [[package]]
 name = "clockwork-cron"
-version = "1.0.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4f467d8a0ecb366844ab2df41dfa27e08eeed308687ab93f248ef0bb86bf35eb"
+version = "1.0.6"
 dependencies = [
  "chrono",
  "nom",
@@ -818,12 +779,50 @@ dependencies = [
 ]
 
 [[package]]
-name = "clockwork-pool"
-version = "1.0.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "92cb11279caded9dab3779ed52c82545b4d7328aa11aee18eb540e14a86a7b5b"
+name = "clockwork-network-program"
+version = "1.0.6"
 dependencies = [
  "anchor-lang",
+ "anchor-spl",
+ "clockwork-pool-program",
+ "clockwork-queue-program",
+]
+
+[[package]]
+name = "clockwork-pool-program"
+version = "1.0.6"
+dependencies = [
+ "anchor-lang",
+]
+
+[[package]]
+name = "clockwork-queue-program"
+version = "1.0.6"
+dependencies = [
+ "anchor-lang",
+ "chrono",
+ "clockwork-cron",
+ "clockwork-pool-program",
+ "static-pubkey",
+]
+
+[[package]]
+name = "clockwork-sdk"
+version = "1.0.6"
+dependencies = [
+ "chrono",
+ "clockwork-client",
+ "clockwork-queue-program",
+ "nom",
+ "once_cell",
+]
+
+[[package]]
+name = "clockwork-webhook-program"
+version = "1.0.6"
+dependencies = [
+ "anchor-lang",
+ "clockwork-pool-program",
 ]
 
 [[package]]
@@ -1749,12 +1748,11 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
- "clockwork-crank",
+ "clockwork-sdk",
  "investments-program",
  "serum-common",
  "serum-crank",
  "solana-client",
- "solana-client-helpers",
  "solana-sdk",
 ]
 
@@ -1764,7 +1762,7 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
- "clockwork-crank",
+ "clockwork-sdk",
 ]
 
 [[package]]
@@ -2833,12 +2831,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
-name = "rustc-hex"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e75f6a532d0fd9f7f13144f392b6ad56a32696bfcd9c78f797f16bbb6f072d6"
-
-[[package]]
 name = "rustc_version"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3107,7 +3099,7 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
- "clockwork-crank",
+ "clockwork-sdk",
  "safe-transmute",
 ]
 
@@ -3392,20 +3384,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "solana-client-helpers"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "13b109be3d34e0d16fd424c0dbd23a18dad4b522f8c98c14e56423ce9b28b67c"
-dependencies = [
- "solana-client",
- "solana-sdk",
- "spl-associated-token-account",
- "spl-token 3.3.1",
- "spl-token-swap",
- "thiserror",
-]
-
-[[package]]
 name = "solana-compute-budget-program"
 version = "1.10.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3581,7 +3559,7 @@ dependencies = [
  "bincode",
  "bitflags",
  "blake3",
- "borsh 0.9.3",
+ "borsh",
  "borsh-derive 0.9.3",
  "bs58 0.4.0",
  "bv",
@@ -3735,7 +3713,7 @@ dependencies = [
  "base64 0.13.0",
  "bincode",
  "bitflags",
- "borsh 0.9.3",
+ "borsh",
  "bs58 0.4.0",
  "bytemuck",
  "byteorder",
@@ -3850,7 +3828,7 @@ dependencies = [
  "Inflector",
  "base64 0.13.0",
  "bincode",
- "borsh 0.9.3",
+ "borsh",
  "bs58 0.4.0",
  "lazy_static",
  "log",
@@ -4004,24 +3982,9 @@ version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2b013067447a1396303ddfc294f36e3d260a32f8a16c501c295bcdc7de39b490"
 dependencies = [
- "borsh 0.9.3",
+ "borsh",
  "solana-program",
  "spl-token 3.3.1",
-]
-
-[[package]]
-name = "spl-math"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2ecdd22720b9e5ab578a862928f5010ca197419502bdace600ccd5d23dae9352"
-dependencies = [
- "borsh 0.7.2",
- "borsh-derive 0.8.2",
- "num-derive",
- "num-traits",
- "solana-program",
- "thiserror",
- "uint",
 ]
 
 [[package]]
@@ -4082,26 +4045,22 @@ dependencies = [
 ]
 
 [[package]]
-name = "spl-token-swap"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c63b79be6174568e8724912b15e62d0c6b0424ac98397e9a5a867ac2881553af"
-dependencies = [
- "arrayref",
- "enum_dispatch",
- "num-derive",
- "num-traits",
- "solana-program",
- "spl-math",
- "spl-token 3.3.1",
- "thiserror",
-]
-
-[[package]]
 name = "stable_deref_trait"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
+
+[[package]]
+name = "static-pubkey"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0547d5945c93f55e1b18bf2a67d1a3d0548561f2687645b22c1c1d4fbb9a8e90"
+dependencies = [
+ "bs58 0.4.0",
+ "proc-macro2 1.0.43",
+ "quote 1.0.21",
+ "syn 1.0.99",
+]
 
 [[package]]
 name = "static_assertions"
@@ -4488,18 +4447,6 @@ name = "ucd-trie"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "89570599c4fe5585de2b388aab47e99f7fa4e9238a1399f707a02e356058141c"
-
-[[package]]
-name = "uint"
-version = "0.8.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9db035e67dfaf7edd9aebfe8676afcd63eed53c8a4044fed514c8cccf1835177"
-dependencies = [
- "byteorder",
- "crunchy",
- "rustc-hex",
- "static_assertions",
-]
 
 [[package]]
 name = "unicode-bidi"
