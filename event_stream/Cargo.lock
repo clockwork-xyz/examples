@@ -784,14 +784,15 @@ dependencies = [
 [[package]]
 name = "clockwork-client"
 version = "1.0.6"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#02a742f408e50e5c3cfd69178559957236043d65"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
  "bincode",
  "borsh 0.9.3",
  "clockwork-network-program",
- "clockwork-pool-program 1.0.6",
- "clockwork-queue-program 1.0.6",
+ "clockwork-pool-program",
+ "clockwork-queue-program",
  "clockwork-webhook-program",
  "solana-client",
  "solana-sdk",
@@ -801,16 +802,7 @@ dependencies = [
 [[package]]
 name = "clockwork-cron"
 version = "1.0.6"
-dependencies = [
- "chrono",
- "nom",
- "once_cell",
-]
-
-[[package]]
-name = "clockwork-cron"
-version = "1.0.6"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=nick/engine-rename#b085f125b708b787d2fba7413755bce8ff802062"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#02a742f408e50e5c3cfd69178559957236043d65"
 dependencies = [
  "chrono",
  "nom",
@@ -820,24 +812,18 @@ dependencies = [
 [[package]]
 name = "clockwork-network-program"
 version = "1.0.6"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#02a742f408e50e5c3cfd69178559957236043d65"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
- "clockwork-pool-program 1.0.6",
- "clockwork-queue-program 1.0.6",
+ "clockwork-pool-program",
+ "clockwork-queue-program",
 ]
 
 [[package]]
 name = "clockwork-pool-program"
 version = "1.0.6"
-dependencies = [
- "anchor-lang",
-]
-
-[[package]]
-name = "clockwork-pool-program"
-version = "1.0.6"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=nick/engine-rename#b085f125b708b787d2fba7413755bce8ff802062"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#02a742f408e50e5c3cfd69178559957236043d65"
 dependencies = [
  "anchor-lang",
 ]
@@ -845,44 +831,23 @@ dependencies = [
 [[package]]
 name = "clockwork-queue-program"
 version = "1.0.6"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#02a742f408e50e5c3cfd69178559957236043d65"
 dependencies = [
  "anchor-lang",
  "chrono",
- "clockwork-cron 1.0.6",
- "clockwork-pool-program 1.0.6",
- "static-pubkey",
-]
-
-[[package]]
-name = "clockwork-queue-program"
-version = "1.0.6"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=nick/engine-rename#b085f125b708b787d2fba7413755bce8ff802062"
-dependencies = [
- "anchor-lang",
- "chrono",
- "clockwork-cron 1.0.6 (git+https://github.com/clockwork-xyz/clockwork?branch=nick/engine-rename)",
- "clockwork-pool-program 1.0.6 (git+https://github.com/clockwork-xyz/clockwork?branch=nick/engine-rename)",
+ "clockwork-cron",
+ "clockwork-pool-program",
  "static-pubkey",
 ]
 
 [[package]]
 name = "clockwork-sdk"
 version = "1.0.6"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#02a742f408e50e5c3cfd69178559957236043d65"
 dependencies = [
  "chrono",
  "clockwork-client",
- "clockwork-queue-program 1.0.6",
- "nom",
- "once_cell",
-]
-
-[[package]]
-name = "clockwork-sdk"
-version = "1.0.6"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=nick/engine-rename#b085f125b708b787d2fba7413755bce8ff802062"
-dependencies = [
- "chrono",
- "clockwork-queue-program 1.0.6 (git+https://github.com/clockwork-xyz/clockwork?branch=nick/engine-rename)",
+ "clockwork-queue-program",
  "nom",
  "once_cell",
 ]
@@ -890,9 +855,10 @@ dependencies = [
 [[package]]
 name = "clockwork-webhook-program"
 version = "1.0.6"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#02a742f408e50e5c3cfd69178559957236043d65"
 dependencies = [
  "anchor-lang",
- "clockwork-pool-program 1.0.6",
+ "clockwork-pool-program",
 ]
 
 [[package]]
@@ -1320,7 +1286,7 @@ name = "event_stream"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
- "clockwork-sdk 1.0.6 (git+https://github.com/clockwork-xyz/clockwork?branch=nick/engine-rename)",
+ "clockwork-sdk",
 ]
 
 [[package]]
@@ -1328,7 +1294,7 @@ name = "event_stream_client"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
- "clockwork-sdk 1.0.6",
+ "clockwork-sdk",
  "event_stream",
  "solana-client-helpers",
  "solana-sdk",
