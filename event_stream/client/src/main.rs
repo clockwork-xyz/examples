@@ -1,10 +1,6 @@
 use {
-    anchor_lang::{
-        prelude::*,
-        solana_program::{system_program, sysvar},
-        InstructionData,
-    },
-    solana_client_helpers::{Client, ClientResult, RpcClient, SplToken},
+    anchor_lang::{prelude::*, solana_program::system_program, InstructionData},
+    solana_client_helpers::{Client, ClientResult, RpcClient},
     solana_sdk::{
         instruction::Instruction, native_token::LAMPORTS_PER_SOL, signature::Keypair,
         transaction::Transaction,
@@ -24,10 +20,9 @@ fn main() -> ClientResult<()> {
     // Initialize the event_stream program
     initialize(&client)?;
 
-    // Ping a new event every second.
+    // Ping a new event every 10 secs
     for _ in 0..5 {
-        let ten_sec = std::time::Duration::from_secs(10);
-        std::thread::sleep(ten_sec);
+        std::thread::sleep(std::time::Duration::from_secs(10));
         ping(&client)?;
     }
 
@@ -40,10 +35,13 @@ fn initialize(client: &Client) -> ClientResult<()> {
         program_id: event_stream::ID,
         accounts: vec![
             AccountMeta::new(authority_pubkey, false),
-            AccountMeta::new_readonly(clockwork_sdk::id::ID, false),
+            AccountMeta::new_readonly(clockwork_sdk::queue_program::ID, false),
             AccountMeta::new(event_stream::state::Event::pubkey(), false),
             AccountMeta::new(
-                clockwork_sdk::state::Queue::pubkey(authority_pubkey, "events".into()),
+                clockwork_sdk::queue_program::state::Queue::pubkey(
+                    authority_pubkey,
+                    "events".into(),
+                ),
                 false,
             ),
             AccountMeta::new(client.payer_pubkey(), true),

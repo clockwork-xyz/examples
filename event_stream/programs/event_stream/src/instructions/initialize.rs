@@ -1,7 +1,7 @@
 use {
     crate::state::*,
     anchor_lang::{prelude::*, solana_program::{instruction::Instruction, system_program}},
-    clockwork_sdk::state::Trigger,
+    clockwork_sdk::queue_program::state::Trigger,
     std::mem::size_of,
 };
 
@@ -16,8 +16,8 @@ pub struct Initialize<'info> {
     )]
     pub authority: Account<'info, Authority>,
 
-    #[account(address = clockwork_sdk::ID)]
-    pub clockwork: Program<'info, clockwork_sdk::program::ClockworkCrank>,
+    #[account(address = clockwork_sdk::queue_program::ID)]
+    pub clockwork: Program<'info, clockwork_sdk::queue_program::QueueProgram>,
 
     #[account(
         init,
@@ -30,11 +30,11 @@ pub struct Initialize<'info> {
 
     #[account(
         seeds = [
-            clockwork_sdk::state::SEED_QUEUE, 
+            clockwork_sdk::queue_program::state::SEED_QUEUE, 
             authority.key().as_ref(), 
-            "events".as_bytes()
+            "event".as_bytes()
         ], 
-        seeds::program = clockwork_sdk::ID,
+        seeds::program = clockwork_sdk::queue_program::ID,
         bump
     )]
     pub queue: SystemAccount<'info>,
@@ -68,12 +68,12 @@ pub fn handler(ctx: Context<Initialize>) -> Result<()> {
             AccountMeta::new_readonly(event.key(), false),
             AccountMeta::new_readonly(queue.key(), true),
         ],
-        data: clockwork_sdk::anchor::sighash("process_event").into(),
+        data: clockwork_sdk::queue_program::utils::anchor_sighash("process_event").into(),
     };
-    clockwork_sdk::cpi::queue_create(
+    clockwork_sdk::queue_program::cpi::queue_create(
         CpiContext::new_with_signer(
             clockwork.to_account_info(),
-            clockwork_sdk::cpi::accounts::QueueCreate {
+            clockwork_sdk::queue_program::cpi::accounts::QueueCreate {
                 authority: authority.to_account_info(),
                 payer: signer.to_account_info(),
                 queue: queue.to_account_info(),
@@ -81,7 +81,7 @@ pub fn handler(ctx: Context<Initialize>) -> Result<()> {
             },
             &[&[SEED_AUTHORITY, &[bump]]]
         ),
-        "events".into(),
+        "event".into(),
         snapshot_kickoff_ix.into(),
         Trigger::Account { pubkey: event.key() }
     )?;
