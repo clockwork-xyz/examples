@@ -21,4 +21,4 @@ overflow-checks = true
 [dependencies]
 anchor-spl = { version = "0.25.0", features = ["dex"] }
 anchor-lang = "0.25.0"
-clockwork-crank = { version = "1.0.5", features = ["cpi"] }
+clockwork-sdk = { path = "../../../../clockwork/sdk", version = "1.0.6" }

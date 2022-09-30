@@ -2,8 +2,8 @@ use {
     crate::state::*,
     anchor_lang::{prelude::*, solana_program::system_program},
     anchor_spl::token::Mint,
-    clockwork_crank::{
-        program::ClockworkCrank,
+    clockwork_sdk::queue_program::{
+        self, QueueProgram,
         state::{Queue, Trigger, SEED_QUEUE},
     },
 };
@@ -11,8 +11,8 @@ use {
 #[derive(Accounts)]
 #[instruction(disbursement_amount: Option<u64>, schedule: Option<Trigger>)]
 pub struct UpdatePayment<'info> {
-    #[account(address = clockwork_crank::ID)]
-    pub clockwork_program: Program<'info, ClockworkCrank>,
+    #[account(address = queue_program::ID)]
+    pub clockwork_program: Program<'info, QueueProgram>,
 
     #[account()]
     pub mint: Account<'info, Mint>,
@@ -34,7 +34,7 @@ pub struct UpdatePayment<'info> {
             payment.key().as_ref(), 
             "payment".as_bytes()
         ],
-        seeds::program = clockwork_crank::ID,
+        seeds::program = queue_program::ID,
         bump,
 	  )]
     pub payment_queue: Account<'info, Queue>,
@@ -72,10 +72,10 @@ pub fn handler<'info>(
     // update queue schedule
     if let Some(schedule) = schedule {
             // Update payment_queue schedule
-            clockwork_crank::cpi::queue_update(
+            clockwork_sdk::queue_program::cpi::queue_update(
                 CpiContext::new_with_signer(
                     clockwork_program.to_account_info(),
-                    clockwork_crank::cpi::accounts::QueueUpdate {
+                    clockwork_sdk::queue_program::cpi::accounts::QueueUpdate {
                         authority: payment.to_account_info(),
                         queue: payment_queue.to_account_info(),
                         system_program: system_program.to_account_info(),
@@ -88,6 +88,7 @@ pub fn handler<'info>(
                         &[bump],
                     ]],
                 ),
+                None,
                 None,
                 Some(schedule),
             )?;

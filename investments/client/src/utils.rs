@@ -1,6 +1,6 @@
 use {
     anchor_lang::{prelude::*, solana_program::sysvar},
-    solana_client_helpers::{Client, ClientResult},
+    clockwork_sdk::{Client, ClientResult},
     solana_sdk::{
         instruction::Instruction, signature::Keypair, signer::Signer, transaction::Transaction,
     },

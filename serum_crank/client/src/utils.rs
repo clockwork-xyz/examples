@@ -2,7 +2,7 @@ use {
     anchor_lang::{prelude::*, solana_program::sysvar},
     anchor_spl::dex::serum_dex::instruction::initialize_market,
     serum_common::client::rpc::mint_to_new_account,
-    solana_client_helpers::{Client, ClientResult, SplToken},
+    clockwork_sdk::{Client, ClientResult, SplToken},
     solana_sdk::{
         instruction::Instruction, signature::Keypair, signer::Signer, transaction::Transaction,
     },

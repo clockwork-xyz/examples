@@ -6,7 +6,7 @@ use {
         solana_program::{system_program,instruction::Instruction},
     },
     anchor_spl::{dex::serum_dex::state::{strip_header, EventQueueHeader, Event, Queue as SerumDexQueue}, token::TokenAccount},
-    clockwork_crank::state::{CrankResponse, Queue, SEED_QUEUE},
+    clockwork_sdk::queue_program::{self, state::{CrankResponse, Queue, SEED_QUEUE}}
 };
 
 #[derive(Accounts)]
@@ -30,7 +30,7 @@ pub struct ReadEvents<'info> {
             crank.key().as_ref(), 
             "crank".as_bytes()
         ], 
-        seeds::program = clockwork_crank::ID,
+        seeds::program = queue_program::ID,
         bump,
     )]
     pub crank_queue: Account<'info, Queue>,
@@ -121,7 +121,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, ReadEvents<'info>>) -> Res
             Instruction {
                 program_id: crate::ID,
                 accounts: next_ix_accounts,
-                data: clockwork_crank::anchor::sighash("consume_events").into(),
+                data: queue_program::utils::anchor_sighash("consume_events").into(),
             }
             .into()
         )

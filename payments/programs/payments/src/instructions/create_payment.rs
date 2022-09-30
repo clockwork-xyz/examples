@@ -10,10 +10,7 @@ use {
         associated_token::{self, AssociatedToken},
         token::{Mint, TokenAccount},
     },
-    clockwork_crank::{
-        program::ClockworkCrank,
-        state::{Trigger, SEED_QUEUE},
-    },
+    clockwork_sdk::queue_program::{self, QueueProgram, state::{Trigger, SEED_QUEUE}},
     std::mem::size_of,
 };
 
@@ -23,8 +20,8 @@ pub struct CreatePayment<'info> {
     #[account(address = anchor_spl::associated_token::ID)]
     pub associated_token_program: Program<'info, AssociatedToken>,
 
-    #[account(address = clockwork_crank::ID)]
-    pub clockwork_program: Program<'info, ClockworkCrank>,
+    #[account(address = queue_program::ID)]
+    pub clockwork_program: Program<'info, QueueProgram>,
 
     #[account(
         init,
@@ -56,7 +53,7 @@ pub struct CreatePayment<'info> {
             payment.key().as_ref(), 
             "payment".as_bytes()
         ], 
-        seeds::program = clockwork_crank::ID,
+        seeds::program = queue_program::ID,
         bump
     )]
     pub payment_queue: SystemAccount<'info>,
@@ -128,16 +125,16 @@ pub fn handler<'info>(
             AccountMeta::new_readonly(payment.sender, false),
             AccountMeta::new_readonly(token_program.key(), false),
         ],
-        data: clockwork_crank::anchor::sighash("disburse_payment").into(),
+        data: clockwork_sdk::queue_program::utils::anchor_sighash("disburse_payment").into(),
     };
 
     msg!("payment: {:#?}", payment);
 
     // Create queue
-    clockwork_crank::cpi::queue_create(
+    clockwork_sdk::queue_program::cpi::queue_create(
         CpiContext::new_with_signer(
             clockwork_program.to_account_info(),
-            clockwork_crank::cpi::accounts::QueueCreate {
+            clockwork_sdk::queue_program::cpi::accounts::QueueCreate {
                 authority: payment.to_account_info(),
                 payer: sender.to_account_info(),
                 queue: payment_queue.to_account_info(),
@@ -151,8 +148,8 @@ pub fn handler<'info>(
                 &[bump],
             ]],
         ),
-        disburse_payment_ix.into(),
         "payment".into(),
+        disburse_payment_ix.into(),
         Trigger::Cron {
             schedule: payment.schedule.to_string()
         },
