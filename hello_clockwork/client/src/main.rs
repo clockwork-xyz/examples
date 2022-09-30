@@ -23,7 +23,8 @@ fn main() -> ClientResult<()> {
 
     // Derive PDAs
     let authority = hello_clockwork::state::Authority::pubkey();
-    let hello_queue = clockwork_sdk::state::Queue::pubkey(authority, "hello".to_string());
+    let hello_queue =
+        clockwork_sdk::queue_program::state::Queue::pubkey(authority, "hello".to_string());
 
     // airdrop to hello queue
     client.airdrop(&hello_queue, LAMPORTS_PER_SOL)?;
@@ -33,7 +34,7 @@ fn main() -> ClientResult<()> {
         program_id: hello_clockwork::ID,
         accounts: vec![
             AccountMeta::new(authority, false),
-            AccountMeta::new_readonly(clockwork_sdk::ID, false),
+            AccountMeta::new_readonly(clockwork_sdk::queue_program::ID, false),
             AccountMeta::new(hello_queue, false),
             AccountMeta::new(client.payer_pubkey(), true),
             AccountMeta::new_readonly(system_program::ID, false),

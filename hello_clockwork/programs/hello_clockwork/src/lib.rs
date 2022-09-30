@@ -16,7 +16,9 @@ pub mod hello_clockwork {
         initialize::handler(ctx)
     }
 
-    pub fn hello_world(ctx: Context<HelloWorld>) -> Result<clockwork_sdk::state::CrankResponse> {
+    pub fn hello_world(
+        ctx: Context<HelloWorld>,
+    ) -> Result<clockwork_sdk::queue_program::state::CrankResponse> {
         hello_world::handler(ctx)
     }
 }

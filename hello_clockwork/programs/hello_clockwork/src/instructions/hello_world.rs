@@ -1,7 +1,7 @@
 use {
     crate::state::*,
     anchor_lang::prelude::*,
-    clockwork_sdk::state::{CrankResponse, SEED_QUEUE, Queue},
+    clockwork_sdk::queue_program::{self, state::{CrankResponse, SEED_QUEUE, Queue}},
 };
 
 #[derive(Accounts)]
@@ -16,7 +16,7 @@ pub struct HelloWorld<'info> {
             authority.key().as_ref(), 
             "hello".as_bytes()
         ], 
-        seeds::program = clockwork_sdk::ID,
+        seeds::program = queue_program::ID,
         bump,
         has_one = authority
     )]
