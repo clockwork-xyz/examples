@@ -8,9 +8,7 @@ use {
         associated_token::AssociatedToken,
         token::{self, Mint, MintTo, TokenAccount},
     },
-    clockwork_crank::{
-        state::{SEED_QUEUE, Queue, CrankResponse},
-    },
+    clockwork_sdk::queue_program::{self, state::{SEED_QUEUE, Queue, CrankResponse}},
 };
 
 #[derive(Accounts)]
@@ -33,7 +31,7 @@ pub struct MintToken<'info> {
             distributor.key().as_ref(), 
             "distributor".as_bytes()
         ], 
-        seeds::program = clockwork_crank::ID,
+        seeds::program = queue_program::ID,
         bump
      )]
     pub distributor_queue: Box<Account<'info, Queue>>,

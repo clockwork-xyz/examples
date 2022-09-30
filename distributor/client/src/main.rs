@@ -5,7 +5,7 @@ use {
         InstructionData,
     },
     anchor_spl::{associated_token, token},
-    solana_client_helpers::{Client, ClientResult, RpcClient, SplToken},
+    clockwork_sdk::{queue_program, Client, ClientResult, SplToken},
     solana_sdk::{
         instruction::Instruction, native_token::LAMPORTS_PER_SOL, signature::Keypair,
         signer::Signer, transaction::Transaction,
@@ -14,12 +14,11 @@ use {
 
 fn main() -> ClientResult<()> {
     // Create Client
-    #[cfg(feature = "devnet")]
-    let client = RpcClient::new("https://api.devnet.solana.com");
-    #[cfg(not(feature = "devnet"))]
-    let client = RpcClient::new("http://localhost:8899");    
     let payer = Keypair::new();
-    let client = Client { client, payer };
+    #[cfg(feature = "devnet")]
+    let client = Client::new(payer, "https://api.devnet.solana.com".into());
+    #[cfg(not(feature = "devnet"))]
+    let client = Client::new(payer, "http://localhost:8899".into());
 
     let bob = Keypair::new().pubkey();
     let charlie = Keypair::new().pubkey();
@@ -36,7 +35,7 @@ fn main() -> ClientResult<()> {
     // derive distributor program PDAs
     let distributor = distributor::state::Distributor::pubkey(mint, client.payer_pubkey());
     let distributor_queue =
-        clockwork_crank::state::Queue::pubkey(distributor, "distributor".into());
+        clockwork_sdk::queue_program::state::Queue::pubkey(distributor, "distributor".into());
 
     print_explorer_link(distributor, "distributor".into())?;
     print_explorer_link(distributor_queue, "distributor_queue".into())?;
@@ -80,7 +79,7 @@ fn initialize(
         accounts: vec![
             AccountMeta::new(client.payer_pubkey(), true),
             AccountMeta::new_readonly(associated_token::ID, false),
-            AccountMeta::new_readonly(clockwork_crank::ID, false),
+            AccountMeta::new_readonly(queue_program::ID, false),
             AccountMeta::new(mint, false),
             AccountMeta::new(distributor, false),
             AccountMeta::new(distributor_queue, false),
@@ -112,7 +111,7 @@ fn set_recipient(
         program_id: distributor::ID,
         accounts: vec![
             AccountMeta::new(client.payer_pubkey(), true),
-            AccountMeta::new_readonly(clockwork_crank::ID, false),
+            AccountMeta::new_readonly(queue_program::ID, false),
             AccountMeta::new(distributor, false),
             AccountMeta::new(distributor_queue, false),
             AccountMeta::new_readonly(mint, false),

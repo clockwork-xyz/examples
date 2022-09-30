@@ -8,8 +8,9 @@ use {
         associated_token::{self, AssociatedToken},
         token::{self, Mint, TokenAccount, SetAuthority, spl_token::instruction::AuthorityType},
     },
-    clockwork_crank::{
-        program::ClockworkCrank,
+    clockwork_sdk::queue_program::{
+        utils::PAYER_PUBKEY,
+        self, QueueProgram,
         state::{Trigger, SEED_QUEUE},
     },
     std::mem::size_of,
@@ -24,8 +25,8 @@ pub struct Initialize<'info> {
     #[account(address = anchor_spl::associated_token::ID)]
     pub associated_token_program: Program<'info, AssociatedToken>,
 
-    #[account(address = clockwork_crank::ID)]
-    pub clockwork_program: Program<'info, ClockworkCrank>,
+    #[account(address = queue_program::ID)]
+    pub clockwork_program: Program<'info, QueueProgram>,
 
     #[account(mut)]
     pub mint: Account<'info, Mint>,
@@ -45,7 +46,7 @@ pub struct Initialize<'info> {
             distributor.key().as_ref(), 
             "distributor".as_bytes()
         ], 
-        seeds::program = clockwork_crank::ID,
+        seeds::program = queue_program::ID,
         bump
      )]
     pub distributor_queue: SystemAccount<'info>,
@@ -110,7 +111,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>, mint_a
             AccountMeta::new_readonly(distributor.key(), false),
             AccountMeta::new(distributor_queue.key(), true),
             AccountMeta::new(mint.key(), false),
-            AccountMeta::new(clockwork_crank::payer::ID, true),
+            AccountMeta::new(PAYER_PUBKEY, true),
             AccountMeta::new_readonly(recipient.key(), false),
             AccountMeta::new(recipient_token_account.key(), false),
             AccountMeta::new_readonly(sysvar::rent::ID, false),
@@ -118,14 +119,14 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>, mint_a
             AccountMeta::new_readonly(token::ID, false),
 
         ],
-        data: clockwork_crank::anchor::sighash("mint_token").to_vec()
+        data: clockwork_sdk::queue_program::utils::anchor_sighash("mint_token").to_vec()
     };
     
     // initialize distributor queue
-    clockwork_crank::cpi::queue_create(
+    clockwork_sdk::queue_program::cpi::queue_create(
         CpiContext::new_with_signer(
             clockwork_program.to_account_info(),
-            clockwork_crank::cpi::accounts::QueueCreate {
+            clockwork_sdk::queue_program::cpi::accounts::QueueCreate {
                 authority: distributor.to_account_info(),
                 payer: authority.to_account_info(),
                 queue: distributor_queue.to_account_info(),
@@ -133,8 +134,8 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>, mint_a
             },
             &[&[SEED_DISTRIBUTOR, distributor.mint.as_ref(), distributor.authority.as_ref(), &[bump]]],
         ),
-        mint_token_ix.into(),
         "distributor".into(),
+        mint_token_ix.into(),
         Trigger::Cron {
             schedule: "*/5 * * * * * *".into(),
         },

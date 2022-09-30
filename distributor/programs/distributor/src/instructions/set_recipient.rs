@@ -7,11 +7,7 @@ use {
     anchor_spl::{
         associated_token::{self, get_associated_token_address}, token::{self, Mint}
     },
-    clockwork_crank::{ 
-        cpi::accounts::QueueUpdate,
-        program::ClockworkCrank,
-        state::{SEED_QUEUE, Queue},
-    },
+    clockwork_sdk::queue_program::{self, cpi::accounts::QueueUpdate, QueueProgram, state::{SEED_QUEUE, Queue}, utils::PAYER_PUBKEY},
 };
 
 #[derive(Accounts)]
@@ -20,8 +16,8 @@ pub struct SetRecipient<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
 
-    #[account(address = clockwork_crank::ID)]
-    pub clockwork_program: Program<'info, ClockworkCrank>,
+    #[account(address = queue_program::ID)]
+    pub clockwork_program: Program<'info, QueueProgram>,
 
     #[account(
         mut,
@@ -39,7 +35,7 @@ pub struct SetRecipient<'info> {
             distributor.key().as_ref(), 
             "distributor".as_bytes()
         ], 
-        seeds::program = clockwork_crank::ID,
+        seeds::program = queue_program::ID,
         bump
      )]
     pub distributor_queue: Account<'info, Queue>,
@@ -77,7 +73,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, SetRecipient<'info>>, new_
             AccountMeta::new_readonly(distributor.key(), false),
             AccountMeta::new(distributor_queue.key(), true),
             AccountMeta::new(mint.key(), false),
-            AccountMeta::new(clockwork_crank::payer::ID, true),
+            AccountMeta::new(PAYER_PUBKEY, true),
             AccountMeta::new_readonly(distributor.recipient, false),
             AccountMeta::new(recipient_token_account_pubkey, false),
             AccountMeta::new_readonly(sysvar::rent::ID, false),
@@ -85,11 +81,11 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, SetRecipient<'info>>, new_
             AccountMeta::new_readonly(token::ID, false),
 
         ],
-        data: clockwork_crank::anchor::sighash("mint_token").to_vec()
+        data: clockwork_sdk::queue_program::utils::anchor_sighash("mint_token").to_vec()
     };
 
     // update distributor queue
-    clockwork_crank::cpi::queue_update(
+    clockwork_sdk::queue_program::cpi::queue_update(
     CpiContext::new_with_signer(
     clockwork_program.to_account_info(),
         QueueUpdate {
@@ -100,6 +96,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, SetRecipient<'info>>, new_
         &[&[SEED_DISTRIBUTOR, distributor.mint.as_ref(), distributor.authority.as_ref(), &[bump]]],
         ),
     Some(mint_token_ix.into()), 
+    None,
     None
     )?;
 
