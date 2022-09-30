@@ -1,25 +1,26 @@
 use {
     anchor_lang::{prelude::Pubkey, solana_program::sysvar, InstructionData},
     anchor_spl::{associated_token, token},
-    solana_client_helpers::{Client, ClientResult, RpcClient, SplToken},
+    clockwork_sdk::{
+        queue_program::{self, state::Trigger},
+        Client, ClientResult, SplToken,
+    },
     solana_sdk::{
         instruction::{AccountMeta, Instruction},
         native_token::LAMPORTS_PER_SOL,
         signature::Keypair,
         signer::Signer,
         system_program,
-        transaction::Transaction,
     },
 };
 
 fn main() -> ClientResult<()> {
     // Create Client
-    #[cfg(feature = "devnet")]
-    let client = RpcClient::new("https://api.devnet.solana.com");
-    #[cfg(not(feature = "devnet"))]
-    let client = RpcClient::new("http://localhost:8899");
     let payer = Keypair::new();
-    let client = Client { client, payer };
+    #[cfg(feature = "devnet")]
+    let client = Client::new(payer, "https://api.devnet.solana.com".into());
+    #[cfg(not(feature = "devnet"))]
+    let client = Client::new(payer, "http://localhost:8899".into());
     client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
 
     // create token mint
@@ -31,7 +32,8 @@ fn main() -> ClientResult<()> {
     // Derive PDAs
     let recipient = Keypair::new().pubkey();
     let payment = payments_program::state::Payment::pubkey(client.payer_pubkey(), recipient, mint);
-    let payment_queue = clockwork_crank::state::Queue::pubkey(payment, "payment".into());
+    let payment_queue =
+        clockwork_sdk::queue_program::state::Queue::pubkey(payment, "payment".into());
 
     // airdrop to payment queue
     client.airdrop(&payment_queue, LAMPORTS_PER_SOL)?;
@@ -65,8 +67,7 @@ fn main() -> ClientResult<()> {
         escrow,
     )?;
 
-    // TODO: Queue update interface not ready yet
-    // update_payment(&client, recipient, queue, payment, mint)?;
+    update_payment(&client, recipient, payment_queue, payment, mint)?;
 
     Ok(())
 }
@@ -86,7 +87,7 @@ fn create_payment_with_top_up(
         program_id: payments_program::ID,
         accounts: vec![
             AccountMeta::new_readonly(associated_token::ID, false),
-            AccountMeta::new_readonly(clockwork_crank::ID, false),
+            AccountMeta::new_readonly(queue_program::ID, false),
             AccountMeta::new(escrow, false),
             AccountMeta::new_readonly(mint, false),
             AccountMeta::new(payment, false),
@@ -125,7 +126,7 @@ fn create_payment_with_top_up(
         .data(),
     };
 
-    send_and_confirm_tx(
+    print_tx_sig(
         client,
         &[create_payment_ix, top_up_payment_ix],
         "create_payment_with_top_up".to_string(),
@@ -139,41 +140,38 @@ fn create_payment_with_top_up(
     Ok(())
 }
 
-// fn update_payment(
-//     client: &Client,
-//     recipient: Pubkey,
-//     queue: Pubkey,
-//     payment: Pubkey,
-//     mint: Pubkey,
-// ) -> ClientResult<()> {
-//     let update_queue_ix = Instruction {
-//         program_id: payments_program::ID,
-//         accounts: vec![
-//             AccountMeta::new_readonly(mint, false),
-//             AccountMeta::new(payment, false),
-//             AccountMeta::new(queue, false),
-//             AccountMeta::new_readonly(recipient, false),
-//             AccountMeta::new_readonly(clockwork_crank::ID, false),
-//             AccountMeta::new(client.payer_pubkey(), true),
-//             AccountMeta::new_readonly(system_program::ID, false),
-//         ],
-//         data: payments_program::instruction::UpdatePayment {
-//             disbursement_amount: Some(100000),
-//             schedule: Some("*/20 * * * * * *".to_string()),
-//         }
-//         .data(),
-//     };
-//     send_and_confirm_tx(client, &[update_queue_ix], "update_queue".to_string())?;
-//     Ok(())
-// }
+fn update_payment(
+    client: &Client,
+    recipient: Pubkey,
+    queue: Pubkey,
+    payment: Pubkey,
+    mint: Pubkey,
+) -> ClientResult<()> {
+    let update_queue_ix = Instruction {
+        program_id: payments_program::ID,
+        accounts: vec![
+            AccountMeta::new_readonly(mint, false),
+            AccountMeta::new(payment, false),
+            AccountMeta::new(queue, false),
+            AccountMeta::new_readonly(recipient, false),
+            AccountMeta::new_readonly(queue_program::ID, false),
+            AccountMeta::new(client.payer_pubkey(), true),
+            AccountMeta::new_readonly(system_program::ID, false),
+        ],
+        data: payments_program::instruction::UpdatePayment {
+            disbursement_amount: Some(100000),
+            schedule: Some(Trigger::Cron {
+                schedule: "*/20 * * * * * *".to_string(),
+            }),
+        }
+        .data(),
+    };
+    print_tx_sig(client, &[update_queue_ix], "update_queue".to_string())?;
+    Ok(())
+}
 
-fn send_and_confirm_tx(client: &Client, ix: &[Instruction], label: String) -> ClientResult<()> {
-    // Create tx
-    let mut tx = Transaction::new_with_payer(ix, Some(&client.payer_pubkey()));
-    tx.sign(&[client.payer()], client.latest_blockhash().unwrap());
-
-    // Send and confirm tx
-    match client.send_and_confirm_transaction(&tx) {
+fn print_tx_sig(client: &Client, ix: &[Instruction], label: String) -> ClientResult<()> {
+    match client.send_and_confirm(ix, &[client.payer()]) {
         Ok(sig) => println!(
             "{} tx: ✅ https://explorer.solana.com/tx/{}?cluster=custom",
             label, sig
