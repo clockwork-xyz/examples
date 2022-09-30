@@ -1,6 +1,6 @@
 use {
     crate::state::*,
-    clockwork_sdk::state::Queue,
+    clockwork_sdk::queue_program::state::Queue,
     anchor_lang::prelude::*,
 };
 
@@ -14,11 +14,11 @@ pub struct ProcessEvent<'info> {
 
     #[account(
         seeds = [
-            clockwork_sdk::state::SEED_QUEUE, 
+            clockwork_sdk::queue_program::state::SEED_QUEUE, 
             authority.key().as_ref(), 
             "events".as_bytes()
         ], 
-        seeds::program = clockwork_sdk::ID,
+        seeds::program = clockwork_sdk::queue_program::ID,
         bump,
         signer,
         has_one = authority
