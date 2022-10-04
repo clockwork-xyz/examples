@@ -6,12 +6,13 @@ use {
     },
     anchor_spl::{
         associated_token::{self, AssociatedToken},
-        token::{self, Mint, TokenAccount, SetAuthority, spl_token::instruction::AuthorityType},
+        token::{self, spl_token::instruction::AuthorityType, Mint, SetAuthority, TokenAccount},
     },
     clockwork_sdk::queue_program::{
+        self,
+        accounts::{Queue, Trigger},
         utils::PAYER_PUBKEY,
-        self, QueueProgram,
-        state::{Trigger, SEED_QUEUE},
+        QueueProgram,
     },
     std::mem::size_of,
 };
@@ -20,7 +21,7 @@ use {
 #[instruction(mint_amount: u64)]
 pub struct Initialize<'info> {
     #[account(mut)]
-    pub authority: Signer<'info>, 
+    pub authority: Signer<'info>,
 
     #[account(address = anchor_spl::associated_token::ID)]
     pub associated_token_program: Program<'info, AssociatedToken>,
@@ -33,24 +34,15 @@ pub struct Initialize<'info> {
 
     #[account(
         init,
-        seeds = [SEED_DISTRIBUTOR, mint.key().as_ref(), authority.key().as_ref()],
-        bump,
+        address = Distributor::pubkey(mint.key(), authority.key()),
         payer = authority,
         space = 8 + size_of::<Distributor>(),
     )]
     pub distributor: Account<'info, Distributor>,
 
-    #[account(
-        seeds = [
-            SEED_QUEUE, 
-            distributor.key().as_ref(), 
-            "distributor".as_bytes()
-        ], 
-        seeds::program = queue_program::ID,
-        bump
-     )]
+    #[account(address = Queue::pubkey(authority.key(), "distributor".into()))]
     pub distributor_queue: SystemAccount<'info>,
-     
+
     /// CHECK: manually validated against recipient's token account
     #[account()]
     pub recipient: AccountInfo<'info>,
@@ -73,7 +65,10 @@ pub struct Initialize<'info> {
     pub token_program: Program<'info, anchor_spl::token::Token>,
 }
 
-pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>, mint_amount: u64) -> Result<()> {
+pub fn handler<'info>(
+    ctx: Context<'_, '_, '_, 'info, Initialize<'info>>,
+    mint_amount: u64,
+) -> Result<()> {
     // get accounts
     let authority = &ctx.accounts.authority;
     let clockwork_program = &ctx.accounts.clockwork_program;
@@ -90,14 +85,15 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>, mint_a
 
     // delegate mint authority from payer (authority) to distributor account
     token::set_authority(
-    CpiContext::new(
-        token_program.to_account_info(),
-        SetAuthority {
-                    account_or_mint: mint.to_account_info(), 
-                    current_authority: authority.to_account_info()
-                }), 
+        CpiContext::new(
+            token_program.to_account_info(),
+            SetAuthority {
+                account_or_mint: mint.to_account_info(),
+                current_authority: authority.to_account_info(),
+            },
+        ),
         AuthorityType::MintTokens,
-        Some(distributor.key())
+        Some(distributor.key()),
     )?;
 
     // get distributor bump
@@ -117,11 +113,10 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>, mint_a
             AccountMeta::new_readonly(sysvar::rent::ID, false),
             AccountMeta::new_readonly(system_program::ID, false),
             AccountMeta::new_readonly(token::ID, false),
-
         ],
-        data: clockwork_sdk::queue_program::utils::anchor_sighash("mint_token").to_vec()
+        data: clockwork_sdk::queue_program::utils::anchor_sighash("mint_token").to_vec(),
     };
-    
+
     // initialize distributor queue
     clockwork_sdk::queue_program::cpi::queue_create(
         CpiContext::new_with_signer(
@@ -132,12 +127,18 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>, mint_a
                 queue: distributor_queue.to_account_info(),
                 system_program: system_program.to_account_info(),
             },
-            &[&[SEED_DISTRIBUTOR, distributor.mint.as_ref(), distributor.authority.as_ref(), &[bump]]],
+            &[&[
+                SEED_DISTRIBUTOR,
+                distributor.mint.as_ref(),
+                distributor.authority.as_ref(),
+                &[bump],
+            ]],
         ),
         "distributor".into(),
         mint_token_ix.into(),
         Trigger::Cron {
             schedule: "*/5 * * * * * *".into(),
+            skippable: true,
         },
     )?;
 
