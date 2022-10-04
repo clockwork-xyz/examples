@@ -15,7 +15,7 @@ pub struct Subscription {
     pub recipient: Pubkey,
     pub mint: Pubkey,
     pub recurrent_amount: u64,
-    pub epochs_reset:u64,
+    pub epochs_reset: u64,
     pub schedule: String,
 }
 
@@ -45,9 +45,9 @@ pub trait SubscriptionAccount {
     fn new(
         &mut self,
         recipient: Pubkey,
-        mint:Pubkey,
+        mint: Pubkey,
         recurrent_amount: u64,
-        epochs_reset:u64,
+        epochs_reset: u64,
         schedule: String,
     ) -> Result<()>;
 }

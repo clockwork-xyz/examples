@@ -21,24 +21,21 @@ pub mod subscriptions_program {
         epochs_reset: u64,
         start_schedule: String,
     ) -> Result<()> {
-        ctx.accounts.process(recurrent_amount,epochs_reset,start_schedule)
+        ctx.accounts
+            .process(recurrent_amount, epochs_reset, start_schedule)
     }
 
     /*
      * subscribe to a subscription
      */
-    pub fn subscribe<'info>(
-        ctx: Context<Subscribe>,
-    ) -> Result<()> {
+    pub fn subscribe<'info>(ctx: Context<Subscribe>) -> Result<()> {
         ctx.accounts.process()
     }
 
     /*
      * unsubscribe from a subscription
      */
-    pub fn unsubscribe<'info>(
-        ctx: Context<Unsubscribe>,
-    ) -> Result<()> {
+    pub fn unsubscribe<'info>(ctx: Context<Unsubscribe>) -> Result<()> {
         ctx.accounts.process()
     }
 }
