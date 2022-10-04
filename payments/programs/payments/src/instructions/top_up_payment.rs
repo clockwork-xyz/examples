@@ -25,8 +25,7 @@ pub struct TopUpPayment<'info> {
 
     #[account(
         mut,
-        seeds = [SEED_PAYMENT, payment.sender.key().as_ref(), payment.recipient.key().as_ref(), payment.mint.as_ref()],
-        bump,
+        address = Payment::pubkey(payment.sender, payment.recipient, payment.mint),
         has_one = recipient,
         has_one = sender,
         has_one = mint
