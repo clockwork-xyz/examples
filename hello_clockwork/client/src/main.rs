@@ -24,7 +24,7 @@ fn main() -> ClientResult<()> {
     // Derive PDAs
     let authority = hello_clockwork::state::Authority::pubkey();
     let hello_queue =
-        clockwork_sdk::queue_program::state::Queue::pubkey(authority, "hello".to_string());
+        clockwork_sdk::queue_program::accounts::Queue::pubkey(authority, "hello".to_string());
 
     // airdrop to hello queue
     client.airdrop(&hello_queue, LAMPORTS_PER_SOL)?;

@@ -1,24 +1,19 @@
 use {
     crate::state::*,
     anchor_lang::prelude::*,
-    clockwork_sdk::queue_program::{self, state::{CrankResponse, SEED_QUEUE, Queue}},
+    clockwork_sdk::queue_program::accounts::{CrankResponse, Queue, QueueAccount},
 };
 
 #[derive(Accounts)]
 pub struct HelloWorld<'info> {
-    #[account(seeds = [SEED_AUTHORITY], bump)]
+    #[account(address = Authority::pubkey())]
     pub authority: Account<'info, Authority>,
 
     #[account(
+        address = hello_queue.pubkey(),
+        constraint = hello_queue.id.eq("hello"),
+        has_one = authority,
         signer, 
-        seeds = [
-            SEED_QUEUE, 
-            authority.key().as_ref(), 
-            "hello".as_bytes()
-        ], 
-        seeds::program = queue_program::ID,
-        bump,
-        has_one = authority
     )]
     pub hello_queue: Account<'info, Queue>,
 }

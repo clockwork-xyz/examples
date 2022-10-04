@@ -18,7 +18,7 @@ pub mod hello_clockwork {
 
     pub fn hello_world(
         ctx: Context<HelloWorld>,
-    ) -> Result<clockwork_sdk::queue_program::state::CrankResponse> {
+    ) -> Result<clockwork_sdk::queue_program::accounts::CrankResponse> {
         hello_world::handler(ctx)
     }
 }
