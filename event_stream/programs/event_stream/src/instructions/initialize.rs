@@ -1,7 +1,14 @@
 use {
     crate::state::*,
-    anchor_lang::{prelude::*, solana_program::{instruction::Instruction, system_program}},
-    clockwork_sdk::queue_program::state::Trigger,
+    anchor_lang::{
+        prelude::*,
+        solana_program::{instruction::Instruction, system_program},
+    },
+    clockwork_sdk::queue_program::{
+        self,
+        accounts::{Queue, Trigger},
+        QueueProgram,
+    },
     std::mem::size_of,
 };
 
@@ -9,34 +16,24 @@ use {
 pub struct Initialize<'info> {
     #[account(
         init,
-        seeds = [SEED_AUTHORITY],
-        bump,
+        address = Authority::pubkey(),
         payer = signer,
         space = 8 + size_of::<Authority>(),
     )]
     pub authority: Account<'info, Authority>,
 
-    #[account(address = clockwork_sdk::queue_program::ID)]
-    pub clockwork: Program<'info, clockwork_sdk::queue_program::QueueProgram>,
+    #[account(address = queue_program::ID)]
+    pub clockwork: Program<'info, QueueProgram>,
 
     #[account(
         init,
-        seeds = [SEED_EVENT],
-        bump,
+        address = Event::pubkey(),
         payer = signer,
         space = 8 + size_of::<Event>(),
     )]
     pub event: Account<'info, Event>,
 
-    #[account(
-        seeds = [
-            clockwork_sdk::queue_program::state::SEED_QUEUE, 
-            authority.key().as_ref(), 
-            "event".as_bytes()
-        ], 
-        seeds::program = clockwork_sdk::queue_program::ID,
-        bump
-    )]
+    #[account(address = Queue::pubkey(authority.key(), "event".into()))]
     pub queue: SystemAccount<'info>,
 
     #[account(mut)]
@@ -79,11 +76,13 @@ pub fn handler(ctx: Context<Initialize>) -> Result<()> {
                 queue: queue.to_account_info(),
                 system_program: system_program.to_account_info(),
             },
-            &[&[SEED_AUTHORITY, &[bump]]]
+            &[&[SEED_AUTHORITY, &[bump]]],
         ),
         "event".into(),
         snapshot_kickoff_ix.into(),
-        Trigger::Account { pubkey: event.key() }
+        Trigger::Account {
+            pubkey: event.key(),
+        },
     )?;
 
     Ok(())
