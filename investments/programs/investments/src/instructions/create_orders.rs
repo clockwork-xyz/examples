@@ -1,10 +1,10 @@
-use {    
+use {
     crate::state::*,
     anchor_lang::{
         prelude::*,
         solana_program::{system_program, sysvar},
     },
-    anchor_spl::dex::InitOpenOrders
+    anchor_spl::dex::InitOpenOrders,
 };
 
 #[derive(Accounts)]
@@ -12,15 +12,7 @@ pub struct CreateOrders<'info> {
     #[account(address = anchor_spl::dex::ID)]
     pub dex_program: Program<'info, anchor_spl::dex::Dex>,
 
-    #[account(
-        seeds = [
-            SEED_INVESTMENT, 
-            investment.payer.as_ref(), 
-            investment.mint_a.as_ref(), 
-            investment.mint_b.as_ref()
-        ],
-        bump,
-    )]
+    #[account(address = Investment::pubkey(investment.payer, investment.mint_a, investment.mint_b))]
     pub investment: Account<'info, Investment>,
 
     #[account(mut)]
@@ -55,7 +47,13 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CreateOrders<'info>>) -> R
             open_orders: open_orders.to_account_info(),
             rent: rent.to_account_info(),
         },
-            &[&[SEED_INVESTMENT, investment.payer.as_ref(), investment.mint_a.as_ref(), investment.mint_b.as_ref(), &[bump]]],
+        &[&[
+            SEED_INVESTMENT,
+            investment.payer.as_ref(),
+            investment.mint_a.as_ref(),
+            investment.mint_b.as_ref(),
+            &[bump],
+        ]],
     ))?;
 
     Ok(())

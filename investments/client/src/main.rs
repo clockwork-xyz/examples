@@ -48,11 +48,11 @@ fn main() -> ClientResult<()> {
         market_keys.coin_mint,
     );
     let investment_queue =
-        clockwork_sdk::queue_program::state::Queue::pubkey(investment, "investment".to_string());
+        clockwork_sdk::queue_program::accounts::Queue::pubkey(investment, "investment".to_string());
 
     // derive serum_crank PDAs
     let crank = serum_crank::state::Crank::pubkey(market_keys.market);
-    let crank_queue = clockwork_sdk::queue_program::state::Queue::pubkey(crank, "crank".into());
+    let crank_queue = clockwork_sdk::queue_program::accounts::Queue::pubkey(crank, "crank".into());
 
     print_explorer_link(investment_queue, "investment_queue".to_string())?;
     print_explorer_link(crank_queue, "crank_queue".to_string())?;

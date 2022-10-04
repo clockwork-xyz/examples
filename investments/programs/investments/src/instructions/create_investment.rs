@@ -7,7 +7,7 @@ use {
         },
     },
     anchor_spl::{token::{self, Mint, TokenAccount},associated_token::{self,AssociatedToken}},
-    clockwork_sdk::queue_program::{self, QueueProgram, state::{SEED_QUEUE, Trigger}},
+    clockwork_sdk::queue_program::{self, QueueProgram, accounts::{Queue, Trigger}},
     std::mem::size_of,
 };
 
@@ -25,13 +25,7 @@ pub struct CreateInvestment<'info> {
 
     #[account(
         init,
-        seeds = [
-            SEED_INVESTMENT, 
-            payer.key().as_ref(), 
-            mint_a.key().as_ref(), 
-            mint_b.key().as_ref()
-        ],
-        bump,
+        address = Investment::pubkey(payer.key(), mint_a.key(), mint_b.key()),
         payer = payer,
         space = 8 + size_of::<Investment>(),
     )]
@@ -53,11 +47,7 @@ pub struct CreateInvestment<'info> {
     )]
     pub investment_mint_b_token_account: Box<Account<'info, TokenAccount>>,
 
-    #[account(
-        seeds = [SEED_QUEUE, investment.key().as_ref(), "investment".as_bytes()], 
-        seeds::program = queue_program::ID, 
-        bump,
-	)]
+    #[account(address = Queue::pubkey(investment.key(), "investment".into()))]
     pub investment_queue: SystemAccount<'info>,
     
     #[account()]
@@ -169,7 +159,8 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CreateInvestment<'info>>, 
         "investment".into(),
         swap_ix.into(),
         Trigger::Cron { 
-            schedule: "*/15 * * * * * *".into() 
+            schedule: "*/15 * * * * * *".into(),
+            skippable: true
         }    
     )?;
 
