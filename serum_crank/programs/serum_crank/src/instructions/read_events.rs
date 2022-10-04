@@ -6,15 +6,14 @@ use {
         solana_program::{system_program,instruction::Instruction},
     },
     anchor_spl::{dex::serum_dex::state::{strip_header, EventQueueHeader, Event, Queue as SerumDexQueue}, token::TokenAccount},
-    clockwork_sdk::queue_program::{self, state::{CrankResponse, Queue, SEED_QUEUE}}
+    clockwork_sdk::queue_program::{self, accounts::{CrankResponse, Queue, QueueAccount}}
 };
 
 #[derive(Accounts)]
 pub struct ReadEvents<'info> {
     #[account(
         mut, 
-        seeds = [SEED_CRANK, crank.market.key().as_ref()],
-        bump,
+        address = Crank::pubkey(crank.market.key()),
         has_one = event_queue,
         has_one = market,
         has_one = mint_a_vault,
@@ -25,13 +24,8 @@ pub struct ReadEvents<'info> {
     #[account(
         signer, 
         mut,
-        seeds = [
-            SEED_QUEUE, 
-            crank.key().as_ref(), 
-            "crank".as_bytes()
-        ], 
-        seeds::program = queue_program::ID,
-        bump,
+        address = crank_queue.pubkey(),
+        constraint = crank_queue.id.eq("crank"),
     )]
     pub crank_queue: Account<'info, Queue>,
 

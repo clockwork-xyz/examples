@@ -2,7 +2,7 @@ use {crate::state::*, anchor_lang::prelude::*};
 
 #[derive(Accounts)]
 pub struct Ping<'info> {
-    #[account(mut, seeds = [SEED_EVENT], bump)]
+    #[account(mut, address = Event::pubkey())]
     pub event: Account<'info, Event>,
 
     #[account(mut)]

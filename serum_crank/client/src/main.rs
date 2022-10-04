@@ -49,7 +49,7 @@ fn main() -> ClientResult<()> {
 
     // derive serum_crank PDAs
     let crank = serum_crank::state::Crank::pubkey(market_keys.market);
-    let crank_queue = clockwork_sdk::queue_program::state::Queue::pubkey(crank, "crank".into());
+    let crank_queue = clockwork_sdk::queue_program::accounts::Queue::pubkey(crank, "crank".into());
 
     print_explorer_link(crank, "crank".into())?;
     print_explorer_link(crank_queue, "crank_queue".into())?;

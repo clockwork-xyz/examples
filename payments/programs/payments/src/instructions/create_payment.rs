@@ -2,15 +2,17 @@ use {
     crate::state::*,
     anchor_lang::{
         prelude::*,
-        solana_program::{
-            instruction::Instruction, system_program, sysvar,
-        },
+        solana_program::{instruction::Instruction, system_program, sysvar},
     },
     anchor_spl::{
         associated_token::{self, AssociatedToken},
         token::{Mint, TokenAccount},
     },
-    clockwork_sdk::queue_program::{self, QueueProgram, state::{Trigger, SEED_QUEUE}},
+    clockwork_sdk::queue_program::{
+        self,
+        accounts::{Queue, Trigger},
+        QueueProgram,
+    },
     std::mem::size_of,
 };
 
@@ -36,26 +38,12 @@ pub struct CreatePayment<'info> {
     #[account(
         init,
         payer = sender,
-        seeds = [
-            SEED_PAYMENT, 
-            sender.key().as_ref(), 
-            recipient.key().as_ref(), 
-            mint.key().as_ref()
-        ],
-        bump,
+        address = Payment::pubkey(sender.key(), recipient.key(), mint.key()),
         space = 8 + size_of::<Payment>(),
     )]
     pub payment: Account<'info, Payment>,
 
-    #[account(
-        seeds = [
-            SEED_QUEUE, 
-            payment.key().as_ref(), 
-            "payment".as_bytes()
-        ], 
-        seeds::program = queue_program::ID,
-        bump
-    )]
+    #[account(address = Queue::pubkey(payment.key(), "payment".into()))]
     pub payment_queue: SystemAccount<'info>,
 
     /// CHECK: the recipient is validated by the seeds of the payment account
@@ -128,8 +116,6 @@ pub fn handler<'info>(
         data: clockwork_sdk::queue_program::utils::anchor_sighash("disburse_payment").into(),
     };
 
-    msg!("payment: {:#?}", payment);
-
     // Create queue
     clockwork_sdk::queue_program::cpi::queue_create(
         CpiContext::new_with_signer(
@@ -151,7 +137,8 @@ pub fn handler<'info>(
         "payment".into(),
         disburse_payment_ix.into(),
         Trigger::Cron {
-            schedule: payment.schedule.to_string()
+            schedule: payment.schedule.to_string(),
+            skippable: true,
         },
     )?;
 

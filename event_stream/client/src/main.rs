@@ -1,6 +1,6 @@
 use {
     anchor_lang::{prelude::*, solana_program::system_program, InstructionData},
-    solana_client_helpers::{Client, ClientResult, RpcClient},
+    clockwork_sdk::{Client, ClientResult},
     solana_sdk::{
         instruction::Instruction, native_token::LAMPORTS_PER_SOL, signature::Keypair,
         transaction::Transaction,
@@ -9,12 +9,11 @@ use {
 
 fn main() -> ClientResult<()> {
     // Create Client
-    #[cfg(feature = "devnet")]
-    let client = RpcClient::new("https://api.devnet.solana.com");
-    #[cfg(not(feature = "devnet"))]
-    let client = RpcClient::new("http://localhost:8899");
     let payer = Keypair::new();
-    let client = Client { client, payer };
+    #[cfg(feature = "devnet")]
+    let client = Client::new(payer, "https://api.devnet.solana.com".into());
+    #[cfg(not(feature = "devnet"))]
+    let client = Client::new(payer, "http://localhost:8899".into());
     client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
 
     // Initialize the event_stream program
@@ -38,7 +37,7 @@ fn initialize(client: &Client) -> ClientResult<()> {
             AccountMeta::new_readonly(clockwork_sdk::queue_program::ID, false),
             AccountMeta::new(event_stream::state::Event::pubkey(), false),
             AccountMeta::new(
-                clockwork_sdk::queue_program::state::Queue::pubkey(
+                clockwork_sdk::queue_program::accounts::Queue::pubkey(
                     authority_pubkey,
                     "events".into(),
                 ),

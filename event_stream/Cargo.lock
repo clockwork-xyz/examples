@@ -231,7 +231,7 @@ dependencies = [
  "arrayref",
  "base64 0.13.0",
  "bincode",
- "borsh 0.9.3",
+ "borsh",
  "bytemuck",
  "solana-program",
  "thiserror",
@@ -317,7 +317,7 @@ dependencies = [
  "num-traits",
  "rusticata-macros",
  "thiserror",
- "time 0.3.14",
+ "time 0.3.15",
 ]
 
 [[package]]
@@ -483,46 +483,12 @@ checksum = "8d696c370c750c948ada61c69a0ee2cbbb9c50b1019ddb86d9317157a99c2cae"
 
 [[package]]
 name = "borsh"
-version = "0.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b42b13fa9bf62be34702e5ee4526aff22530ae22fe34a0c4290d30d5e4e782e6"
-dependencies = [
- "borsh-derive 0.7.2",
-]
-
-[[package]]
-name = "borsh"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "15bf3650200d8bffa99015595e10f1fbd17de07abbc25bb067da79e769939bfa"
 dependencies = [
- "borsh-derive 0.9.3",
+ "borsh-derive",
  "hashbrown 0.11.2",
-]
-
-[[package]]
-name = "borsh-derive"
-version = "0.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e6aaa45f8eec26e4bf71e7e5492cf53a91591af8f871f422d550e7cc43f6b927"
-dependencies = [
- "borsh-derive-internal 0.7.2",
- "borsh-schema-derive-internal 0.7.2",
- "proc-macro2 1.0.46",
- "syn 1.0.101",
-]
-
-[[package]]
-name = "borsh-derive"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "307f3740906bac2c118a8122fe22681232b244f1369273e45f1156b45c43d2dd"
-dependencies = [
- "borsh-derive-internal 0.8.2",
- "borsh-schema-derive-internal 0.8.2",
- "proc-macro-crate 0.1.5",
- "proc-macro2 1.0.46",
- "syn 1.0.101",
 ]
 
 [[package]]
@@ -531,32 +497,10 @@ version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6441c552f230375d18e3cc377677914d2ca2b0d36e52129fe15450a2dce46775"
 dependencies = [
- "borsh-derive-internal 0.9.3",
- "borsh-schema-derive-internal 0.9.3",
+ "borsh-derive-internal",
+ "borsh-schema-derive-internal",
  "proc-macro-crate 0.1.5",
  "proc-macro2 1.0.46",
- "syn 1.0.101",
-]
-
-[[package]]
-name = "borsh-derive-internal"
-version = "0.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "61621b9d3cca65cc54e2583db84ef912d59ae60d2f04ba61bc0d7fc57556bda2"
-dependencies = [
- "proc-macro2 1.0.46",
- "quote 1.0.21",
- "syn 1.0.101",
-]
-
-[[package]]
-name = "borsh-derive-internal"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2104c73179359431cc98e016998f2f23bc7a05bc53e79741bcba705f30047bc"
-dependencies = [
- "proc-macro2 1.0.46",
- "quote 1.0.21",
  "syn 1.0.101",
 ]
 
@@ -565,28 +509,6 @@ name = "borsh-derive-internal"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5449c28a7b352f2d1e592a8a28bf139bc71afb0764a14f3c02500935d8c44065"
-dependencies = [
- "proc-macro2 1.0.46",
- "quote 1.0.21",
- "syn 1.0.101",
-]
-
-[[package]]
-name = "borsh-schema-derive-internal"
-version = "0.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85b38abfda570837b0949c2c7ebd31417e15607861c23eacb2f668c69f6f3bf7"
-dependencies = [
- "proc-macro2 1.0.46",
- "quote 1.0.21",
- "syn 1.0.101",
-]
-
-[[package]]
-name = "borsh-schema-derive-internal"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae29eb8418fcd46f723f8691a2ac06857d31179d33d2f2d91eb13967de97c728"
 dependencies = [
  "proc-macro2 1.0.46",
  "quote 1.0.21",
@@ -783,26 +705,27 @@ dependencies = [
 
 [[package]]
 name = "clockwork-client"
-version = "1.0.6"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#61a20b79e529ecbc4a1be968091fc1ced8cef574"
+version = "1.1.3"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#14adabfc61a459131a6ba3ea82d73b0725aa3574"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
  "bincode",
- "borsh 0.9.3",
+ "borsh",
  "clockwork-network-program",
  "clockwork-pool-program",
  "clockwork-queue-program",
  "clockwork-webhook-program",
  "solana-client",
  "solana-sdk",
+ "spl-associated-token-account",
  "thiserror",
 ]
 
 [[package]]
 name = "clockwork-cron"
-version = "1.0.6"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#61a20b79e529ecbc4a1be968091fc1ced8cef574"
+version = "1.1.3"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#14adabfc61a459131a6ba3ea82d73b0725aa3574"
 dependencies = [
  "chrono",
  "nom",
@@ -811,8 +734,8 @@ dependencies = [
 
 [[package]]
 name = "clockwork-network-program"
-version = "1.0.6"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#61a20b79e529ecbc4a1be968091fc1ced8cef574"
+version = "1.1.3"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#14adabfc61a459131a6ba3ea82d73b0725aa3574"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -822,16 +745,16 @@ dependencies = [
 
 [[package]]
 name = "clockwork-pool-program"
-version = "1.0.6"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#61a20b79e529ecbc4a1be968091fc1ced8cef574"
+version = "1.1.3"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#14adabfc61a459131a6ba3ea82d73b0725aa3574"
 dependencies = [
  "anchor-lang",
 ]
 
 [[package]]
 name = "clockwork-queue-program"
-version = "1.0.6"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#61a20b79e529ecbc4a1be968091fc1ced8cef574"
+version = "1.1.3"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#14adabfc61a459131a6ba3ea82d73b0725aa3574"
 dependencies = [
  "anchor-lang",
  "chrono",
@@ -842,8 +765,8 @@ dependencies = [
 
 [[package]]
 name = "clockwork-sdk"
-version = "1.0.6"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#61a20b79e529ecbc4a1be968091fc1ced8cef574"
+version = "1.1.3"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#14adabfc61a459131a6ba3ea82d73b0725aa3574"
 dependencies = [
  "chrono",
  "clockwork-client",
@@ -854,8 +777,8 @@ dependencies = [
 
 [[package]]
 name = "clockwork-webhook-program"
-version = "1.0.6"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#61a20b79e529ecbc4a1be968091fc1ced8cef574"
+version = "1.1.3"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#14adabfc61a459131a6ba3ea82d73b0725aa3574"
 dependencies = [
  "anchor-lang",
  "clockwork-pool-program",
@@ -1296,7 +1219,6 @@ dependencies = [
  "anchor-lang",
  "clockwork-sdk",
  "event_stream",
- "solana-client-helpers",
  "solana-sdk",
 ]
 
@@ -2670,7 +2592,7 @@ checksum = "6413f3de1edee53342e6138e75b56d32e7bc6e332b3bd62d497b1929d4cfbcdd"
 dependencies = [
  "pem",
  "ring",
- "time 0.3.14",
+ "time 0.3.15",
  "yasna",
 ]
 
@@ -2793,12 +2715,6 @@ name = "rustc-hash"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
-
-[[package]]
-name = "rustc-hex"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e75f6a532d0fd9f7f13144f392b6ad56a32696bfcd9c78f797f16bbb6f072d6"
 
 [[package]]
 name = "rustc_version"
@@ -3093,9 +3009,9 @@ dependencies = [
 
 [[package]]
 name = "smallvec"
-version = "1.9.0"
+version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2fd0db749597d91ff862fd1d55ea87f7855a744a8425a64695b6fca237d1dad1"
+checksum = "a507befe795404456341dfab10cef66ead4c041f62b8b11bbb92bffe5d0953e0"
 
 [[package]]
 name = "socket2"
@@ -3254,20 +3170,6 @@ dependencies = [
  "tokio-tungstenite",
  "tungstenite",
  "url",
-]
-
-[[package]]
-name = "solana-client-helpers"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "13b109be3d34e0d16fd424c0dbd23a18dad4b522f8c98c14e56423ce9b28b67c"
-dependencies = [
- "solana-client",
- "solana-sdk",
- "spl-associated-token-account",
- "spl-token",
- "spl-token-swap",
- "thiserror",
 ]
 
 [[package]]
@@ -3446,8 +3348,8 @@ dependencies = [
  "bincode",
  "bitflags",
  "blake3",
- "borsh 0.9.3",
- "borsh-derive 0.9.3",
+ "borsh",
+ "borsh-derive",
  "bs58 0.4.0",
  "bv",
  "bytemuck",
@@ -3600,7 +3502,7 @@ dependencies = [
  "base64 0.13.0",
  "bincode",
  "bitflags",
- "borsh 0.9.3",
+ "borsh",
  "bs58 0.4.0",
  "bytemuck",
  "byteorder",
@@ -3715,7 +3617,7 @@ dependencies = [
  "Inflector",
  "base64 0.13.0",
  "bincode",
- "borsh 0.9.3",
+ "borsh",
  "bs58 0.4.0",
  "lazy_static",
  "log",
@@ -3869,24 +3771,9 @@ version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2b013067447a1396303ddfc294f36e3d260a32f8a16c501c295bcdc7de39b490"
 dependencies = [
- "borsh 0.9.3",
+ "borsh",
  "solana-program",
  "spl-token",
-]
-
-[[package]]
-name = "spl-math"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2ecdd22720b9e5ab578a862928f5010ca197419502bdace600ccd5d23dae9352"
-dependencies = [
- "borsh 0.7.2",
- "borsh-derive 0.8.2",
- "num-derive",
- "num-traits",
- "solana-program",
- "thiserror",
- "uint",
 ]
 
 [[package]]
@@ -3927,22 +3814,6 @@ dependencies = [
  "solana-program",
  "solana-zk-token-sdk 0.8.1",
  "spl-memo",
- "spl-token",
- "thiserror",
-]
-
-[[package]]
-name = "spl-token-swap"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c63b79be6174568e8724912b15e62d0c6b0424ac98397e9a5a867ac2881553af"
-dependencies = [
- "arrayref",
- "enum_dispatch",
- "num-derive",
- "num-traits",
- "solana-program",
- "spl-math",
  "spl-token",
  "thiserror",
 ]
@@ -4131,9 +4002,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.14"
+version = "0.3.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c3f9a28b618c3a6b9251b6908e9c99e04b9e5c02e6581ccbb67d59c34ef7f9b"
+checksum = "d634a985c4d4238ec39cacaed2e7ae552fbd3c476b552c1deac3021b7d7eaf0c"
 dependencies = [
  "itoa",
  "libc",
@@ -4344,18 +4215,6 @@ name = "typenum"
 version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dcf81ac59edc17cc8697ff311e8f5ef2d99fcbd9817b34cec66f90b6c3dfd987"
-
-[[package]]
-name = "uint"
-version = "0.8.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9db035e67dfaf7edd9aebfe8676afcd63eed53c8a4044fed514c8cccf1835177"
-dependencies = [
- "byteorder",
- "crunchy",
- "rustc-hex",
- "static_assertions",
-]
 
 [[package]]
 name = "unicode-bidi"
@@ -4689,7 +4548,7 @@ dependencies = [
  "oid-registry",
  "rusticata-macros",
  "thiserror",
- "time 0.3.14",
+ "time 0.3.15",
 ]
 
 [[package]]
@@ -4722,7 +4581,7 @@ version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "346d34a236c9d3e5f3b9b74563f238f955bbd05fa0b8b4efa53c130c43982f4c"
 dependencies = [
- "time 0.3.14",
+ "time 0.3.15",
 ]
 
 [[package]]

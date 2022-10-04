@@ -7,7 +7,7 @@ use {
     anchor_spl::{
         associated_token::{self, get_associated_token_address}, token::{self, Mint}
     },
-    clockwork_sdk::queue_program::{self, cpi::accounts::QueueUpdate, QueueProgram, state::{SEED_QUEUE, Queue}, utils::PAYER_PUBKEY},
+    clockwork_sdk::queue_program::{self, cpi::accounts::QueueUpdate, QueueProgram, accounts::{QueueAccount, Queue}, utils::PAYER_PUBKEY},
 };
 
 #[derive(Accounts)]
@@ -21,8 +21,7 @@ pub struct SetRecipient<'info> {
 
     #[account(
         mut,
-        seeds = [SEED_DISTRIBUTOR, distributor.mint.as_ref(), distributor.authority.as_ref()],
-        bump,
+        address = Distributor::pubkey(distributor.mint, distributor.authority),
         has_one = mint,
         has_one = authority,
     )]
@@ -30,13 +29,8 @@ pub struct SetRecipient<'info> {
 
     #[account(
         mut, 
-        seeds = [
-            SEED_QUEUE, 
-            distributor.key().as_ref(), 
-            "distributor".as_bytes()
-        ], 
-        seeds::program = queue_program::ID,
-        bump
+        address = distributor_queue.pubkey(),
+        constraint = distributor_queue.id.eq("distributor")
      )]
     pub distributor_queue: Account<'info, Queue>,
     

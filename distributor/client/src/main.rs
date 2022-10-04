@@ -35,7 +35,7 @@ fn main() -> ClientResult<()> {
     // derive distributor program PDAs
     let distributor = distributor::state::Distributor::pubkey(mint, client.payer_pubkey());
     let distributor_queue =
-        clockwork_sdk::queue_program::state::Queue::pubkey(distributor, "distributor".into());
+        clockwork_sdk::queue_program::accounts::Queue::pubkey(distributor, "distributor".into());
 
     print_explorer_link(distributor, "distributor".into())?;
     print_explorer_link(distributor_queue, "distributor_queue".into())?;

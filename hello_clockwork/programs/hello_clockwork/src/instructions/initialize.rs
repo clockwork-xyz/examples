@@ -2,9 +2,12 @@ use {
     crate::state::*,
     anchor_lang::{
         prelude::*,
-        solana_program::{system_program, instruction::Instruction},
+        solana_program::{instruction::Instruction, system_program},
     },
-    clockwork_sdk::queue_program::{self, state::{Trigger, SEED_QUEUE}},
+    clockwork_sdk::queue_program::{
+        self,
+        accounts::{Queue, Trigger},
+    },
     std::mem::size_of,
 };
 
@@ -12,8 +15,7 @@ use {
 pub struct Initialize<'info> {
     #[account(
         init,
-        seeds = [SEED_AUTHORITY],
-        bump,
+        address = Authority::pubkey(),
         payer = payer,
         space = 8 + size_of::<Authority>(),
     )]
@@ -22,19 +24,11 @@ pub struct Initialize<'info> {
     #[account(address = queue_program::ID)]
     pub clockwork_program: Program<'info, clockwork_sdk::queue_program::QueueProgram>,
 
-    #[account(
-        seeds = [
-            SEED_QUEUE, 
-            authority.key().as_ref(), 
-            "hello".as_bytes()
-        ], 
-        seeds::program = queue_program::ID,
-        bump
-     )]
+    #[account(address = Queue::pubkey(authority.key(), "hello".into()))]
     pub hello_queue: SystemAccount<'info>,
 
     #[account(mut)]
-    pub payer: Signer<'info>, 
+    pub payer: Signer<'info>,
 
     #[account(address = system_program::ID)]
     pub system_program: Program<'info, System>,
@@ -51,9 +45,9 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Res
     // define ix
     let hello_clockwork_ix = Instruction {
         program_id: crate::ID,
-        accounts: vec![ 
+        accounts: vec![
             AccountMeta::new_readonly(authority.key(), false),
-            AccountMeta::new_readonly(hello_queue.key(), true)
+            AccountMeta::new_readonly(hello_queue.key(), true),
         ],
         data: clockwork_sdk::queue_program::utils::anchor_sighash("hello_world").to_vec(),
     };
@@ -75,6 +69,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Res
         hello_clockwork_ix.into(),
         Trigger::Cron {
             schedule: "*/15 * * * * * *".into(),
+            skippable: true,
         },
     )?;
 

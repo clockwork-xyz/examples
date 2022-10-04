@@ -15,7 +15,7 @@ use {
         },
         token::{Token, TokenAccount},
     },
-    clockwork_sdk::queue_program::{self, state::{Queue, SEED_QUEUE, CrankResponse}},
+    clockwork_sdk::queue_program::accounts::{Queue, QueueAccount, CrankResponse},
     std::num::NonZeroU64,
 };
 
@@ -27,15 +27,7 @@ pub struct Swap<'info> {
     #[account(address = anchor_spl::dex::ID)]
     pub dex_program: Program<'info, anchor_spl::dex::Dex>,
 
-    #[account(
-        seeds = [
-            SEED_INVESTMENT, 
-            investment.payer.as_ref(), 
-            investment.mint_a.as_ref(), 
-            investment.mint_b.as_ref()
-        ],
-        bump,
-    )]
+    #[account(address = Investment::pubkey(investment.payer, investment.mint_a, investment.mint_b))]
     pub investment: Box<Account<'info, Investment>>,
 
     #[account(
@@ -46,9 +38,8 @@ pub struct Swap<'info> {
     pub investment_mint_a_token_account: Box<Account<'info, TokenAccount>>,
 
     #[account(
-      seeds = [SEED_QUEUE, investment.key().as_ref(), "investment".as_ref()], 
-      seeds::program = queue_program::ID, 
-      bump,
+      address = investment_queue.pubkey(),
+      constraint = investment_queue.id.eq("investment")
     )]
     pub investment_queue: Box<Account<'info, Queue>>,
 
