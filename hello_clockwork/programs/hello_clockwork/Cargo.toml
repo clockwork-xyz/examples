@@ -20,4 +20,4 @@ overflow-checks = true
 
 [dependencies]
 anchor-lang = "0.25.0"
-clockwork-sdk = { path = "../../../../clockwork/sdk", version = "1.0.6" }
+clockwork-sdk = { branch = "main", git = "https://github.com/clockwork-xyz/clockwork", version = "1.0.6" }
