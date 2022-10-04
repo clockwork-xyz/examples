@@ -28,7 +28,7 @@ pub mod payments_program {
      */
     pub fn disburse_payment<'info>(
         ctx: Context<'_, '_, '_, 'info, DisbursePayment<'info>>,
-    ) -> Result<clockwork_sdk::queue_program::state::CrankResponse> {
+    ) -> Result<clockwork_sdk::queue_program::accounts::CrankResponse> {
         disburse_payment::handler(ctx)
     }
 
@@ -48,7 +48,7 @@ pub mod payments_program {
     pub fn update_payment<'info>(
         ctx: Context<'_, '_, '_, 'info, UpdatePayment<'info>>,
         disbursement_amount: Option<u64>,
-        schedule: Option<clockwork_sdk::queue_program::state::Trigger>,
+        schedule: Option<clockwork_sdk::queue_program::accounts::Trigger>,
     ) -> Result<()> {
         update_payment::handler(ctx, disbursement_amount, schedule)
     }

@@ -3,8 +3,9 @@ use {
     anchor_lang::{prelude::*, solana_program::system_program},
     anchor_spl::token::Mint,
     clockwork_sdk::queue_program::{
-        self, QueueProgram,
-        state::{Queue, Trigger, SEED_QUEUE},
+        self,
+        accounts::{Queue, QueueAccount, Trigger},
+        QueueProgram,
     },
 };
 
@@ -19,8 +20,7 @@ pub struct UpdatePayment<'info> {
 
     #[account(
         mut,
-        seeds = [SEED_PAYMENT, payment.sender.key().as_ref(), payment.recipient.key().as_ref(), payment.mint.as_ref()],
-        bump,
+        address = Payment::pubkey(sender.key(), recipient.key(), mint.key()),
         has_one = recipient,
         has_one = sender,
         has_one = mint
@@ -29,13 +29,8 @@ pub struct UpdatePayment<'info> {
 
     #[account(
         mut,
-        seeds = [
-            SEED_QUEUE, 
-            payment.key().as_ref(), 
-            "payment".as_bytes()
-        ],
-        seeds::program = queue_program::ID,
-        bump,
+        address = payment_queue.pubkey(),
+        constraint = payment_queue.id.eq("payment"),
 	  )]
     pub payment_queue: Account<'info, Queue>,
 
@@ -71,27 +66,27 @@ pub fn handler<'info>(
 
     // update queue schedule
     if let Some(schedule) = schedule {
-            // Update payment_queue schedule
-            clockwork_sdk::queue_program::cpi::queue_update(
-                CpiContext::new_with_signer(
-                    clockwork_program.to_account_info(),
-                    clockwork_sdk::queue_program::cpi::accounts::QueueUpdate {
-                        authority: payment.to_account_info(),
-                        queue: payment_queue.to_account_info(),
-                        system_program: system_program.to_account_info(),
-                    },
-                    &[&[
-                        SEED_PAYMENT,
-                        payment.sender.as_ref(),
-                        payment.recipient.as_ref(),
-                        payment.mint.as_ref(),
-                        &[bump],
-                    ]],
-                ),
-                None,
-                None,
-                Some(schedule),
-            )?;
+        // Update payment_queue schedule
+        clockwork_sdk::queue_program::cpi::queue_update(
+            CpiContext::new_with_signer(
+                clockwork_program.to_account_info(),
+                clockwork_sdk::queue_program::cpi::accounts::QueueUpdate {
+                    authority: payment.to_account_info(),
+                    queue: payment_queue.to_account_info(),
+                    system_program: system_program.to_account_info(),
+                },
+                &[&[
+                    SEED_PAYMENT,
+                    payment.sender.as_ref(),
+                    payment.recipient.as_ref(),
+                    payment.mint.as_ref(),
+                    &[bump],
+                ]],
+            ),
+            None,
+            None,
+            Some(schedule),
+        )?;
     }
 
     Ok(())

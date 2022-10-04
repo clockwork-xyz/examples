@@ -5,7 +5,7 @@ use {
         associated_token::AssociatedToken,
         token::{self, Mint, TokenAccount, Transfer}
     },
-    clockwork_sdk::queue_program::{self, state::{Queue, SEED_QUEUE, CrankResponse}},
+    clockwork_sdk::queue_program::accounts::{Queue, CrankResponse, QueueAccount},
 };
 
 #[derive(Accounts)]
@@ -25,8 +25,7 @@ pub struct DisbursePayment<'info> {
 
     #[account(
         mut,
-        seeds = [SEED_PAYMENT, payment.sender.key().as_ref(), payment.recipient.key().as_ref(), payment.mint.as_ref()],
-        bump,
+        address = Payment::pubkey(sender.key(), recipient.key(), mint.key()),
         has_one = sender,
         has_one = recipient,
         has_one = mint,
@@ -35,13 +34,8 @@ pub struct DisbursePayment<'info> {
 
     #[account(
         signer, 
-        seeds = [
-            SEED_QUEUE, 
-            payment.key().as_ref(), 
-            "payment".as_bytes()
-        ], 
-        seeds::program = queue_program::ID,
-        bump,
+        address = payment_queue.pubkey(),
+        constraint = payment_queue.id.eq("payment"),
     )]
     pub payment_queue: Box<Account<'info, Queue>>,
 

@@ -2,7 +2,7 @@ use {
     anchor_lang::{prelude::Pubkey, solana_program::sysvar, InstructionData},
     anchor_spl::{associated_token, token},
     clockwork_sdk::{
-        queue_program::{self, state::Trigger},
+        queue_program::{self, accounts::Trigger},
         Client, ClientResult, SplToken,
     },
     solana_sdk::{
@@ -33,7 +33,7 @@ fn main() -> ClientResult<()> {
     let recipient = Keypair::new().pubkey();
     let payment = payments_program::state::Payment::pubkey(client.payer_pubkey(), recipient, mint);
     let payment_queue =
-        clockwork_sdk::queue_program::state::Queue::pubkey(payment, "payment".into());
+        clockwork_sdk::queue_program::accounts::Queue::pubkey(payment, "payment".into());
 
     // airdrop to payment queue
     client.airdrop(&payment_queue, LAMPORTS_PER_SOL)?;
@@ -162,6 +162,7 @@ fn update_payment(
             disbursement_amount: Some(100000),
             schedule: Some(Trigger::Cron {
                 schedule: "*/20 * * * * * *".to_string(),
+                skippable: true,
             }),
         }
         .data(),
