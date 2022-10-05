@@ -23,8 +23,9 @@ pub struct Initialize<'info> {
 
     #[account(
         init,
-        address = Crank::pubkey(market.key()),
         payer = payer,
+        seeds = [SEED_CRANK, market.key().as_ref()],
+        bump,
         space = 8 + size_of::<Crank>(),
     )]
     pub crank: Account<'info, Crank>,
