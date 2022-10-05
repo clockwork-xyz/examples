@@ -25,7 +25,8 @@ pub struct CreateInvestment<'info> {
 
     #[account(
         init,
-        address = Investment::pubkey(payer.key(), mint_a.key(), mint_b.key()),
+        seeds = [SEED_INVESTMENT, payer.key().as_ref(), mint_a.key().as_ref(), mint_b.key().as_ref()],
+        bump,
         payer = payer,
         space = 8 + size_of::<Investment>(),
     )]

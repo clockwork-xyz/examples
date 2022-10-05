@@ -27,7 +27,15 @@ pub struct Swap<'info> {
     #[account(address = anchor_spl::dex::ID)]
     pub dex_program: Program<'info, anchor_spl::dex::Dex>,
 
-    #[account(address = Investment::pubkey(investment.payer, investment.mint_a, investment.mint_b))]
+    #[account(
+        seeds = [
+            SEED_INVESTMENT, 
+            investment.payer.key().as_ref(), 
+            investment.mint_a.key().as_ref(), 
+            investment.mint_b.key().as_ref()
+        ], 
+        bump,
+    )]
     pub investment: Box<Account<'info, Investment>>,
 
     #[account(

@@ -754,20 +754,28 @@ dependencies = [
 [[package]]
 name = "clockwork-client"
 version = "1.1.4"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#402762d5ea18494202894414cded5a90afdf1182"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
  "bincode",
  "borsh",
  "clockwork-network-program",
- "clockwork-pool-program",
- "clockwork-queue-program",
+ "clockwork-pool-program 1.1.4",
+ "clockwork-queue-program 1.1.4",
  "clockwork-webhook-program",
  "solana-client",
  "solana-sdk",
  "spl-associated-token-account",
  "thiserror",
+]
+
+[[package]]
+name = "clockwork-cron"
+version = "1.1.4"
+dependencies = [
+ "chrono",
+ "nom",
+ "once_cell",
 ]
 
 [[package]]
@@ -783,12 +791,18 @@ dependencies = [
 [[package]]
 name = "clockwork-network-program"
 version = "1.1.4"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#402762d5ea18494202894414cded5a90afdf1182"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
- "clockwork-pool-program",
- "clockwork-queue-program",
+ "clockwork-pool-program 1.1.4",
+ "clockwork-queue-program 1.1.4",
+]
+
+[[package]]
+name = "clockwork-pool-program"
+version = "1.1.4"
+dependencies = [
+ "anchor-lang",
 ]
 
 [[package]]
@@ -802,13 +816,35 @@ dependencies = [
 [[package]]
 name = "clockwork-queue-program"
 version = "1.1.4"
+dependencies = [
+ "anchor-lang",
+ "chrono",
+ "clockwork-cron 1.1.4",
+ "clockwork-pool-program 1.1.4",
+ "static-pubkey",
+]
+
+[[package]]
+name = "clockwork-queue-program"
+version = "1.1.4"
 source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#402762d5ea18494202894414cded5a90afdf1182"
 dependencies = [
  "anchor-lang",
  "chrono",
- "clockwork-cron",
- "clockwork-pool-program",
+ "clockwork-cron 1.1.4 (git+https://github.com/clockwork-xyz/clockwork?branch=main)",
+ "clockwork-pool-program 1.1.4 (git+https://github.com/clockwork-xyz/clockwork?branch=main)",
  "static-pubkey",
+]
+
+[[package]]
+name = "clockwork-sdk"
+version = "1.1.4"
+dependencies = [
+ "chrono",
+ "clockwork-client",
+ "clockwork-queue-program 1.1.4",
+ "nom",
+ "once_cell",
 ]
 
 [[package]]
@@ -817,8 +853,7 @@ version = "1.1.4"
 source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#402762d5ea18494202894414cded5a90afdf1182"
 dependencies = [
  "chrono",
- "clockwork-client",
- "clockwork-queue-program",
+ "clockwork-queue-program 1.1.4 (git+https://github.com/clockwork-xyz/clockwork?branch=main)",
  "nom",
  "once_cell",
 ]
@@ -826,10 +861,9 @@ dependencies = [
 [[package]]
 name = "clockwork-webhook-program"
 version = "1.1.4"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#402762d5ea18494202894414cded5a90afdf1182"
 dependencies = [
  "anchor-lang",
- "clockwork-pool-program",
+ "clockwork-pool-program 1.1.4",
 ]
 
 [[package]]
@@ -1751,7 +1785,7 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
- "clockwork-sdk",
+ "clockwork-sdk 1.1.4",
  "investments-program",
  "serum-common",
  "serum-crank",
@@ -1765,7 +1799,7 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
- "clockwork-sdk",
+ "clockwork-sdk 1.1.4",
 ]
 
 [[package]]
@@ -3096,7 +3130,7 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
- "clockwork-sdk",
+ "clockwork-sdk 1.1.4 (git+https://github.com/clockwork-xyz/clockwork?branch=main)",
  "safe-transmute",
 ]
 
