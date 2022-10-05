@@ -3,7 +3,7 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-event_stream = "6QbrCgUoyXrJjJEjgAwKsR5b9hT162sQ6ZDPRU8TEoJg"
+event_stream = "DQhQE1v5mmi7ppuw5xx8o7BhnCeCou1abt23KTHakGBy"
 
 [registry]
 url = "https://api.apr.dev"
