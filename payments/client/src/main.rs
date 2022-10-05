@@ -150,11 +150,11 @@ fn update_payment(
     let update_queue_ix = Instruction {
         program_id: payments_program::ID,
         accounts: vec![
+            AccountMeta::new_readonly(queue_program::ID, false),
             AccountMeta::new_readonly(mint, false),
             AccountMeta::new(payment, false),
             AccountMeta::new(queue, false),
             AccountMeta::new_readonly(recipient, false),
-            AccountMeta::new_readonly(queue_program::ID, false),
             AccountMeta::new(client.payer_pubkey(), true),
             AccountMeta::new_readonly(system_program::ID, false),
         ],
