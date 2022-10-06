@@ -708,7 +708,7 @@ name = "client"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
- "clockwork-sdk",
+ "clockwork-sdk 1.1.4",
  "hello-clockwork",
  "solana-sdk",
 ]
@@ -716,15 +716,14 @@ dependencies = [
 [[package]]
 name = "clockwork-client"
 version = "1.1.4"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#402762d5ea18494202894414cded5a90afdf1182"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
  "bincode",
  "borsh",
  "clockwork-network-program",
- "clockwork-pool-program",
- "clockwork-queue-program",
+ "clockwork-pool-program 1.1.4",
+ "clockwork-queue-program 1.1.4",
  "clockwork-webhook-program",
  "solana-client",
  "solana-sdk",
@@ -735,7 +734,16 @@ dependencies = [
 [[package]]
 name = "clockwork-cron"
 version = "1.1.4"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#402762d5ea18494202894414cded5a90afdf1182"
+dependencies = [
+ "chrono",
+ "nom",
+ "once_cell",
+]
+
+[[package]]
+name = "clockwork-cron"
+version = "1.1.4"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#d8d35c8f243b146b2c98cad400dd30bd50795c8e"
 dependencies = [
  "chrono",
  "nom",
@@ -745,18 +753,24 @@ dependencies = [
 [[package]]
 name = "clockwork-network-program"
 version = "1.1.4"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#402762d5ea18494202894414cded5a90afdf1182"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
- "clockwork-pool-program",
- "clockwork-queue-program",
+ "clockwork-pool-program 1.1.4",
+ "clockwork-queue-program 1.1.4",
 ]
 
 [[package]]
 name = "clockwork-pool-program"
 version = "1.1.4"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#402762d5ea18494202894414cded5a90afdf1182"
+dependencies = [
+ "anchor-lang",
+]
+
+[[package]]
+name = "clockwork-pool-program"
+version = "1.1.4"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#d8d35c8f243b146b2c98cad400dd30bd50795c8e"
 dependencies = [
  "anchor-lang",
 ]
@@ -764,34 +778,61 @@ dependencies = [
 [[package]]
 name = "clockwork-queue-program"
 version = "1.1.4"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#402762d5ea18494202894414cded5a90afdf1182"
 dependencies = [
  "anchor-lang",
  "chrono",
- "clockwork-cron",
- "clockwork-pool-program",
+ "clockwork-cron 1.1.4",
+ "clockwork-pool-program 1.1.4",
+ "static-pubkey",
+]
+
+[[package]]
+name = "clockwork-queue-program"
+version = "1.1.4"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#d8d35c8f243b146b2c98cad400dd30bd50795c8e"
+dependencies = [
+ "anchor-lang",
+ "chrono",
+ "clockwork-cron 1.1.4 (git+https://github.com/clockwork-xyz/clockwork?branch=main)",
+ "clockwork-pool-program 1.1.4 (git+https://github.com/clockwork-xyz/clockwork?branch=main)",
  "static-pubkey",
 ]
 
 [[package]]
 name = "clockwork-sdk"
 version = "1.1.4"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#402762d5ea18494202894414cded5a90afdf1182"
 dependencies = [
  "chrono",
  "clockwork-client",
- "clockwork-queue-program",
+ "clockwork-utils",
  "nom",
  "once_cell",
 ]
 
 [[package]]
-name = "clockwork-webhook-program"
+name = "clockwork-sdk"
 version = "1.1.4"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#402762d5ea18494202894414cded5a90afdf1182"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#d8d35c8f243b146b2c98cad400dd30bd50795c8e"
+dependencies = [
+ "chrono",
+ "clockwork-queue-program 1.1.4 (git+https://github.com/clockwork-xyz/clockwork?branch=main)",
+ "nom",
+ "once_cell",
+]
+
+[[package]]
+name = "clockwork-utils"
+version = "1.1.4"
 dependencies = [
  "anchor-lang",
- "clockwork-pool-program",
+]
+
+[[package]]
+name = "clockwork-webhook-program"
+version = "1.1.4"
+dependencies = [
+ "anchor-lang",
+ "clockwork-pool-program 1.1.4",
 ]
 
 [[package]]
@@ -1466,7 +1507,7 @@ name = "hello-clockwork"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
- "clockwork-sdk",
+ "clockwork-sdk 1.1.4 (git+https://github.com/clockwork-xyz/clockwork?branch=main)",
 ]
 
 [[package]]
@@ -2984,9 +3025,9 @@ dependencies = [
 
 [[package]]
 name = "signature"
-version = "1.6.3"
+version = "1.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "deb766570a2825fa972bceff0d195727876a9cdf2460ab2e52d455dc2de47fd9"
+checksum = "74233d3b3b2f6d4b006dc19dee745e73e2a6bfb6f93607cd3b02bd5b00797d7c"
 
 [[package]]
 name = "sized-chunks"
@@ -4152,9 +4193,9 @@ checksum = "b6bc1c9ce2b5135ac7f93c72918fc37feb872bdc6a5533a8b85eb4b86bfdae52"
 
 [[package]]
 name = "tracing"
-version = "0.1.36"
+version = "0.1.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2fce9567bd60a67d08a16488756721ba392f24f29006402881e43b19aac64307"
+checksum = "8ce8c33a8d48bd45d624a6e523445fd21ec13d3653cd51f681abf67418f54eb8"
 dependencies = [
  "cfg-if",
  "pin-project-lite",
@@ -4164,9 +4205,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-attributes"
-version = "0.1.22"
+version = "0.1.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11c75893af559bc8e10716548bdef5cb2b983f8e637db9d0e15126b61b484ee2"
+checksum = "4017f8f45139870ca7e672686113917c71c7a6e02d4924eda67186083c03081a"
 dependencies = [
  "proc-macro2 1.0.46",
  "quote 1.0.21",
@@ -4175,9 +4216,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-core"
-version = "0.1.29"
+version = "0.1.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5aeea4303076558a00714b823f9ad67d58a3bbda1df83d8827d21193156e22f7"
+checksum = "24eb03ba0eab1fd845050058ce5e616558e8f8d8fca633e6b163fe25c797213a"
 dependencies = [
  "once_cell",
 ]
