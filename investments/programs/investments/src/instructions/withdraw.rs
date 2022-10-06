@@ -11,7 +11,13 @@ use {
 #[instruction(amount: u64)]
 pub struct Withdraw<'info> {
     #[account(
-        address = Investment::pubkey(investment.payer, investment.mint_a, investment.mint_b),
+        seeds = [
+            SEED_INVESTMENT, 
+            investment.payer.key().as_ref(), 
+            investment.mint_a.key().as_ref(), 
+            investment.mint_b.key().as_ref()
+        ], 
+        bump,
         has_one = payer,
         has_one = mint_a
     )]

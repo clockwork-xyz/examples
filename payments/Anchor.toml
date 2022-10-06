@@ -2,10 +2,10 @@
 seeds = false
 
 [programs.devnet]
-payments_program = "2NW97YfZ4hAbSoi8T5KFaiKnomJMDzyzJmRJhr8BYSfg"
+payments_program = "9dbFJLM8YbgYwP4wfV1LbZ23n8p1jeNzcPkzPgShHTsf"
 
 [programs.localnet]
-payments_program = "2NW97YfZ4hAbSoi8T5KFaiKnomJMDzyzJmRJhr8BYSfg"
+payments_program = "9dbFJLM8YbgYwP4wfV1LbZ23n8p1jeNzcPkzPgShHTsf"
 
 [registry]
 url = "https://anchor.projectserum.com"

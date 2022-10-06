@@ -16,7 +16,8 @@ use {
 pub struct Initialize<'info> {
     #[account(
         init,
-        address = Authority::pubkey(),
+        seeds = [SEED_AUTHORITY],
+        bump,
         payer = signer,
         space = 8 + size_of::<Authority>(),
     )]
@@ -27,7 +28,8 @@ pub struct Initialize<'info> {
 
     #[account(
         init,
-        address = Event::pubkey(),
+        seeds = [SEED_EVENT],
+        bump,
         payer = signer,
         space = 8 + size_of::<Event>(),
     )]

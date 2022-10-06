@@ -15,7 +15,8 @@ use {
 pub struct Initialize<'info> {
     #[account(
         init,
-        address = Authority::pubkey(),
+        seeds = [SEED_AUTHORITY],
+        bump,
         payer = payer,
         space = 8 + size_of::<Authority>(),
     )]
@@ -38,7 +39,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Res
     // Get accounts
     let authority = &mut ctx.accounts.authority;
     let payer = &ctx.accounts.payer;
-    let hello_queue = &ctx.accounts.hello_queue;
+    let hello_queue = &mut ctx.accounts.hello_queue;
     let clockwork_program = &ctx.accounts.clockwork_program;
     let system_program = &ctx.accounts.system_program;
 

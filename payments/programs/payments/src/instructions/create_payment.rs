@@ -38,7 +38,13 @@ pub struct CreatePayment<'info> {
     #[account(
         init,
         payer = sender,
-        address = Payment::pubkey(sender.key(), recipient.key(), mint.key()),
+        seeds = [
+            SEED_PAYMENT, 
+            sender.key().as_ref(), 
+            recipient.key().as_ref(), 
+            mint.key().as_ref()
+        ],
+        bump,
         space = 8 + size_of::<Payment>(),
     )]
     pub payment: Account<'info, Payment>,

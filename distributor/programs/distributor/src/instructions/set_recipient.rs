@@ -21,7 +21,8 @@ pub struct SetRecipient<'info> {
 
     #[account(
         mut,
-        address = Distributor::pubkey(distributor.mint, distributor.authority),
+        seeds = [SEED_DISTRIBUTOR, distributor.mint.as_ref(), distributor.authority.as_ref()],
+        bump,
         has_one = mint,
         has_one = authority,
     )]

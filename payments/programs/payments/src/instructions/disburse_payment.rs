@@ -25,7 +25,13 @@ pub struct DisbursePayment<'info> {
 
     #[account(
         mut,
-        address = Payment::pubkey(sender.key(), recipient.key(), mint.key()),
+        seeds = [
+            SEED_PAYMENT, 
+            payment.sender.key().as_ref(), 
+            payment.recipient.key().as_ref(), 
+            payment.mint.key().as_ref()
+        ],
+        bump,
         has_one = sender,
         has_one = recipient,
         has_one = mint,

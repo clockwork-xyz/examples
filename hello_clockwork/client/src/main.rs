@@ -29,6 +29,11 @@ fn main() -> ClientResult<()> {
     // airdrop to hello queue
     client.airdrop(&hello_queue, LAMPORTS_PER_SOL)?;
 
+    println!("{}", authority);
+    println!("{}", clockwork_sdk::queue_program::ID);
+    println!("{}", hello_queue);
+    println!("{}", client.payer_pubkey());
+
     // Create ix
     let initialize_ix = Instruction {
         program_id: hello_clockwork::ID,

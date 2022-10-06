@@ -11,7 +11,13 @@ use {
 #[instruction(amount: u64)]
 pub struct Claim<'info> {
     #[account(
-        address = Investment::pubkey(investment.payer, investment.mint_a, investment.mint_b),
+        seeds = [
+            SEED_INVESTMENT, 
+            investment.payer.key().as_ref(), 
+            investment.mint_a.key().as_ref(), 
+            investment.mint_b.key().as_ref()
+        ], 
+        bump,
         has_one = payer,
         has_one = mint_b
     )]
@@ -52,7 +58,7 @@ pub struct Claim<'info> {
 
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Claim<'info>>, amount: u64) -> Result<()> {
     // Get accounts
-    let investment = &mut ctx.accounts.investment;
+    let investment = &ctx.accounts.investment;
     let investment_mint_b_token_accoount = &mut ctx.accounts.investment_mint_b_token_accoount;
     let payer_mint_b_token_account = &mut ctx.accounts.payer_mint_b_token_account;
     let token_program = &ctx.accounts.token_program;

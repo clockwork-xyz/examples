@@ -39,7 +39,7 @@ fn initialize(client: &Client) -> ClientResult<()> {
             AccountMeta::new(
                 clockwork_sdk::queue_program::accounts::Queue::pubkey(
                     authority_pubkey,
-                    "events".into(),
+                    "event".into(),
                 ),
                 false,
             ),

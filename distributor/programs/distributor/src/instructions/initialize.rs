@@ -34,13 +34,14 @@ pub struct Initialize<'info> {
 
     #[account(
         init,
-        address = Distributor::pubkey(mint.key(), authority.key()),
+        seeds = [SEED_DISTRIBUTOR, mint.key().as_ref(), authority.key().as_ref()],
+        bump,
         payer = authority,
         space = 8 + size_of::<Distributor>(),
     )]
     pub distributor: Account<'info, Distributor>,
 
-    #[account(address = Queue::pubkey(authority.key(), "distributor".into()))]
+    #[account(address = Queue::pubkey(distributor.key(), "distributor".into()))]
     pub distributor_queue: SystemAccount<'info>,
 
     /// CHECK: manually validated against recipient's token account
