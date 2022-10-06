@@ -1,8 +1,8 @@
 use {
     anchor_lang::{prelude::*, solana_program::sysvar},
     anchor_spl::dex::serum_dex::instruction::initialize_market,
+    clockwork_sdk::client::{Client, ClientResult, SplToken},
     serum_common::client::rpc::mint_to_new_account,
-    clockwork_sdk::{Client, ClientResult, SplToken},
     solana_sdk::{
         instruction::Instruction, signature::Keypair, signer::Signer, transaction::Transaction,
     },
