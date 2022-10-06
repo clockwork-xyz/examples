@@ -16,21 +16,12 @@ pub struct Subscription {
     pub mint: Pubkey,
     pub recurrent_amount: u64,
     pub epochs_reset: u64,
-    pub schedule: String,
+    pub is_active: bool,
 }
 
 impl Subscription {
     pub fn pubkey(sender: Pubkey, recipient: Pubkey, mint: Pubkey) -> Pubkey {
-        Pubkey::find_program_address(
-            &[
-                SEED_SUBSCRIPTION,
-                sender.as_ref(),
-                recipient.as_ref(),
-                mint.as_ref(),
-            ],
-            &crate::ID,
-        )
-        .0
+        Pubkey::find_program_address(&[SEED_SUBSCRIPTION, recipient.as_ref()], &crate::ID).0
     }
 }
 
@@ -48,7 +39,7 @@ pub trait SubscriptionAccount {
         mint: Pubkey,
         recurrent_amount: u64,
         epochs_reset: u64,
-        schedule: String,
+        isActive: bool,
     ) -> Result<()>;
 }
 
@@ -59,13 +50,13 @@ impl SubscriptionAccount for Account<'_, Subscription> {
         mint: Pubkey,
         recurrent_amount: u64,
         epochs_reset: u64,
-        schedule: String,
+        is_acitve: bool,
     ) -> Result<()> {
         self.recipient = recipient;
         self.mint = mint;
         self.recurrent_amount = recurrent_amount;
         self.epochs_reset = epochs_reset;
-        self.schedule = schedule;
+        self.is_active = is_acitve;
         Ok(())
     }
 }

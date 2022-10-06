@@ -1,10 +1,7 @@
 use {
     crate::state::*,
-    anchor_lang::{prelude::*, solana_program::system_program},
-    clockwork_crank::{
-        program::ClockworkCrank,
-        state::{Trigger, SEED_QUEUE},
-    },
+    anchor_lang::prelude::*,
+    clockwork_crank::{program::ClockworkCrank, state::SEED_QUEUE},
     std::mem::size_of,
 };
 
@@ -28,11 +25,6 @@ pub struct CreateSubscription<'info> {
     #[account(
         init,
         payer = payer,
-        seeds = [
-            SEED_SUBSCRIPTION,
-            payer.key().as_ref(),
-        ],
-        bump,
         space = 8 + size_of::<Subscription>(),
     )]
     pub subscription: Account<'info, Subscription>,
@@ -45,13 +37,16 @@ impl<'info> CreateSubscription<'_> {
         &mut self,
         recurrent_amount: u64,
         epochs_reset: u64,
-        start_schedule: String,
+        mint: Pubkey,
+        is_active: bool,
     ) -> Result<()> {
         let Self {
             payer,
-            clockwork_program,
+            subscription,
             ..
         } = self;
+
+        subscription.new(payer.key(), mint, recurrent_amount, epochs_reset, is_active)?;
 
         Ok(())
     }

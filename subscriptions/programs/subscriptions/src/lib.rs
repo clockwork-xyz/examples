@@ -19,17 +19,19 @@ pub mod subscriptions_program {
         ctx: Context<CreateSubscription>,
         recurrent_amount: u64,
         epochs_reset: u64,
-        start_schedule: String,
+        mint: Pubkey,
+        is_active: bool,
     ) -> Result<()> {
         ctx.accounts
-            .process(recurrent_amount, epochs_reset, start_schedule)
+            .process(recurrent_amount, epochs_reset, mint, is_active)
     }
 
     /*
      * subscribe to a subscription
      */
     pub fn subscribe<'info>(ctx: Context<Subscribe>) -> Result<()> {
-        ctx.accounts.process()
+        let bump = *ctx.bumps.get("payment").unwrap();
+        ctx.accounts.process(bump)
     }
 
     /*
