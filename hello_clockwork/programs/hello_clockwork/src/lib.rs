@@ -1,5 +1,4 @@
 pub mod id;
-pub mod state;
 
 mod instructions;
 
@@ -12,13 +11,10 @@ use instructions::*;
 pub mod hello_clockwork {
     use super::*;
 
-    pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Result<()> {
-        initialize::handler(ctx)
-    }
-
     pub fn hello_world(
         ctx: Context<HelloWorld>,
+        name: String,
     ) -> Result<clockwork_sdk::queue_program::accounts::CrankResponse> {
-        hello_world::handler(ctx)
+        hello_world::handler(ctx, name)
     }
 }
