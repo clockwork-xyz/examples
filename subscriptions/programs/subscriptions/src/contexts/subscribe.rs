@@ -1,6 +1,13 @@
 use {
     crate::state::*,
-    anchor_lang::prelude::*,
+    anchor_lang::{
+        prelude::*,
+        solana_program::{instruction::Instruction, system_program, sysvar},
+    },
+    anchor_spl::{
+        associated_token::{self, AssociatedToken},
+        token::{Mint, Token, TokenAccount},
+    },
     clockwork_crank::{
         program::ClockworkCrank,
         state::{Trigger, SEED_QUEUE},
@@ -12,6 +19,9 @@ use {
 pub struct Subscribe<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
+    #[account(address = subscription.mint)]
+    pub mint: Account<'info, Mint>,
+
     #[account(address = clockwork_crank::ID)]
     pub clockwork_program: Program<'info, ClockworkCrank>,
     #[account(
@@ -25,14 +35,11 @@ pub struct Subscribe<'info> {
     )]
     pub subscriptions_queue: SystemAccount<'info>,
 
-    #[account(
-        init,
-        payer = payer,
-        space = 8 + size_of::<Subscription>(),
-    )]
+    #[account(mut)]
     pub subscription: Account<'info, Subscription>,
 
     pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
 }
 
 impl<'info> Subscribe<'_> {
@@ -43,6 +50,7 @@ impl<'info> Subscribe<'_> {
             subscription,
             subscriptions_queue,
             system_program,
+            token_program,
             ..
         } = self;
 
@@ -51,13 +59,12 @@ impl<'info> Subscribe<'_> {
         //     program_id: crate::ID,
         //     accounts: vec![
         //         AccountMeta::new_readonly(associated_token::ID, false),
-        //         AccountMeta::new(escrow.key(), false),
-        //         AccountMeta::new_readonly(payment.mint, false),
-        //         AccountMeta::new(payment.key(), false),
-        //         AccountMeta::new_readonly(payment_queue.key(), true),
-        //         AccountMeta::new_readonly(payment.recipient, false),
-        //         AccountMeta::new(recipient_token_account.key(), false),
-        //         AccountMeta::new_readonly(payment.sender, false),
+        //         AccountMeta::new_readonly(subscription.mint, false),
+        //         AccountMeta::new(subscription.key(), false),
+        //         AccountMeta::new_readonly(subscriptions_queue.key(), true),
+        //         AccountMeta::new_readonly(subscription.recipient, false),
+        //         // AccountMeta::new(recipient_token_account.key(), false),
+        //         AccountMeta::new_readonly(payer.key(), false),
         //         AccountMeta::new_readonly(token_program.key(), false),
         //     ],
         //     data: clockwork_crank::anchor::sighash("disburse_payment").into(),
@@ -72,16 +79,15 @@ impl<'info> Subscribe<'_> {
         //             queue: subscriptions_queue.to_account_info(),
         //             system_program: system_program.to_account_info(),
         //         },
-        //         &[&[
-        //             SEED_SUBSCRIPTION,
-        //             subscription.recipient.as_ref(),
-        //             subscription.mint.as_ref(),
-        //             &[bump],
-        //         ]],
+        //         // FIX SEEDS
+        //         &[&[SEED_SUBSCRIPTION, &[bump]]],
         //     ),
         //     disburse_payment_ix.into(),
         //     "payment".into(),
-        //     Trigger::Cron { schedule: 12 },
+        //     // TIME SHOULD BE CURRENT + EPOCHS RESET
+        //     Trigger::Cron {
+        //         schedule: "12".to_string(),
+        //     },
         // )?;
 
         Ok(())

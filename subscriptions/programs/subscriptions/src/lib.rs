@@ -21,9 +21,10 @@ pub mod subscriptions_program {
         epochs_reset: u64,
         mint: Pubkey,
         is_active: bool,
+        market_id: String,
     ) -> Result<()> {
         ctx.accounts
-            .process(recurrent_amount, epochs_reset, mint, is_active)
+            .process(recurrent_amount, epochs_reset, mint, is_active, market_id)
     }
 
     /*
@@ -38,6 +39,15 @@ pub mod subscriptions_program {
      * unsubscribe from a subscription
      */
     pub fn unsubscribe<'info>(ctx: Context<Unsubscribe>) -> Result<()> {
+        ctx.accounts.process()
+    }
+
+    /*
+     * disburse payment from program authority's ATA to recipient's ATA
+     */
+    pub fn disburse_payment<'info>(
+        ctx: Context<DisbursePayment>,
+    ) -> Result<clockwork_crank::state::CrankResponse> {
         ctx.accounts.process()
     }
 }
