@@ -1,6 +1,9 @@
 use {
     anchor_lang::prelude::*,
-    clockwork_sdk::queue_program::accounts::{CrankResponse, Queue, QueueAccount},
+    clockwork_sdk::{
+        queue_program::accounts::{Queue, QueueAccount},
+        CrankResponse,
+    },
 };
 #[derive(Accounts)]
 #[instruction(name: String)]
