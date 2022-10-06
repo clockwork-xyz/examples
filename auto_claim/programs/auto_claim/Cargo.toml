@@ -17,3 +17,6 @@ default = []
 
 [dependencies]
 anchor-lang = "0.25.0"
+clockwork-sdk = { path = "../../../../clockwork/sdk", version = "1.1.4" }
+streamflow-sdk = {version = "0.5.2", features = ["cpi"]}
+# clockwork-sdk = { branch = "main", git = "https://github.com/clockwork-xyz/clockwork", version = "1.1.4" }

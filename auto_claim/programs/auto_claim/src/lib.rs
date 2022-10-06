@@ -1,15 +1,18 @@
-use anchor_lang::prelude::*;
+pub mod id;
+pub mod state;
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+mod instructions;
+
+use anchor_lang::prelude::*;
+use instructions::*;
+
+pub use id::ID;
 
 #[program]
 pub mod auto_claim {
     use super::*;
 
     pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
-        Ok(())
+        initialize::handler(ctx)
     }
 }
-
-#[derive(Accounts)]
-pub struct Initialize {}
