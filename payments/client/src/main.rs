@@ -1,8 +1,8 @@
 use {
     anchor_lang::{prelude::Pubkey, solana_program::sysvar, InstructionData},
     anchor_spl::{associated_token, token},
-    clockwork_sdk::{
-        queue_program::{self, accounts::Trigger},
+    clockwork_sdk::client::{
+        queue_program::{self, objects::Trigger},
         Client, ClientResult, SplToken,
     },
     solana_sdk::{

@@ -28,7 +28,7 @@ pub mod payments_program {
      */
     pub fn disburse_payment<'info>(
         ctx: Context<'_, '_, '_, 'info, DisbursePayment<'info>>,
-    ) -> Result<clockwork_sdk::queue_program::accounts::CrankResponse> {
+    ) -> Result<clockwork_sdk::CrankResponse> {
         disburse_payment::handler(ctx)
     }
 
