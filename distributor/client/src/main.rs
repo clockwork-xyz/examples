@@ -5,7 +5,7 @@ use {
         InstructionData,
     },
     anchor_spl::{associated_token, token},
-    clockwork_sdk::{queue_program, Client, ClientResult, SplToken},
+    clockwork_sdk::client::{queue_program, Client, ClientResult, SplToken},
     solana_sdk::{
         instruction::Instruction, native_token::LAMPORTS_PER_SOL, signature::Keypair,
         signer::Signer, transaction::Transaction,

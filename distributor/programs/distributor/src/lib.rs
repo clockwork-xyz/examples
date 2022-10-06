@@ -27,7 +27,7 @@ pub mod distributor {
      */
     pub fn mint_token<'info>(
         ctx: Context<'_, '_, '_, 'info, MintToken<'info>>,
-    ) -> Result<clockwork_sdk::queue_program::accounts::CrankResponse> {
+    ) -> Result<clockwork_sdk::CrankResponse> {
         mint_token::handler(ctx)
     }
 
