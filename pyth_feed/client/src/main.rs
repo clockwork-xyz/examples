@@ -14,15 +14,15 @@ fn main() -> ClientResult<()> {
     let client = Client::new(payer, "https://api.devnet.solana.com".into());
     client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
 
-    // Initialize the pyth_feed program
-    initialize(&client)?;
+    // create queue that listens for account changes for a pyth pricing feed
+    create_feed(&client)?;
 
     Ok(())
 }
 
-fn initialize(client: &Client) -> ClientResult<()> {
+fn create_feed(client: &Client) -> ClientResult<()> {
     let feed_pubkey = pyth_feed::state::Feed::pubkey();
-    let initialize_ix = Instruction {
+    let create_feed_ix = Instruction {
         program_id: pyth_feed::ID,
         accounts: vec![
             AccountMeta::new_readonly(clockwork_sdk::queue_program::ID, false),
@@ -40,7 +40,12 @@ fn initialize(client: &Client) -> ClientResult<()> {
         }
         .data(),
     };
-    sign_send_and_confirm_tx(&client, [initialize_ix].to_vec(), None, "initialize".into())?;
+    sign_send_and_confirm_tx(
+        &client,
+        [create_feed_ix].to_vec(),
+        None,
+        "create_feed".into(),
+    )?;
     Ok(())
 }
 
@@ -78,7 +83,7 @@ pub fn sign_send_and_confirm_tx(
 
     tx.sign(&[client.payer()], client.latest_blockhash().unwrap());
 
-    // Send and confirm initialize tx
+    // Send and confirm tx
     match client.send_and_confirm_transaction(&tx) {
         Ok(sig) => println!(
             "{} tx: ✅ https://explorer.solana.com/tx/{}?cluster=custom",
