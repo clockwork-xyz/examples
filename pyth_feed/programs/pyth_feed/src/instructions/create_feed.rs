@@ -59,6 +59,7 @@ pub fn handler<'info>(
         data: clockwork_sdk::anchor_sighash("process_pyth_feed").into(),
     };
 
+    // initialize queue
     clockwork_sdk::queue_program::cpi::queue_create(
         CpiContext::new_with_signer(
             clockwork.to_account_info(),
@@ -73,6 +74,22 @@ pub fn handler<'info>(
         "feed".into(),
         proceess_feed_ix.into(),
         Trigger::Account { pubkey: pyth_feed },
+    )?;
+
+    // set the rate limit of the queue to crank 1 time per slot
+    clockwork_sdk::queue_program::cpi::queue_update(
+        CpiContext::new_with_signer(
+            clockwork.to_account_info(),
+            clockwork_sdk::queue_program::cpi::accounts::QueueUpdate {
+                authority: feed.to_account_info(),
+                queue: queue.to_account_info(),
+                system_program: system_program.to_account_info(),
+            },
+            &[&[SEED_FEED, &[bump]]],
+        ),
+        None,
+        Some(1),
+        None,
     )?;
 
     Ok(())
