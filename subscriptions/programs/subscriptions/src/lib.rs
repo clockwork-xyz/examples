@@ -31,7 +31,7 @@ pub mod subscriptions_program {
      * subscribe to a subscription
      */
     pub fn subscribe<'info>(ctx: Context<Subscribe>) -> Result<()> {
-        let bump = *ctx.bumps.get("payment").unwrap();
+        let bump = *ctx.bumps.get("subscription").unwrap();
         ctx.accounts.process(bump)
     }
 
@@ -48,6 +48,7 @@ pub mod subscriptions_program {
     pub fn disburse_payment<'info>(
         ctx: Context<DisbursePayment>,
     ) -> Result<clockwork_crank::state::CrankResponse> {
-        ctx.accounts.process()
+        let bump = *ctx.bumps.get("subscription").unwrap();
+        ctx.accounts.process(bump)
     }
 }

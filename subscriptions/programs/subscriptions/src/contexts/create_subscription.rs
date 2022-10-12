@@ -10,7 +10,7 @@ use {
 };
 
 #[derive(Accounts)]
-#[instruction(market_id: String)]
+#[instruction(subscription_id: String)]
 pub struct CreateSubscription<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
@@ -25,7 +25,7 @@ pub struct CreateSubscription<'info> {
 
     #[account(
         init,
-        address = Subscription::pubkey(owner.key(),market_id),
+        address = Subscription::pubkey(owner.key(),subscription_id),
         payer = owner,
         space = 8 + size_of::<Subscription>(),
     )]
@@ -59,7 +59,7 @@ impl<'info> CreateSubscription<'_> {
         epochs_reset: u64,
         mint: Pubkey,
         is_active: bool,
-        market_id: String,
+        subscription_id: String,
     ) -> Result<()> {
         let Self {
             owner,
@@ -76,8 +76,8 @@ impl<'info> CreateSubscription<'_> {
             epochs_reset,
             is_active,
             vec![],
-            market_id,
-        );
+            subscription_id,
+        )?;
 
         Ok(())
     }

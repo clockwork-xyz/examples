@@ -1,41 +1,37 @@
 use {
     crate::state::*,
     anchor_lang::prelude::*,
-    anchor_spl::{ 
+    anchor_spl::{
         associated_token::AssociatedToken,
-        token::{self,TokenAccount,Transfer}
+        token::{self, TokenAccount, Transfer},
     },
-    clockwork_crank::state::{Queue, SEED_QUEUE, CrankResponse},
+    clockwork_crank::state::{CrankResponse, Queue, SEED_QUEUE},
 };
 
 #[derive(Accounts)]
 pub struct DisbursePayment<'info> {
-    pub subscriber: Signer<'info>,
     #[account(
         mut,
-        associated_token::authority = subscriber,
-        associated_token::mint = subscription.mint,
+        address = Subscriber::pubkey(subscriber.owner.key(),subscription.key()),
     )]
-    pub subscriber_token_account: Account<'info,TokenAccount>,
-    #[account(address = subscription.owner)]
-    pub owner: AccountInfo<'info>,
-    #[account( 
+    pub subscriber: Account<'info, Subscriber>,
+    #[account(
         address = subscription.subscription_bank
     )]
     pub subscription_bank: Box<Account<'info, TokenAccount>>,
 
     #[account(
         mut,
-        address = Subscription::pubkey(subscription.owner,subscription.market_id.clone())
+        address = Subscription::pubkey(subscription.owner,subscription.subscription_id.clone())
     )]
     pub subscription: Box<Account<'info, Subscription>>,
     #[account(
-        signer, 
+        signer,
         seeds = [
-            SEED_QUEUE, 
-            subscription.key().as_ref(), 
+            SEED_QUEUE,
+            subscription.key().as_ref(),
             "subscription".as_bytes()
-        ], 
+        ],
         seeds::program = clockwork_crank::ID,
         bump,
     )]
@@ -45,35 +41,39 @@ pub struct DisbursePayment<'info> {
     pub associated_token_program: Program<'info, AssociatedToken>,
     #[account(address = anchor_spl::token::ID)]
     pub token_program: Program<'info, anchor_spl::token::Token>,
-
 }
 
 impl<'info> DisbursePayment<'_> {
-    pub fn process(
-        &mut self,
-    ) -> Result<CrankResponse> {
+    pub fn process(&mut self, bump: u8) -> Result<CrankResponse> {
         let Self {
-            owner,
             subscriber,
-            subscriber_token_account,
             subscription,
-            subscription_bank,
-            token_program,
             ..
         } = self;
 
-    token::transfer(
-        CpiContext::new(
-            token_program.to_account_info(), 
-            Transfer {
-                from: subscriber_token_account.to_account_info(),
-                to: subscription_bank.to_account_info(),
-                authority: subscriber.to_account_info(),
-            },             
-    ),subscription.recurrent_amount)?;
+        if subscriber.locked_amount - subscription.recurrent_amount < 0 {
+            subscriber.is_active = false;
+            subscriber.is_subscribed = false
+        } else {
+            subscriber.locked_amount -= subscription.recurrent_amount;
+            subscriber.is_subscribed = true
+        }
 
-    Ok(CrankResponse{ next_instruction: None })
+        // transfer from escrow to recipient's token account
+        // token::transfer(
+        //     CpiContext::new_with_signer(
+        //         token_program.to_account_info(),
+        //         Transfer {
+        //             from: escrow.to_account_info(),
+        //             to: subscription_bank.to_account_info(),
+        //             authority: subscription.to_account_info(),
+        //         },
+        //         &[&[SEED_SUBSCRIPTION, subscription.owner.as_ref(), subscription.subscription_id.as_bytes(), &[bump]]]),
+        //     subscription.recurrent_amount,
+        // )?;
+
+        Ok(CrankResponse {
+            next_instruction: None,
+        })
     }
 }
-
-

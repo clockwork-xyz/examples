@@ -1,13 +1,7 @@
 use {
     crate::state::*,
-    anchor_lang::{
-        prelude::*,
-        solana_program::{instruction::Instruction, system_program, sysvar},
-    },
-    anchor_spl::{
-        associated_token::{self, AssociatedToken},
-        token::{Mint, Token, TokenAccount},
-    },
+    anchor_lang::prelude::*,
+    anchor_spl::token::Token,
     clockwork_crank::{
         program::ClockworkCrank,
         state::{Trigger, SEED_QUEUE},
@@ -19,8 +13,13 @@ use {
 pub struct Subscribe<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
-    #[account(address = subscription.mint)]
-    pub mint: Account<'info, Mint>,
+    #[account(
+        init_if_needed,
+        address = Subscriber::pubkey(payer.key(),subscription.key()),
+        payer = payer,
+        space = 8 + size_of::<Subscriber>(),
+    )]
+    pub subscriber: Account<'info, Subscriber>,
 
     #[account(address = clockwork_crank::ID)]
     pub clockwork_program: Program<'info, ClockworkCrank>,
@@ -46,6 +45,7 @@ impl<'info> Subscribe<'_> {
     pub fn process(&mut self, bump: u8) -> Result<()> {
         let Self {
             payer,
+            subscriber,
             clockwork_program,
             subscription,
             subscriptions_queue,
@@ -54,7 +54,8 @@ impl<'info> Subscribe<'_> {
             ..
         } = self;
 
-        // create ix
+        subscriber.new(payer.key(), subscription.key(), 0, true, false)?;
+
         // let disburse_payment_ix = Instruction {
         //     program_id: crate::ID,
         //     accounts: vec![

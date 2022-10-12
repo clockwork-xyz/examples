@@ -19,7 +19,7 @@ pub struct Subscription {
     pub epochs_reset: u64,
     pub is_active: bool,
     pub subscribers: Vec<Pubkey>,
-    pub market_id: String,
+    pub subscription_id: String,
 }
 
 impl Subscription {
@@ -53,7 +53,7 @@ pub trait SubscriptionAccount {
         epochs_reset: u64,
         is_active: bool,
         subscribers: Vec<Pubkey>,
-        market_id: String,
+        subscription_id: String,
     ) -> Result<()>;
 }
 
@@ -67,7 +67,7 @@ impl SubscriptionAccount for Account<'_, Subscription> {
         epochs_reset: u64,
         is_acitve: bool,
         subscribers: Vec<Pubkey>,
-        market_id: String,
+        subscription_id: String,
     ) -> Result<()> {
         self.owner = owner;
         self.subscription_bank = subscription_bank;
@@ -76,7 +76,7 @@ impl SubscriptionAccount for Account<'_, Subscription> {
         self.epochs_reset = epochs_reset;
         self.is_active = is_acitve;
         self.subscribers = vec![];
-        self.market_id = market_id;
+        self.subscription_id = subscription_id;
         Ok(())
     }
 }
