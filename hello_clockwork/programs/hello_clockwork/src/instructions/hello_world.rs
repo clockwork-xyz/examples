@@ -21,5 +21,6 @@ pub fn handler(_ctx: Context<HelloWorld>, name: String) -> Result<CrankResponse>
 
     Ok(CrankResponse {
         next_instruction: None,
+        kickoff_instruction: None,
     })
 }

@@ -42,7 +42,7 @@ fn main() -> ClientResult<()> {
     let queue_create = queue_create(
         client.payer_pubkey(),
         "hello".into(),
-        hello_world_ix,
+        hello_world_ix.into(),
         client.payer_pubkey(),
         hello_queue,
         Trigger::Cron {
