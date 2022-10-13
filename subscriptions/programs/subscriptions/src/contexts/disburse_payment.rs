@@ -53,12 +53,20 @@ impl<'info> DisbursePayment<'_> {
             ..
         } = self;
 
-        if subscriber.locked_amount - subscription.recurrent_amount < 0 {
-            subscriber.is_active = false;
-            subscriber.is_subscribed = false
-        } else {
-            subscriber.locked_amount -= subscription.recurrent_amount;
-            subscriber.is_subscribed = true
+        let amount_left = subscriber
+            .locked_amount
+            .checked_sub(subscription.recurrent_amount);
+
+        match amount_left {
+            Some(value) => {
+                subscriber.locked_amount = value;
+                subscriber.is_active = false;
+                subscriber.is_subscribed = false;
+            }
+            None => {
+                subscriber.locked_amount -= subscription.recurrent_amount;
+                subscriber.is_subscribed = true
+            }
         }
 
         // transfer from escrow to recipient's token account
