@@ -15,9 +15,16 @@ pub struct CreateSubscription<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
     #[account(
-        mut,
-        associated_token::authority = subscription,
-        associated_token::mint = mint,
+        init,
+        payer = owner,
+        token::mint = mint,
+        token::authority = subscription,
+        seeds = [
+            subscription.key().as_ref(),
+            owner.key().as_ref(),
+            "subscription_bank".as_bytes()
+        ],
+        bump,
     )]
     pub subscription_bank: Box<Account<'info, TokenAccount>>,
 

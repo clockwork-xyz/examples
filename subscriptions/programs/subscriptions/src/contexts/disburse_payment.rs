@@ -1,10 +1,6 @@
 use {
     crate::state::*,
     anchor_lang::prelude::*,
-    anchor_spl::{
-        associated_token::AssociatedToken,
-        token::{self, TokenAccount, Transfer},
-    },
     clockwork_crank::state::{CrankResponse, Queue, SEED_QUEUE},
 };
 
@@ -15,12 +11,6 @@ pub struct DisbursePayment<'info> {
         address = Subscriber::pubkey(subscriber.owner.key(),subscription.key()),
     )]
     pub subscriber: Account<'info, Subscriber>,
-    #[account(
-        mut,
-        associated_token::authority = subscription,
-        associated_token::mint = subscription.mint,
-    )]
-    pub subscription_bank: Box<Account<'info, TokenAccount>>,
 
     #[account(
         mut,
@@ -38,15 +28,10 @@ pub struct DisbursePayment<'info> {
         bump,
     )]
     pub subscription_queue: Box<Account<'info, Queue>>,
-
-    #[account(address = anchor_spl::associated_token::ID)]
-    pub associated_token_program: Program<'info, AssociatedToken>,
-    #[account(address = anchor_spl::token::ID)]
-    pub token_program: Program<'info, anchor_spl::token::Token>,
 }
 
 impl<'info> DisbursePayment<'_> {
-    pub fn process(&mut self, bump: u8) -> Result<CrankResponse> {
+    pub fn process(&mut self) -> Result<CrankResponse> {
         let Self {
             subscriber,
             subscription,
@@ -68,19 +53,6 @@ impl<'info> DisbursePayment<'_> {
                 subscriber.is_subscribed = true
             }
         }
-
-        // transfer from escrow to recipient's token account
-        // token::transfer(
-        //     CpiContext::new_with_signer(
-        //         token_program.to_account_info(),
-        //         Transfer {
-        //             from: escrow.to_account_info(),
-        //             to: subscription_bank.to_account_info(),
-        //             authority: subscription.to_account_info(),
-        //         },
-        //         &[&[SEED_SUBSCRIPTION, subscription.owner.as_ref(), subscription.subscription_id.as_bytes(), &[bump]]]),
-        //     subscription.recurrent_amount,
-        // )?;
 
         Ok(CrankResponse {
             next_instruction: None,

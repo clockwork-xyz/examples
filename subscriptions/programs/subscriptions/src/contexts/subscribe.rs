@@ -29,8 +29,12 @@ pub struct Subscribe<'info> {
     pub subscriber_token_account: Box<Account<'info, TokenAccount>>,
     #[account(
         mut,
-        associated_token::authority = subscription,
-        associated_token::mint = subscription.mint,
+        seeds = [
+            subscription.key().as_ref(),
+            subscription.owner.key().as_ref(),
+            "subscription_bank".as_bytes()
+        ],
+        bump,
     )]
     pub subscription_bank: Box<Account<'info, TokenAccount>>,
 
@@ -77,14 +81,36 @@ impl<'info> Subscribe<'_> {
             false,
         )?;
 
-        // transfer from subscriber to subscription_bank
         transfer(
-            CpiContext::new_with_signer(
+            CpiContext::new(
                 token_program.to_account_info(),
                 Transfer {
                     from: subscriber_token_account.to_account_info(),
                     to: subscription_bank.to_account_info(),
                     authority: subscription.to_account_info(),
+                },
+            ),
+            subscription_period as u64 * subscription.recurrent_amount,
+        )?;
+
+        let disburse_payment_ix = Instruction {
+            program_id: crate::ID,
+            accounts: vec![
+                AccountMeta::new_readonly(subscriber.key(), false),
+                AccountMeta::new_readonly(subscription.key(), false),
+                AccountMeta::new_readonly(subscriptions_queue.key(), true),
+            ],
+            data: clockwork_crank::anchor::sighash("disburse_payment").into(),
+        };
+
+        clockwork_crank::cpi::queue_create(
+            CpiContext::new_with_signer(
+                clockwork_program.to_account_info(),
+                clockwork_crank::cpi::accounts::QueueCreate {
+                    authority: subscription.to_account_info(),
+                    payer: payer.to_account_info(),
+                    queue: subscriptions_queue.to_account_info(),
+                    system_program: system_program.to_account_info(),
                 },
                 &[&[
                     SEED_SUBSCRIPTION,
@@ -93,43 +119,13 @@ impl<'info> Subscribe<'_> {
                     &[bump],
                 ]],
             ),
-            subscription_period as u64 * subscription.recurrent_amount,
+            disburse_payment_ix.into(),
+            "payment".into(),
+            // TIME SHOULD BE CURRENT + EPOCHS RESET
+            Trigger::Cron {
+                schedule: "12".to_string(),
+            },
         )?;
-
-        // let disburse_payment_ix = Instruction {
-        //     program_id: crate::ID,
-        //     accounts: vec![
-        //         AccountMeta::new_readonly(associated_token::ID, false),
-        //         AccountMeta::new_readonly(subscription.mint, false),
-        //         AccountMeta::new(subscription.key(), false),
-        //         AccountMeta::new_readonly(subscriptions_queue.key(), true),
-        //         AccountMeta::new_readonly(subscription.recipient, false),
-        //         // AccountMeta::new(recipient_token_account.key(), false),
-        //         AccountMeta::new_readonly(payer.key(), false),
-        //         AccountMeta::new_readonly(token_program.key(), false),
-        //     ],
-        //     data: clockwork_crank::anchor::sighash("disburse_payment").into(),
-        // };
-
-        // clockwork_crank::cpi::queue_create(
-        //     CpiContext::new_with_signer(
-        //         clockwork_program.to_account_info(),
-        //         clockwork_crank::cpi::accounts::QueueCreate {
-        //             authority: subscription.to_account_info(),
-        //             payer: payer.to_account_info(),
-        //             queue: subscriptions_queue.to_account_info(),
-        //             system_program: system_program.to_account_info(),
-        //         },
-        //         // FIX SEEDS
-        //         &[&[SEED_SUBSCRIPTION, &[bump]]],
-        //     ),
-        //     disburse_payment_ix.into(),
-        //     "payment".into(),
-        //     // TIME SHOULD BE CURRENT + EPOCHS RESET
-        //     Trigger::Cron {
-        //         schedule: "12".to_string(),
-        //     },
-        // )?;
 
         Ok(())
     }

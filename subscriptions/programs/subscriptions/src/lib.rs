@@ -48,7 +48,6 @@ pub mod subscriptions_program {
     pub fn disburse_payment<'info>(
         ctx: Context<DisbursePayment>,
     ) -> Result<clockwork_crank::state::CrankResponse> {
-        let bump = *ctx.bumps.get("subscription").unwrap();
-        ctx.accounts.process(bump)
+        ctx.accounts.process()
     }
 }
