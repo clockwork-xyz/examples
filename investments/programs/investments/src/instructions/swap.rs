@@ -15,7 +15,7 @@ use {
         },
         token::{Token, TokenAccount},
     },
-    clockwork_sdk::queue_program::accounts::{Queue, QueueAccount, CrankResponse},
+    clockwork_sdk::{queue_program::accounts::{Queue, QueueAccount}, CrankResponse},
     std::num::NonZeroU64,
 };
 

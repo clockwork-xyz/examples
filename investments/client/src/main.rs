@@ -11,7 +11,7 @@ use {
         },
         token,
     },
-    clockwork_sdk::{queue_program, Client, ClientResult, SplToken},
+    clockwork_sdk::client::{queue_program, Client, ClientResult, SplToken},
     serum_common::client::rpc::mint_to_new_account,
     solana_sdk::{
         instruction::Instruction, native_token::LAMPORTS_PER_SOL, signature::Keypair,

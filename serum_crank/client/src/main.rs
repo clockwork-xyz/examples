@@ -14,7 +14,7 @@ use {
         },
         token,
     },
-    clockwork_sdk::{Client, ClientResult},
+    clockwork_sdk::client::{Client, ClientResult},
     serum_common::client::rpc::mint_to_new_account,
     solana_sdk::{
         instruction::Instruction, native_token::LAMPORTS_PER_SOL, signature::Keypair,

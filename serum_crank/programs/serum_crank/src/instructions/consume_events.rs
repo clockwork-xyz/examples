@@ -6,7 +6,7 @@ use {
     },
     anchor_lang::solana_program::program::invoke_signed,
     anchor_spl::{token::TokenAccount, dex::serum_dex},
-    clockwork_sdk::queue_program::{self, accounts::{CrankResponse, Queue, QueueAccount}},
+    clockwork_sdk::{queue_program::{self, accounts::{Queue, QueueAccount}}, CrankResponse},
 };
 
 #[derive(Accounts)]

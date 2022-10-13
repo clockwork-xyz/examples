@@ -5,7 +5,7 @@ use {
         associated_token::AssociatedToken,
         token::{self, Mint, TokenAccount, Transfer}
     },
-    clockwork_sdk::queue_program::accounts::{Queue, CrankResponse, QueueAccount},
+    clockwork_sdk::{queue_program::accounts::{Queue, QueueAccount}, CrankResponse},
 };
 
 #[derive(Accounts)]
