@@ -6,7 +6,10 @@ use {
     },
     anchor_lang::solana_program::program::invoke_signed,
     anchor_spl::{token::TokenAccount, dex::serum_dex},
-    clockwork_sdk::{queue_program::accounts::{Queue, QueueAccount}, PAYER_PUBKEY, CrankResponse},
+    clockwork_sdk::{
+        PAYER_PUBKEY, CrankResponse, InstructionData,
+        queue_program::accounts::{Queue, QueueAccount} 
+    },
 };
 
 #[derive(Accounts)]
@@ -60,10 +63,32 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, ConsumeEvents<'info>>) -> 
 
     // get crank bump
     let bump = *ctx.bumps.get("crank").unwrap();
+
+    // derive read events ix
+    let read_events_ix: Option<InstructionData> = 
+        Some(
+            Instruction {
+                program_id: crate::ID,
+                accounts: vec![
+                    AccountMeta::new(crank.key(), false),
+                    AccountMeta::new(crank_queue.key(), true),
+                    AccountMeta::new_readonly(dex_program.key(), false),
+                    AccountMeta::new_readonly(event_queue.key(), false),
+                    AccountMeta::new_readonly(market.key(), false),
+                    AccountMeta::new_readonly(mint_a_vault.key(), false),
+                    AccountMeta::new_readonly(mint_b_vault.key(), false),
+                    AccountMeta::new(PAYER_PUBKEY, true),
+                    AccountMeta::new_readonly(system_program::ID, false),
+                ],
+                data: clockwork_sdk::anchor_sighash("read_events").into(),
+            }
+            .into()
+        );
     
     // coerce open orders type
     let open_orders_accounts = crank.open_orders.iter().map(|pk| pk).collect::<Vec<&Pubkey>>();
     
+    // if there are orders that need to be cranked
     if open_orders_accounts.len() > 0 {   
         // derive consume events ix
         let consume_events_ix = 
@@ -90,28 +115,18 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, ConsumeEvents<'info>>) -> 
 
         // invoke crank events ix
         invoke_signed(&consume_events_ix, &cpi_account_infos,&[&[SEED_CRANK, crank.market.as_ref(), &[bump]]])?;
-    }
 
-    // return read events ix
+        // read events again bc there might be more open orders
+        return Ok(CrankResponse { 
+            kickoff_instruction: None,
+            next_instruction: read_events_ix
+        });     
+    }
+    
+    // end execution context because there are no more events to consume
     Ok(CrankResponse { 
-        next_instruction: Some(
-            Instruction {
-                program_id: crate::ID,
-                accounts: vec![
-                    AccountMeta::new(crank.key(), false),
-                    AccountMeta::new(crank_queue.key(), true),
-                    AccountMeta::new_readonly(dex_program.key(), false),
-                    AccountMeta::new_readonly(event_queue.key(), false),
-                    AccountMeta::new_readonly(market.key(), false),
-                    AccountMeta::new_readonly(mint_a_vault.key(), false),
-                    AccountMeta::new_readonly(mint_b_vault.key(), false),
-                    AccountMeta::new(PAYER_PUBKEY, true),
-                    AccountMeta::new_readonly(system_program::ID, false),
-                ],
-                data: clockwork_sdk::anchor_sighash("read_events").into(),
-            }
-            .into()
-        ),
-        kickoff_instruction: None
-    }) 
+        kickoff_instruction: read_events_ix,
+        next_instruction: None,
+    })
+
 }
