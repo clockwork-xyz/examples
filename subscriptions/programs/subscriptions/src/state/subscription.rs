@@ -13,7 +13,6 @@ pub const SEED_SUBSCRIPTION: &[u8] = b"subscription";
 #[derive(Debug)]
 pub struct Subscription {
     pub owner: Pubkey,
-    pub subscription_bank: Pubkey,
     pub mint: Pubkey,
     pub recurrent_amount: u64,
     pub epochs_reset: u64,
@@ -47,7 +46,6 @@ pub trait SubscriptionAccount {
     fn new(
         &mut self,
         owner: Pubkey,
-        owner_token_account: Pubkey,
         mint: Pubkey,
         recurrent_amount: u64,
         epochs_reset: u64,
@@ -61,7 +59,6 @@ impl SubscriptionAccount for Account<'_, Subscription> {
     fn new(
         &mut self,
         owner: Pubkey,
-        subscription_bank: Pubkey,
         mint: Pubkey,
         recurrent_amount: u64,
         epochs_reset: u64,
@@ -70,7 +67,6 @@ impl SubscriptionAccount for Account<'_, Subscription> {
         subscription_id: String,
     ) -> Result<()> {
         self.owner = owner;
-        self.subscription_bank = subscription_bank;
         self.mint = mint;
         self.recurrent_amount = recurrent_amount;
         self.epochs_reset = epochs_reset;

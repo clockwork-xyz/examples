@@ -30,9 +30,9 @@ pub mod subscriptions_program {
     /*
      * subscribe to a subscription
      */
-    pub fn subscribe<'info>(ctx: Context<Subscribe>) -> Result<()> {
+    pub fn subscribe<'info>(ctx: Context<Subscribe>, subscription_period: u8) -> Result<()> {
         let bump = *ctx.bumps.get("subscription").unwrap();
-        ctx.accounts.process(bump)
+        ctx.accounts.process(bump, subscription_period)
     }
 
     /*

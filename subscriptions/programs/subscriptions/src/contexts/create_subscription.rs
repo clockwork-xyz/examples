@@ -16,7 +16,7 @@ pub struct CreateSubscription<'info> {
     pub owner: Signer<'info>,
     #[account(
         mut,
-        associated_token::authority = owner,
+        associated_token::authority = subscription,
         associated_token::mint = mint,
     )]
     pub subscription_bank: Box<Account<'info, TokenAccount>>,
@@ -70,7 +70,6 @@ impl<'info> CreateSubscription<'_> {
 
         subscription.new(
             owner.key(),
-            subscription_bank.key(),
             mint,
             recurrent_amount,
             epochs_reset,

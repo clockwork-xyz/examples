@@ -16,7 +16,9 @@ pub struct DisbursePayment<'info> {
     )]
     pub subscriber: Account<'info, Subscriber>,
     #[account(
-        address = subscription.subscription_bank
+        mut,
+        associated_token::authority = subscription,
+        associated_token::mint = subscription.mint,
     )]
     pub subscription_bank: Box<Account<'info, TokenAccount>>,
 
