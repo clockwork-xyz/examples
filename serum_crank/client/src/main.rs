@@ -1,5 +1,3 @@
-use clockwork_sdk::queue_program;
-
 mod utils;
 
 use {
@@ -14,7 +12,10 @@ use {
         },
         token,
     },
-    clockwork_sdk::client::{Client, ClientResult},
+    clockwork_sdk::client::{
+        queue_program::{self, objects::Queue},
+        Client, ClientResult,
+    },
     serum_common::client::rpc::mint_to_new_account,
     solana_sdk::{
         instruction::Instruction, native_token::LAMPORTS_PER_SOL, signature::Keypair,
@@ -49,7 +50,7 @@ fn main() -> ClientResult<()> {
 
     // derive serum_crank PDAs
     let crank = serum_crank::state::Crank::pubkey(market_keys.market);
-    let crank_queue = clockwork_sdk::queue_program::accounts::Queue::pubkey(crank, "crank".into());
+    let crank_queue = Queue::pubkey(crank, "crank".into());
 
     print_explorer_link(crank, "crank".into())?;
     print_explorer_link(crank_queue, "crank_queue".into())?;

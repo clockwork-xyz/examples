@@ -8,10 +8,13 @@ use {
         dex::serum_dex::state::Market,
         token::{Mint, TokenAccount},
     },
-    clockwork_sdk::queue_program::{
-        self,
-        accounts::{Queue, Trigger},
-        QueueProgram,
+    clockwork_sdk::{
+        queue_program::{
+            self,
+            accounts::{Queue, Trigger},
+            QueueProgram,
+        },
+        PAYER_PUBKEY,
     },
     std::mem::size_of,
 };
@@ -111,10 +114,10 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Res
             AccountMeta::new_readonly(market.key(), false),
             AccountMeta::new_readonly(mint_a_vault.key(), false),
             AccountMeta::new_readonly(mint_b_vault.key(), false),
-            AccountMeta::new(clockwork_sdk::queue_program::utils::PAYER_PUBKEY, true),
+            AccountMeta::new(PAYER_PUBKEY, true),
             AccountMeta::new_readonly(system_program.key(), false),
         ],
-        data: clockwork_sdk::queue_program::utils::anchor_sighash("read_events").to_vec(),
+        data: clockwork_sdk::anchor_sighash("read_events").to_vec(),
     };
 
     // initialize queue

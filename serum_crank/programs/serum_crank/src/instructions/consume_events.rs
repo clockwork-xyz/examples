@@ -6,7 +6,7 @@ use {
     },
     anchor_lang::solana_program::program::invoke_signed,
     anchor_spl::{token::TokenAccount, dex::serum_dex},
-    clockwork_sdk::{queue_program::{self, accounts::{Queue, QueueAccount}}, CrankResponse},
+    clockwork_sdk::{queue_program::accounts::{Queue, QueueAccount}, PAYER_PUBKEY, CrankResponse},
 };
 
 #[derive(Accounts)]
@@ -105,12 +105,13 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, ConsumeEvents<'info>>) -> 
                     AccountMeta::new_readonly(market.key(), false),
                     AccountMeta::new_readonly(mint_a_vault.key(), false),
                     AccountMeta::new_readonly(mint_b_vault.key(), false),
-                    AccountMeta::new(queue_program::utils::PAYER_PUBKEY, true),
+                    AccountMeta::new(PAYER_PUBKEY, true),
                     AccountMeta::new_readonly(system_program::ID, false),
                 ],
-                data: clockwork_sdk::queue_program::utils::anchor_sighash("read_events").into(),
+                data: clockwork_sdk::anchor_sighash("read_events").into(),
             }
             .into()
-        )
+        ),
+        kickoff_instruction: None
     }) 
 }
