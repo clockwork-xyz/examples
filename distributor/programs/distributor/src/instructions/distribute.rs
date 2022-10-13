@@ -15,12 +15,13 @@ use {
 };
 
 #[derive(Accounts)]
-pub struct MintToken<'info> {
+pub struct Distribute<'info> {
     #[account(address = anchor_spl::associated_token::ID)]
     pub associated_token_program: Program<'info, AssociatedToken>,
 
     #[account(
-        address = Distributor::pubkey(distributor.mint, distributor.authority),
+        seeds = [SEED_DISTRIBUTOR, distributor.mint.as_ref(), distributor.authority.as_ref()],
+        bump,
         has_one = mint,
         has_one = recipient,
     )]
@@ -60,7 +61,7 @@ pub struct MintToken<'info> {
     pub token_program: Program<'info, anchor_spl::token::Token>,
 }
 
-pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, MintToken<'info>>) -> Result<CrankResponse> {
+pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Distribute<'info>>) -> Result<CrankResponse> {
     // get accounts
     let distributor = &ctx.accounts.distributor;
     let mint = &ctx.accounts.mint;
@@ -91,5 +92,6 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, MintToken<'info>>) -> Resu
 
     Ok(CrankResponse {
         next_instruction: None,
+        kickoff_instruction: None,
     })
 }

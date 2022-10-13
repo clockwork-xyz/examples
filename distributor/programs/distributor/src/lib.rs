@@ -13,31 +13,33 @@ pub mod distributor {
     use super::*;
 
     /*
-     * initialize clockwork queue
+     * initialize distributor account
      */
-    pub fn initialize<'info>(
-        ctx: Context<'_, '_, '_, 'info, Initialize<'info>>,
+    pub fn create<'info>(
+        ctx: Context<'_, '_, '_, 'info, Create<'info>>,
         mint_amount: u64,
     ) -> Result<()> {
-        initialize::handler(ctx, mint_amount)
+        create::handler(ctx, mint_amount)
     }
 
     /*
      * mint to recipient's ATA
      */
-    pub fn mint_token<'info>(
-        ctx: Context<'_, '_, '_, 'info, MintToken<'info>>,
+    pub fn distribute<'info>(
+        ctx: Context<'_, '_, '_, 'info, Distribute<'info>>,
     ) -> Result<clockwork_sdk::CrankResponse> {
-        mint_token::handler(ctx)
+        distribute::handler(ctx)
     }
 
     /*
-     * update recipient and clockwork queue ix data
+     * update recipient, mint amount, and queue schedule
      */
-    pub fn set_recipient<'info>(
-        ctx: Context<'_, '_, '_, 'info, SetRecipient<'info>>,
+    pub fn update<'info>(
+        ctx: Context<'_, '_, '_, 'info, Update<'info>>,
         new_recipient: Option<Pubkey>,
+        mint_amount: Option<u64>,
+        trigger: Option<clockwork_sdk::queue_program::accounts::Trigger>,
     ) -> Result<()> {
-        set_recipient::handler(ctx, new_recipient)
+        update::handler(ctx, new_recipient, mint_amount, trigger)
     }
 }

@@ -12,6 +12,7 @@ pub struct Distributor {
     pub authority: Pubkey,
     pub mint: Pubkey,
     pub recipient: Pubkey,
+    pub recipient_token_account: Pubkey,
     pub mint_amount: u64,
 }
 
@@ -41,6 +42,7 @@ pub trait DistributorAccount {
         &mut self,
         authority: Pubkey,
         recipient: Pubkey,
+        recipient_token_account: Pubkey,
         mint: Pubkey,
         mint_amount: u64,
     ) -> Result<()>;
@@ -51,11 +53,13 @@ impl DistributorAccount for Account<'_, Distributor> {
         &mut self,
         authority: Pubkey,
         recipient: Pubkey,
+        recipient_token_account: Pubkey,
         mint: Pubkey,
         mint_amount: u64,
     ) -> Result<()> {
         self.authority = authority;
         self.recipient = recipient;
+        self.recipient_token_account = recipient_token_account;
         self.mint = mint;
         self.mint_amount = mint_amount;
         Ok(())
