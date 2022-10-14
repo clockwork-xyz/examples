@@ -1,7 +1,7 @@
 use {
     crate::state::*,
     anchor_lang::prelude::*,
-    clockwork_crank::state::{CrankResponse, Queue, SEED_QUEUE},
+    clockwork_sdk::{queue_program::accounts::Queue, CrankResponse},
 };
 
 #[derive(Accounts)]
@@ -17,17 +17,8 @@ pub struct DisbursePayment<'info> {
         address = Subscription::pubkey(subscription.owner,subscription.subscription_id.clone())
     )]
     pub subscription: Box<Account<'info, Subscription>>,
-    #[account(
-        signer,
-        seeds = [
-            SEED_QUEUE,
-            subscription.key().as_ref(),
-            "subscription".as_bytes()
-        ],
-        seeds::program = clockwork_crank::ID,
-        bump,
-    )]
-    pub subscription_queue: Box<Account<'info, Queue>>,
+    #[account(address = Queue::pubkey(subscription.key(), "subscription".into()))]
+    pub subscriptions_queue: Box<Account<'info, Queue>>,
 }
 
 impl<'info> DisbursePayment<'_> {
@@ -45,17 +36,16 @@ impl<'info> DisbursePayment<'_> {
         match amount_left {
             Some(value) => {
                 subscriber.locked_amount = value;
-                subscriber.is_active = false;
-                subscriber.is_subscribed = false;
+                subscriber.is_subscribed = true;
             }
             None => {
-                subscriber.locked_amount -= subscription.recurrent_amount;
-                subscriber.is_subscribed = true
+                subscriber.is_subscribed = false;
             }
         }
 
         Ok(CrankResponse {
             next_instruction: None,
+            kickoff_instruction: None,
         })
     }
 }

@@ -3,9 +3,10 @@ use {
     anchor_lang::prelude::*,
     anchor_lang::solana_program::instruction::Instruction,
     anchor_spl::token::{transfer, Token, TokenAccount, Transfer},
-    clockwork_crank::{
-        program::ClockworkCrank,
-        state::{Trigger, SEED_QUEUE},
+    clockwork_sdk::queue_program::{
+        self,
+        accounts::{Queue, Trigger},
+        QueueProgram,
     },
     std::mem::size_of,
 };
@@ -15,7 +16,7 @@ pub struct Subscribe<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
-        init_if_needed,
+        init,
         address = Subscriber::pubkey(payer.key(),subscription.key()),
         payer = payer,
         space = 8 + size_of::<Subscriber>(),
@@ -29,29 +30,16 @@ pub struct Subscribe<'info> {
     pub subscriber_token_account: Box<Account<'info, TokenAccount>>,
     #[account(
         mut,
-        seeds = [
-            subscription.key().as_ref(),
-            subscription.owner.key().as_ref(),
-            "subscription_bank".as_bytes()
-        ],
-        bump,
+        address=Subscription::bank_pubkey(subscription.key(),subscription.owner.key())
     )]
     pub subscription_bank: Box<Account<'info, TokenAccount>>,
 
-    #[account(address = clockwork_crank::ID)]
-    pub clockwork_program: Program<'info, ClockworkCrank>,
-    #[account(
-        seeds = [
-            SEED_QUEUE,
-            subscription.key().as_ref(),
-            "subscription".as_bytes()
-        ],
-        seeds::program = clockwork_crank::ID,
-        bump
-    )]
-    pub subscriptions_queue: SystemAccount<'info>,
+    #[account(address = queue_program::ID)]
+    pub clockwork_program: Program<'info, QueueProgram>,
+    #[account(address = Queue::pubkey(subscription.key(), "subscription".into()))]
+    pub subscriptions_queue: Box<Account<'info, Queue>>,
 
-    #[account(mut)]
+    #[account(mut, address = Subscription::pubkey(subscription.owner.key(),subscription.subscription_id))]
     pub subscription: Account<'info, Subscription>,
 
     pub system_program: Program<'info, System>,
@@ -76,9 +64,8 @@ impl<'info> Subscribe<'_> {
         subscriber.new(
             payer.key(),
             subscription.key(),
-            subscription_period as u64 * subscription.recurrent_amount,
+            (subscription_period as u64 - 1) * subscription.recurrent_amount,
             true,
-            false,
         )?;
 
         transfer(
@@ -87,7 +74,7 @@ impl<'info> Subscribe<'_> {
                 Transfer {
                     from: subscriber_token_account.to_account_info(),
                     to: subscription_bank.to_account_info(),
-                    authority: subscription.to_account_info(),
+                    authority: payer.to_account_info(),
                 },
             ),
             subscription_period as u64 * subscription.recurrent_amount,
@@ -100,13 +87,13 @@ impl<'info> Subscribe<'_> {
                 AccountMeta::new_readonly(subscription.key(), false),
                 AccountMeta::new_readonly(subscriptions_queue.key(), true),
             ],
-            data: clockwork_crank::anchor::sighash("disburse_payment").into(),
+            data: clockwork_sdk::queue_program::utils::anchor_sighash("disburse_payment").into(),
         };
 
-        clockwork_crank::cpi::queue_create(
+        clockwork_sdk::queue_program::cpi::queue_create(
             CpiContext::new_with_signer(
                 clockwork_program.to_account_info(),
-                clockwork_crank::cpi::accounts::QueueCreate {
+                clockwork_sdk::queue_program::cpi::accounts::QueueCreate {
                     authority: subscription.to_account_info(),
                     payer: payer.to_account_info(),
                     queue: subscriptions_queue.to_account_info(),
@@ -121,9 +108,9 @@ impl<'info> Subscribe<'_> {
             ),
             disburse_payment_ix.into(),
             "payment".into(),
-            // TIME SHOULD BE CURRENT + EPOCHS RESET
             Trigger::Cron {
-                schedule: "12".to_string(),
+                schedule: subscription.schedule,
+                skippable: true,
             },
         )?;
 

@@ -18,13 +18,13 @@ pub mod subscriptions_program {
     pub fn create_subscription<'info>(
         ctx: Context<CreateSubscription>,
         recurrent_amount: u64,
-        epochs_reset: u64,
+        schedule: String,
         mint: Pubkey,
         is_active: bool,
         market_id: String,
     ) -> Result<()> {
         ctx.accounts
-            .process(recurrent_amount, epochs_reset, mint, is_active, market_id)
+            .process(recurrent_amount, schedule, mint, is_active, market_id)
     }
 
     /*
@@ -47,7 +47,7 @@ pub mod subscriptions_program {
      */
     pub fn disburse_payment<'info>(
         ctx: Context<DisbursePayment>,
-    ) -> Result<clockwork_crank::state::CrankResponse> {
+    ) -> Result<clockwork_sdk::CrankResponse> {
         ctx.accounts.process()
     }
 }

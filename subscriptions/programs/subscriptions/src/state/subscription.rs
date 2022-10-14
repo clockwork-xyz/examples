@@ -15,7 +15,7 @@ pub struct Subscription {
     pub owner: Pubkey,
     pub mint: Pubkey,
     pub recurrent_amount: u64,
-    pub epochs_reset: u64,
+    pub schedule: String,
     pub is_active: bool,
     pub subscribers: Vec<Pubkey>,
     pub subscription_id: String,
@@ -28,6 +28,18 @@ impl Subscription {
                 SEED_SUBSCRIPTION,
                 owner.as_ref(),
                 subscription_id.as_bytes(),
+            ],
+            &crate::ID,
+        )
+        .0
+    }
+
+    pub fn bank_pubkey(subscription: Pubkey, owner: Pubkey) -> Pubkey {
+        Pubkey::find_program_address(
+            &[
+                subscription.as_ref(),
+                owner.as_ref(),
+                "subscription_bank".as_bytes(),
             ],
             &crate::ID,
         )
@@ -48,7 +60,7 @@ pub trait SubscriptionAccount {
         owner: Pubkey,
         mint: Pubkey,
         recurrent_amount: u64,
-        epochs_reset: u64,
+        schedule: String,
         is_active: bool,
         subscribers: Vec<Pubkey>,
         subscription_id: String,
@@ -61,7 +73,7 @@ impl SubscriptionAccount for Account<'_, Subscription> {
         owner: Pubkey,
         mint: Pubkey,
         recurrent_amount: u64,
-        epochs_reset: u64,
+        schedule: String,
         is_acitve: bool,
         subscribers: Vec<Pubkey>,
         subscription_id: String,
@@ -69,7 +81,7 @@ impl SubscriptionAccount for Account<'_, Subscription> {
         self.owner = owner;
         self.mint = mint;
         self.recurrent_amount = recurrent_amount;
-        self.epochs_reset = epochs_reset;
+        self.schedule = schedule;
         self.is_active = is_acitve;
         self.subscribers = vec![];
         self.subscription_id = subscription_id;

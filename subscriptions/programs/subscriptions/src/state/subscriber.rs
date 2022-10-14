@@ -15,7 +15,6 @@ pub struct Subscriber {
     pub owner: Pubkey,
     pub subscription: Pubkey,
     pub locked_amount: u64,
-    pub is_active: bool,
     pub is_subscribed: bool,
 }
 
@@ -42,7 +41,6 @@ pub trait SubscriberAccount {
         owner: Pubkey,
         subscription: Pubkey,
         locked_amount: u64,
-        is_active: bool,
         is_subscribed: bool,
     ) -> Result<()>;
 }
@@ -53,13 +51,11 @@ impl SubscriberAccount for Account<'_, Subscriber> {
         owner: Pubkey,
         subscription: Pubkey,
         locked_amount: u64,
-        is_acitve: bool,
         is_subscribed: bool,
     ) -> Result<()> {
         self.owner = owner;
         self.subscription = subscription;
         self.locked_amount = locked_amount;
-        self.is_active = is_acitve;
         self.is_subscribed = is_subscribed;
         Ok(())
     }

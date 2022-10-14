@@ -409,22 +409,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "clockwork-crank"
-version = "1.0.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f135a8239200e882c5166d76c13c77f37b06eb587ad0dd56a0926361acbe07a0"
-dependencies = [
- "anchor-lang",
- "chrono",
- "clockwork-cron",
- "clockwork-pool",
-]
-
-[[package]]
 name = "clockwork-cron"
-version = "1.0.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e5f6316802735a61a5d942dfdd1aa220696a5eac5ae994a2559ca2008c90b1e6"
+version = "1.2.12"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#0cbbaa158bd525f2f7614b2592217706b016c756"
 dependencies = [
  "chrono",
  "nom",
@@ -432,12 +419,47 @@ dependencies = [
 ]
 
 [[package]]
-name = "clockwork-pool"
-version = "1.0.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "772201a5666b03b632fced77a7d7fbee22f512631a0807bb0e432619bf795c8a"
+name = "clockwork-network-program"
+version = "1.2.12"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#0cbbaa158bd525f2f7614b2592217706b016c756"
 dependencies = [
  "anchor-lang",
+ "anchor-spl",
+ "clockwork-utils",
+]
+
+[[package]]
+name = "clockwork-queue-program"
+version = "1.2.12"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#0cbbaa158bd525f2f7614b2592217706b016c756"
+dependencies = [
+ "anchor-lang",
+ "chrono",
+ "clockwork-cron",
+ "clockwork-network-program",
+ "clockwork-utils",
+ "static-pubkey",
+]
+
+[[package]]
+name = "clockwork-sdk"
+version = "1.2.12"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#0cbbaa158bd525f2f7614b2592217706b016c756"
+dependencies = [
+ "chrono",
+ "clockwork-queue-program",
+ "clockwork-utils",
+ "nom",
+ "once_cell",
+]
+
+[[package]]
+name = "clockwork-utils"
+version = "1.2.12"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#0cbbaa158bd525f2f7614b2592217706b016c756"
+dependencies = [
+ "anchor-lang",
+ "static-pubkey",
 ]
 
 [[package]]
@@ -1337,12 +1359,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "static-pubkey"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0547d5945c93f55e1b18bf2a67d1a3d0548561f2687645b22c1c1d4fbb9a8e90"
+dependencies = [
+ "bs58 0.4.0",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "subscriptions"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
- "clockwork-crank",
+ "clockwork-sdk",
 ]
 
 [[package]]

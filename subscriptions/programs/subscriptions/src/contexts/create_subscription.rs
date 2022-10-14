@@ -5,7 +5,7 @@ use {
         associated_token::AssociatedToken,
         token::{Mint, TokenAccount},
     },
-    clockwork_crank::{program::ClockworkCrank, state::SEED_QUEUE},
+    clockwork_sdk::queue_program::{self, accounts::Queue, QueueProgram},
     std::mem::size_of,
 };
 
@@ -37,24 +37,16 @@ pub struct CreateSubscription<'info> {
         space = 8 + size_of::<Subscription>(),
     )]
     pub subscription: Account<'info, Subscription>,
-    #[account(
-        seeds = [
-            SEED_QUEUE,
-            subscription.key().as_ref(),
-            "subscription".as_bytes()
-        ],
-        seeds::program = clockwork_crank::ID,
-        bump
-    )]
-    pub subscriptions_queue: SystemAccount<'info>,
+    #[account(address = Queue::pubkey(subscription.key(), "subscription".into()))]
+    pub subscriptions_queue: Box<Account<'info, Queue>>,
 
     pub system_program: Program<'info, System>,
     #[account(address = anchor_spl::token::ID)]
     pub token_program: Program<'info, anchor_spl::token::Token>,
     #[account(address = anchor_spl::associated_token::ID)]
     pub associated_token_program: Program<'info, AssociatedToken>,
-    #[account(address = clockwork_crank::ID)]
-    pub clockwork_program: Program<'info, ClockworkCrank>,
+    #[account(address = queue_program::ID)]
+    pub clockwork_program: Program<'info, QueueProgram>,
     #[account(address = sysvar::rent::ID)]
     pub rent: Sysvar<'info, Rent>,
 }
@@ -63,7 +55,7 @@ impl<'info> CreateSubscription<'_> {
     pub fn process(
         &mut self,
         recurrent_amount: u64,
-        epochs_reset: u64,
+        schedule: String,
         mint: Pubkey,
         is_active: bool,
         subscription_id: String,
@@ -71,7 +63,6 @@ impl<'info> CreateSubscription<'_> {
         let Self {
             owner,
             subscription,
-            subscription_bank,
             ..
         } = self;
 
@@ -79,7 +70,7 @@ impl<'info> CreateSubscription<'_> {
             owner.key(),
             mint,
             recurrent_amount,
-            epochs_reset,
+            schedule,
             is_active,
             vec![],
             subscription_id,
