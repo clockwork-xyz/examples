@@ -39,7 +39,8 @@ pub mod subscriptions_program {
      * unsubscribe from a subscription
      */
     pub fn unsubscribe<'info>(ctx: Context<Unsubscribe>) -> Result<()> {
-        ctx.accounts.process()
+        let bump = *ctx.bumps.get("subscription").unwrap();
+        ctx.accounts.process(bump)
     }
 
     /*

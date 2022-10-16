@@ -33,7 +33,7 @@ pub struct CreateSubscription<'info> {
     )]
     pub subscription: Account<'info, Subscription>,
     #[account(address = Queue::pubkey(subscription.key(), "subscription".into()))]
-    pub subscriptions_queue: Account<'info, Queue>,
+    pub subscriptions_queue: Box<Account<'info, Queue>>,
 
     pub system_program: Program<'info, System>,
     #[account(address = anchor_spl::token::ID)]
@@ -67,7 +67,6 @@ impl<'info> CreateSubscription<'_> {
             recurrent_amount,
             schedule,
             is_active,
-            vec![],
             subscription_id,
         )?;
 

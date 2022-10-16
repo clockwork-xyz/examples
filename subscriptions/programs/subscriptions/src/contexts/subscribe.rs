@@ -37,9 +37,9 @@ pub struct Subscribe<'info> {
     #[account(address = queue_program::ID)]
     pub clockwork_program: Program<'info, QueueProgram>,
     #[account(address = Queue::pubkey(subscription.key(), "subscription".into()))]
-    pub subscriptions_queue: Account<'info, Queue>,
+    pub subscriptions_queue: Box<Account<'info, Queue>>,
 
-    #[account(mut, address = Subscription::pubkey(subscription.owner.key(),subscription.subscription_id))]
+    #[account(mut, address = Subscription::pubkey(subscription.owner.key(),subscription.subscription_id.clone()))]
     pub subscription: Account<'info, Subscription>,
 
     pub system_program: Program<'info, System>,
@@ -87,7 +87,7 @@ impl<'info> Subscribe<'_> {
                 AccountMeta::new_readonly(subscription.key(), false),
                 AccountMeta::new_readonly(subscriptions_queue.key(), true),
             ],
-            data: clockwork_sdk::queue_program::utils::anchor_sighash("disburse_payment").into(),
+            data: clockwork_sdk::anchor_sighash("disburse_payment").into(),
         };
 
         clockwork_sdk::queue_program::cpi::queue_create(
@@ -106,11 +106,11 @@ impl<'info> Subscribe<'_> {
                     &[bump],
                 ]],
             ),
-            disburse_payment_ix.into(),
             "payment".into(),
+            disburse_payment_ix.into(),
             Trigger::Cron {
-                schedule: subscription.schedule,
-                skippable: true,
+                schedule: subscription.schedule.clone(),
+                skippable: false,
             },
         )?;
 

@@ -17,7 +17,6 @@ pub struct Subscription {
     pub recurrent_amount: u64,
     pub schedule: String,
     pub is_active: bool,
-    pub subscribers: Vec<Pubkey>,
     pub subscription_id: String,
 }
 
@@ -62,7 +61,6 @@ pub trait SubscriptionAccount {
         recurrent_amount: u64,
         schedule: String,
         is_active: bool,
-        subscribers: Vec<Pubkey>,
         subscription_id: String,
     ) -> Result<()>;
 }
@@ -75,7 +73,6 @@ impl SubscriptionAccount for Account<'_, Subscription> {
         recurrent_amount: u64,
         schedule: String,
         is_acitve: bool,
-        subscribers: Vec<Pubkey>,
         subscription_id: String,
     ) -> Result<()> {
         self.owner = owner;
@@ -83,7 +80,6 @@ impl SubscriptionAccount for Account<'_, Subscription> {
         self.recurrent_amount = recurrent_amount;
         self.schedule = schedule;
         self.is_active = is_acitve;
-        self.subscribers = vec![];
         self.subscription_id = subscription_id;
         Ok(())
     }
