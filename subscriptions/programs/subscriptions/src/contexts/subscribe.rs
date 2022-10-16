@@ -27,17 +27,17 @@ pub struct Subscribe<'info> {
         associated_token::authority = payer,
         associated_token::mint = subscription.mint,
     )]
-    pub subscriber_token_account: Box<Account<'info, TokenAccount>>,
+    pub subscriber_token_account: Account<'info, TokenAccount>,
     #[account(
         mut,
         address=Subscription::bank_pubkey(subscription.key(),subscription.owner.key())
     )]
-    pub subscription_bank: Box<Account<'info, TokenAccount>>,
+    pub subscription_bank: Account<'info, TokenAccount>,
 
     #[account(address = queue_program::ID)]
     pub clockwork_program: Program<'info, QueueProgram>,
     #[account(address = Queue::pubkey(subscription.key(), "subscription".into()))]
-    pub subscriptions_queue: Box<Account<'info, Queue>>,
+    pub subscriptions_queue: Account<'info, Queue>,
 
     #[account(mut, address = Subscription::pubkey(subscription.owner.key(),subscription.subscription_id))]
     pub subscription: Account<'info, Subscription>,

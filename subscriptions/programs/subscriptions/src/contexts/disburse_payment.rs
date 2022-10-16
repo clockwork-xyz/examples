@@ -16,9 +16,9 @@ pub struct DisbursePayment<'info> {
         mut,
         address = Subscription::pubkey(subscription.owner,subscription.subscription_id.clone())
     )]
-    pub subscription: Box<Account<'info, Subscription>>,
+    pub subscription: Account<'info, Subscription>,
     #[account(address = Queue::pubkey(subscription.key(), "subscription".into()))]
-    pub subscriptions_queue: Box<Account<'info, Queue>>,
+    pub subscriptions_queue: Account<'info, Queue>,
 }
 
 impl<'info> DisbursePayment<'_> {
