@@ -19,12 +19,7 @@ pub struct CreateSubscription<'info> {
         payer = owner,
         token::mint = mint,
         token::authority = subscription,
-        seeds = [
-            subscription.key().as_ref(),
-            owner.key().as_ref(),
-            "subscription_bank".as_bytes()
-        ],
-        bump,
+        address = Subscription::bank_pubkey(subscription.key(),owner.key())
     )]
     pub subscription_bank: Box<Account<'info, TokenAccount>>,
 
