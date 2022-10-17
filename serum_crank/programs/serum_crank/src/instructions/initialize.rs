@@ -10,9 +10,12 @@ use {
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
+    #[account(mut)]
+    pub authority: Signer<'info>,
+
     #[account(
         init,
-        payer = payer,
+        payer = authority,
         seeds = [SEED_CRANK, market.key().as_ref()],
         bump,
         space = 8 + size_of::<Crank>(),
@@ -45,9 +48,6 @@ pub struct Initialize<'info> {
         constraint = mint_b_vault.mint == mint_b.key()
     )]
     pub mint_b_vault: Account<'info, TokenAccount>,
-
-    #[account(mut)]
-    pub payer: Signer<'info>,
 
     #[account(address = system_program::ID)]
     pub system_program: Program<'info, System>,

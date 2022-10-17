@@ -6,7 +6,7 @@ use {
         solana_program::{system_program,instruction::Instruction},
     },
     anchor_spl::{dex::serum_dex::state::{strip_header, EventQueueHeader, Event, Queue as SerumDexQueue}, token::TokenAccount},
-    clockwork_sdk::{queue_program::accounts::{Queue, QueueAccount}, CrankResponse}
+    clockwork_sdk::{queue_program::accounts::Queue, CrankResponse}
 };
 
 #[derive(Accounts)]
@@ -20,15 +20,14 @@ pub struct ReadEvents<'info> {
         has_one = mint_a_vault,
         has_one = mint_b_vault,
     )]
-    pub crank: Account<'info, Crank>,
+    pub crank: Box<Account<'info, Crank>>,
 
     #[account(
         signer, 
-        mut,
-        address = crank_queue.pubkey(),
-        constraint = crank_queue.id.eq("crank"),
+        address = Queue::pubkey(crank_queue.authority, crank_queue.id.clone()),
+        constraint = crank_queue.id.eq("crank")
     )]
-    pub crank_queue: Account<'info, Queue>,
+    pub crank_queue: Box<Account<'info, Queue>>,
 
     #[account(address = anchor_spl::dex::ID)]
     pub dex_program: Program<'info, anchor_spl::dex::Dex>,
@@ -39,9 +38,9 @@ pub struct ReadEvents<'info> {
     /// CHECK: this account is validated against the crank account
     pub market: AccountInfo<'info>,
 
-    pub mint_a_vault: Account<'info, TokenAccount>,
+    pub mint_a_vault: Box<Account<'info, TokenAccount>>,
 
-    pub mint_b_vault: Account<'info, TokenAccount>,
+    pub mint_b_vault: Box<Account<'info, TokenAccount>>,
 
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -53,7 +52,7 @@ pub struct ReadEvents<'info> {
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, ReadEvents<'info>>) -> Result<CrankResponse> {
     // Get accounts
     let crank = &mut ctx.accounts.crank;
-    let crank_queue = &mut ctx.accounts.crank_queue;
+    let crank_queue = &ctx.accounts.crank_queue;
     let dex_program = &ctx.accounts.dex_program;
     let event_queue = &ctx.accounts.event_queue;
     let market = &ctx.accounts.market;
