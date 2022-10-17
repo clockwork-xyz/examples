@@ -1,6 +1,6 @@
 use {
     anchor_lang::{prelude::*, solana_program::system_program, InstructionData},
-    clockwork_sdk::{Client, ClientResult},
+    clockwork_sdk::client::{Client, ClientResult},
     solana_sdk::{
         instruction::Instruction, native_token::LAMPORTS_PER_SOL, signature::Keypair,
         transaction::Transaction,
@@ -21,16 +21,21 @@ fn main() -> ClientResult<()> {
 }
 
 fn create_feed(client: &Client) -> ClientResult<()> {
-    let feed_pubkey = pyth_feed::state::Feed::pubkey();
+    let feed_pubkey = pyth_feed::state::Feed::pubkey(client.payer_pubkey());
+    let feed_queue_pubkey =
+        clockwork_sdk::queue_program::accounts::Queue::pubkey(feed_pubkey, "feed".into());
+
+    print_explorer_link(feed_queue_pubkey, "feed_queue".into())?;
+
+    // airdrop queue
+    client.airdrop(&feed_queue_pubkey, 2 * LAMPORTS_PER_SOL)?;
+
     let create_feed_ix = Instruction {
         program_id: pyth_feed::ID,
         accounts: vec![
             AccountMeta::new_readonly(clockwork_sdk::queue_program::ID, false),
             AccountMeta::new(feed_pubkey, false),
-            AccountMeta::new(
-                clockwork_sdk::queue_program::accounts::Queue::pubkey(feed_pubkey, "feed".into()),
-                false,
-            ),
+            AccountMeta::new(feed_queue_pubkey, false),
             AccountMeta::new(client.payer_pubkey(), true),
             AccountMeta::new_readonly(system_program::ID, false),
         ],
@@ -51,7 +56,7 @@ fn create_feed(client: &Client) -> ClientResult<()> {
 
 pub fn print_explorer_link(address: Pubkey, label: String) -> ClientResult<()> {
     println!(
-        "{}: https://explorer.solana.com/address/{}?cluster=custom",
+        "{}: https://explorer.solana.com/address/{}?cluster=devnet",
         label.to_string(),
         address
     );
