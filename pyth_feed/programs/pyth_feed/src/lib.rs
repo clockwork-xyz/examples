@@ -19,7 +19,7 @@ pub mod pyth_feed {
         create_feed::handler(ctx, pyth_feed)
     }
 
-    pub fn process_pyth_feed(ctx: Context<ProcessPythFeed>) -> Result<()> {
-        process_pyth_feed::handler(ctx)
+    pub fn process_feed(ctx: Context<ProcessFeed>) -> Result<()> {
+        process_feed::handler(ctx)
     }
 }

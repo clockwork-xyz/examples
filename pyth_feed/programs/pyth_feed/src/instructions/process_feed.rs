@@ -6,8 +6,8 @@ use {
 };
 
 #[derive(Accounts)]
-pub struct ProcessPythFeed<'info> {
-    #[account(mut, seeds = [SEED_FEED], bump)]
+pub struct ProcessFeed<'info> {
+    #[account(mut, seeds = [SEED_FEED, feed.authority.as_ref()], bump)]
     pub feed: Account<'info, Feed>,
 
     /// CHECK: this account is manually being checked against the feed account's feed field
@@ -18,14 +18,14 @@ pub struct ProcessPythFeed<'info> {
 
     #[account(
         address = queue.pubkey(),
-        constraint = queue.id.eq("events"),
+        constraint = queue.id.eq("feed"),
         signer,
         constraint = queue.authority == feed.key()
     )]
     pub queue: Account<'info, Queue>,
 }
 
-pub fn handler<'info>(ctx: Context<ProcessPythFeed>) -> Result<()> {
+pub fn handler<'info>(ctx: Context<ProcessFeed>) -> Result<()> {
     let feed = &mut ctx.accounts.feed;
     let pyth_data_feed = &ctx.accounts.pyth_data_feed;
 

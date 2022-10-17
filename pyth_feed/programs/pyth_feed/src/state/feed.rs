@@ -15,8 +15,8 @@ pub struct Feed {
 }
 
 impl Feed {
-    pub fn pubkey() -> Pubkey {
-        Pubkey::find_program_address(&[SEED_FEED], &crate::ID).0
+    pub fn pubkey(authority: Pubkey) -> Pubkey {
+        Pubkey::find_program_address(&[SEED_FEED, authority.key().as_ref()], &crate::ID).0
     }
 }
 

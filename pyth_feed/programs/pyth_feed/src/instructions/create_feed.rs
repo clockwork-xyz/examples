@@ -6,7 +6,7 @@ use {
     },
     clockwork_sdk::queue_program::{
         self,
-        accounts::{Queue, Trigger},
+        accounts::{Queue, QueueSettings, Trigger},
         QueueProgram,
     },
     std::mem::size_of,
@@ -19,7 +19,7 @@ pub struct CreateFeed<'info> {
 
     #[account(
         init,
-        seeds = [SEED_FEED],
+        seeds = [SEED_FEED, signer.key().as_ref()],
         bump,
         payer = signer,
         space = 8 + size_of::<Feed>()
@@ -40,15 +40,20 @@ pub fn handler<'info>(
     ctx: Context<'_, '_, '_, 'info, CreateFeed<'info>>,
     pyth_feed: Pubkey,
 ) -> Result<()> {
+    // Get accounts
     let clockwork = &ctx.accounts.clockwork;
     let feed = &mut ctx.accounts.feed;
     let queue = &ctx.accounts.queue;
     let signer = &ctx.accounts.signer;
     let system_program = &ctx.accounts.system_program;
 
-    feed.new(feed.key(), pyth_feed)?;
+    // initialize PDA feed account
+    feed.new(signer.key(), pyth_feed)?;
 
+    // get feed bump
     let bump = *ctx.bumps.get("feed").unwrap();
+
+    // build process feed ix
     let proceess_feed_ix = Instruction {
         program_id: crate::ID,
         accounts: vec![
@@ -56,7 +61,7 @@ pub fn handler<'info>(
             AccountMeta::new_readonly(feed.price_feed, false),
             AccountMeta::new(queue.key(), true),
         ],
-        data: clockwork_sdk::anchor_sighash("process_pyth_feed").into(),
+        data: clockwork_sdk::anchor_sighash("process_feed").into(),
     };
 
     // initialize queue
@@ -69,7 +74,7 @@ pub fn handler<'info>(
                 queue: queue.to_account_info(),
                 system_program: system_program.to_account_info(),
             },
-            &[&[SEED_FEED, &[bump]]],
+            &[&[SEED_FEED, feed.authority.as_ref(), &[bump]]],
         ),
         "feed".into(),
         proceess_feed_ix.into(),
@@ -85,11 +90,14 @@ pub fn handler<'info>(
                 queue: queue.to_account_info(),
                 system_program: system_program.to_account_info(),
             },
-            &[&[SEED_FEED, &[bump]]],
+            &[&[SEED_FEED, feed.authority.as_ref(), &[bump]]],
         ),
-        None,
-        Some(1),
-        None,
+        QueueSettings {
+            fee: None,
+            kickoff_instruction: None,
+            rate_limit: Some(1),
+            trigger: None,
+        },
     )?;
 
     Ok(())
