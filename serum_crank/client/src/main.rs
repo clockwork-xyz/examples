@@ -12,9 +12,15 @@ use {
         },
         token,
     },
-    clockwork_sdk::client::{
-        queue_program::{self, objects::Queue},
-        Client, ClientResult,
+    clockwork_sdk::{
+        client::{
+            queue_program::{
+                instruction::queue_create,
+                objects::{Queue, Trigger},
+            },
+            Client, ClientResult,
+        },
+        PAYER_PUBKEY,
     },
     serum_common::client::rpc::mint_to_new_account,
     solana_sdk::{
@@ -50,12 +56,12 @@ fn main() -> ClientResult<()> {
 
     // derive serum_crank PDAs
     let crank = serum_crank::state::Crank::pubkey(market_keys.market);
-    let crank_queue = Queue::pubkey(crank, "crank".into());
+    let crank_queue = Queue::pubkey(client.payer_pubkey(), "crank".into());
 
     print_explorer_link(crank, "crank".into())?;
     print_explorer_link(crank_queue, "crank_queue".into())?;
 
-    // init serum_crank program
+    // init crank account and serum crank queue from the client side
     initialize_serum_crank(&client, crank, crank_queue, &market_keys)?;
 
     // Create wallets for alice and bob
@@ -148,32 +154,68 @@ fn initialize_serum_crank(
     crank_queue: Pubkey,
     market_keys: &MarketKeys,
 ) -> ClientResult<()> {
+    //airdrop crank queue
     client.airdrop(&crank_queue, LAMPORTS_PER_SOL)?;
 
+    // destructor struct for convenience
+    let MarketKeys {
+        event_q,
+        market,
+        pc_mint,
+        pc_vault,
+        coin_mint,
+        coin_vault,
+        ..
+    } = *market_keys;
+
+    // define initialize ix
     let initialize_ix = Instruction {
         program_id: serum_crank::ID,
         accounts: vec![
-            AccountMeta::new_readonly(queue_program::ID, false),
-            AccountMeta::new(crank, false),
-            AccountMeta::new(crank_queue, false),
+            AccountMeta::new(client.payer_pubkey(), true),
+            AccountMeta::new(crank.key(), false),
             AccountMeta::new_readonly(anchor_spl::dex::ID, false),
-            AccountMeta::new_readonly(market_keys.event_q, false),
-            AccountMeta::new_readonly(market_keys.market, false),
-            AccountMeta::new_readonly(market_keys.pc_mint, false),
-            AccountMeta::new_readonly(market_keys.pc_vault, false),
-            AccountMeta::new_readonly(market_keys.coin_mint, false),
-            AccountMeta::new_readonly(market_keys.coin_vault, false),
-            AccountMeta::new_readonly(client.payer_pubkey(), true),
+            AccountMeta::new_readonly(event_q, false),
+            AccountMeta::new_readonly(market, false),
+            AccountMeta::new_readonly(pc_mint, false),
+            AccountMeta::new_readonly(pc_vault, false),
+            AccountMeta::new_readonly(coin_mint, false),
+            AccountMeta::new_readonly(coin_vault, false),
             AccountMeta::new_readonly(system_program::ID, false),
         ],
         data: serum_crank::instruction::Initialize.data(),
     };
 
+    // create queue with read events ix
+    let queue_create = queue_create(
+        client.payer_pubkey(),
+        "crank".into(),
+        Instruction {
+            program_id: serum_crank::ID,
+            accounts: vec![
+                AccountMeta::new(crank.key(), false),
+                AccountMeta::new(crank_queue.key(), true),
+                AccountMeta::new_readonly(anchor_spl::dex::ID, false),
+                AccountMeta::new_readonly(event_q, false),
+                AccountMeta::new_readonly(market, false),
+                AccountMeta::new_readonly(pc_vault, false),
+                AccountMeta::new_readonly(coin_vault, false),
+                AccountMeta::new(PAYER_PUBKEY, true),
+                AccountMeta::new_readonly(system_program::ID, false),
+            ],
+            data: serum_crank::instruction::ReadEvents.data(),
+        }
+        .into(),
+        client.payer_pubkey(),
+        crank_queue,
+        Trigger::Account { pubkey: event_q },
+    );
+
     sign_send_and_confirm_tx(
         &client,
-        [initialize_ix].to_vec(),
+        vec![initialize_ix, queue_create],
         None,
-        "initialize_serum_crank".to_string(),
+        "initialize crank and queue_create".into(),
     )?;
 
     Ok(())
