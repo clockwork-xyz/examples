@@ -1,12 +1,12 @@
 [package]
-name = "payments-program"
+name = "payments"
 version = "0.1.0"
 description = "Created with Anchor"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "payments_program"
+name = "payments"
 
 [features]
 no-entrypoint = []
@@ -15,11 +15,7 @@ no-log-ix-name = []
 cpi = ["no-entrypoint"]
 default = []
 
-[profile.release]
-overflow-checks = true
-
 [dependencies]
+anchor-lang = {version = "0.25.0", features = ["init-if-needed"] }
 anchor-spl = { version = "0.25.0", features = ["token"] }
-anchor-lang = "0.25.0" 
-clockwork-sdk = { path = "../../../../clockwork/sdk", version = "1.1.4", features = ["queue"] }
-# clockwork-sdk = { branch = "main", git = "https://github.com/clockwork-xyz/clockwork", version = "1.1.4" }
+clockwork-sdk = { branch = "main", git = "https://github.com/clockwork-xyz/clockwork", version = "1.2.13", features = ["queue"] }
