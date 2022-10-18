@@ -3,7 +3,7 @@ use {
     anchor_spl::{associated_token, token},
     clockwork_sdk::{
         client::{
-            queue_program::{self, instruction::queue_create, objects::Trigger},
+            queue_program::{instruction::queue_create, objects::Trigger},
             Client, ClientResult, SplToken,
         },
         PAYER_PUBKEY,
@@ -81,7 +81,7 @@ fn main() -> ClientResult<()> {
         std::thread::sleep(std::time::Duration::from_secs(1));
     }
 
-    update_payment(&client, mint, payment, payment_queue, recipient)?;
+    update_payment(&client, mint, payment, recipient)?;
 
     Ok(())
 }
@@ -161,26 +161,19 @@ fn update_payment(
     client: &Client,
     mint: Pubkey,
     payment: Pubkey,
-    payment_queue: Pubkey,
     recipient: Pubkey,
 ) -> ClientResult<()> {
     let update_payment_ix = Instruction {
         program_id: payments::ID,
         accounts: vec![
-            AccountMeta::new_readonly(queue_program::ID, false),
             AccountMeta::new_readonly(mint, false),
             AccountMeta::new(payment, false),
-            AccountMeta::new(payment_queue, false),
             AccountMeta::new_readonly(recipient, false),
             AccountMeta::new(client.payer_pubkey(), true),
             AccountMeta::new_readonly(system_program::ID, false),
         ],
         data: payments::instruction::UpdatePayment {
             amount: Some(50000),
-            trigger: Some(Trigger::Cron {
-                schedule: "*/4 * * * * * *".into(),
-                skippable: true,
-            }),
         }
         .data(),
     };
