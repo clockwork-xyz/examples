@@ -37,7 +37,7 @@ pub struct DisbursePayment<'info> {
     #[account(
         signer, 
         address = payment_queue.pubkey(),
-        constraint = payment_queue.id.eq("payment"),
+        constraint = payment_queue.authority.eq(&payment.sender),
     )]
     pub payment_queue: Box<Account<'info, Queue>>,
 

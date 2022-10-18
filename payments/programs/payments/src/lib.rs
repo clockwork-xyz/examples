@@ -32,13 +32,12 @@ pub mod payments {
     }
 
     /*
-     * update disbursement amount and/or schedule
+     * update disbursement amount
      */
     pub fn update_payment<'info>(
         ctx: Context<'_, '_, '_, 'info, UpdatePayment<'info>>,
         amount: Option<u64>,
-        trigger: Option<clockwork_sdk::queue_program::accounts::Trigger>,
     ) -> Result<()> {
-        update_payment::handler(ctx, amount, trigger)
+        update_payment::handler(ctx, amount)
     }
 }
