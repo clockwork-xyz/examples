@@ -3,7 +3,7 @@ use {
     anchor_spl::{associated_token, token},
     clockwork_sdk::{
         client::{
-            queue_program::{instruction::queue_create, objects::Trigger},
+            queue_program::{self, instruction::queue_create, objects::Trigger},
             Client, ClientResult, SplToken,
         },
         PAYER_PUBKEY,
@@ -74,7 +74,14 @@ fn main() -> ClientResult<()> {
         sender_token_account,
     )?;
 
-    // update_payment(&client, recipient, payment_queue, payment, mint)?;
+    // wait 10 seconds to update payment
+    println!("wait 10 seconds to update payment");
+    for n in 0..10 {
+        println!("{}", n);
+        std::thread::sleep(std::time::Duration::from_secs(1));
+    }
+
+    update_payment(&client, mint, payment, payment_queue, recipient)?;
 
     Ok(())
 }
@@ -131,15 +138,14 @@ fn create_payment(
         client.payer_pubkey(),
         payment_queue,
         Trigger::Cron {
-            schedule: "*/15 * * * * * *".into(),
+            schedule: "*/2 * * * * * *".into(),
             skippable: true,
         },
     );
 
     print_explorer_link(payment_queue, "payment_queue".into())?;
-    print_explorer_link(client.payer_pubkey(), "sender".into())?;
     print_explorer_link(sender_token_account, "sender_token_account".into())?;
-    print_explorer_link(payment, "payment".into())?;
+    print_explorer_link(recipient_token_account, "recipient_token_account".into())?;
 
     sign_send_and_confirm_tx(
         client,
@@ -151,36 +157,43 @@ fn create_payment(
     Ok(())
 }
 
-// fn update_payment(
-//     client: &Client,
-//     recipient: Pubkey,
-//     queue: Pubkey,
-//     payment: Pubkey,
-//     mint: Pubkey,
-// ) -> ClientResult<()> {
-//     let update_queue_ix = Instruction {
-//         program_id: payments::ID,
-//         accounts: vec![
-//             AccountMeta::new_readonly(queue_program::ID, false),
-//             AccountMeta::new_readonly(mint, false),
-//             AccountMeta::new(payment, false),
-//             AccountMeta::new(queue, false),
-//             AccountMeta::new_readonly(recipient, false),
-//             AccountMeta::new(client.payer_pubkey(), true),
-//             AccountMeta::new_readonly(system_program::ID, false),
-//         ],
-//         data: payments::instruction::UpdatePayment {
-//             disbursement_amount: Some(100000),
-//             schedule: Some(Trigger::Cron {
-//                 schedule: "*/20 * * * * * *".to_string(),
-//                 skippable: true,
-//             }),
-//         }
-//         .data(),
-//     };
-//     print_tx_sig(client, &[update_queue_ix], "update_queue".to_string())?;
-//     Ok(())
-// }
+fn update_payment(
+    client: &Client,
+    mint: Pubkey,
+    payment: Pubkey,
+    payment_queue: Pubkey,
+    recipient: Pubkey,
+) -> ClientResult<()> {
+    let update_payment_ix = Instruction {
+        program_id: payments::ID,
+        accounts: vec![
+            AccountMeta::new_readonly(queue_program::ID, false),
+            AccountMeta::new_readonly(mint, false),
+            AccountMeta::new(payment, false),
+            AccountMeta::new(payment_queue, false),
+            AccountMeta::new_readonly(recipient, false),
+            AccountMeta::new(client.payer_pubkey(), true),
+            AccountMeta::new_readonly(system_program::ID, false),
+        ],
+        data: payments::instruction::UpdatePayment {
+            amount: Some(50000),
+            trigger: Some(Trigger::Cron {
+                schedule: "*/4 * * * * * *".into(),
+                skippable: true,
+            }),
+        }
+        .data(),
+    };
+
+    sign_send_and_confirm_tx(
+        client,
+        [update_payment_ix].to_vec(),
+        None,
+        "update_payment".to_string(),
+    )?;
+
+    Ok(())
+}
 
 pub fn print_explorer_link(address: Pubkey, label: String) -> ClientResult<()> {
     println!(
