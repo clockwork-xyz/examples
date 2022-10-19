@@ -2,17 +2,14 @@
 seeds = false
 skip-lint = false
 
-[programs.localnet]
-payments = "Da42fsoWLyui6iwABCXNhu8R9JdqLQ9jXvCtCfrmouw9"
-
 [programs.devnet]
-payments = "Da42fsoWLyui6iwABCXNhu8R9JdqLQ9jXvCtCfrmouw9"
+pyth_feed = "3JmeDCyyB1nSubYLYHrZxY4fo16aaHfa3pE4NDaxxV13"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

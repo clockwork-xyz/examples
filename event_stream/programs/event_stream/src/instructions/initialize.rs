@@ -60,7 +60,7 @@ pub fn handler(ctx: Context<Initialize>) -> Result<()> {
 
     // Create a queue to process the events
     let bump = *ctx.bumps.get("authority").unwrap();
-    let snapshot_kickoff_ix = Instruction {
+    let process_event_ix = Instruction {
         program_id: crate::ID,
         accounts: vec![
             AccountMeta::new_readonly(authority.key(), false),
@@ -81,7 +81,7 @@ pub fn handler(ctx: Context<Initialize>) -> Result<()> {
             &[&[SEED_AUTHORITY, &[bump]]],
         ),
         "event".into(),
-        snapshot_kickoff_ix.into(),
+        process_event_ix.into(),
         Trigger::Account {
             pubkey: event.key(),
         },

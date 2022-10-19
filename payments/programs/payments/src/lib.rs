@@ -9,7 +9,7 @@ use anchor_lang::prelude::*;
 use instructions::*;
 
 #[program]
-pub mod payments_program {
+pub mod payments {
     use super::*;
 
     /*
@@ -17,39 +17,27 @@ pub mod payments_program {
      */
     pub fn create_payment<'info>(
         ctx: Context<'_, '_, '_, 'info, CreatePayment<'info>>,
-        disbursement_amount: u64,
-        schedule: String,
+        amount: u64,
     ) -> Result<()> {
-        create_payment::handler(ctx, disbursement_amount, schedule)
+        create_payment::handler(ctx, amount)
     }
 
     /*
      * disburse payment from program authority's ATA to recipient's ATA
      */
     pub fn disburse_payment<'info>(
-        ctx: Context<'_, '_, '_, 'info, DisbursePayment<'info>>,
+        ctx: Context<'_, '_, '_, '_, DisbursePayment<'_>>,
     ) -> Result<clockwork_sdk::CrankResponse> {
         disburse_payment::handler(ctx)
     }
 
     /*
-     * deposit into program authority's ATA
-     */
-    pub fn top_up_payment<'info>(
-        ctx: Context<'_, '_, '_, 'info, TopUpPayment<'info>>,
-        amount: u64,
-    ) -> Result<()> {
-        top_up_payment::handler(ctx, amount)
-    }
-
-    /*
-     * update disbursement amount and/or schedule
+     * update disbursement amount
      */
     pub fn update_payment<'info>(
         ctx: Context<'_, '_, '_, 'info, UpdatePayment<'info>>,
-        disbursement_amount: Option<u64>,
-        schedule: Option<clockwork_sdk::queue_program::accounts::Trigger>,
+        amount: Option<u64>,
     ) -> Result<()> {
-        update_payment::handler(ctx, disbursement_amount, schedule)
+        update_payment::handler(ctx, amount)
     }
 }
