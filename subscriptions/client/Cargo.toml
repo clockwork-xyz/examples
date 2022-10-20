@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-subscriptions= { path = "../programs/subscriptions", features = ["no-entrypoint"], version = "0.1.0" }
+subscriptions-program = { path = "../programs/subscriptions", features = ["no-entrypoint"], version = "0.1.0" }
 clockwork-crank = "1.0.5"
 anchor-spl = "0.25.0"
 anchor-lang = "0.25.0"

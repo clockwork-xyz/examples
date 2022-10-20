@@ -791,7 +791,7 @@ dependencies = [
  "solana-client",
  "solana-client-helpers",
  "solana-sdk",
- "subscriptions",
+ "subscriptions-program",
 ]
 
 [[package]]
@@ -4082,7 +4082,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "subscriptions"
+name = "subscriptions-program"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",

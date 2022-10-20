@@ -1,10 +1,13 @@
-pub mod utils;
-pub use utils::*;
-
 use {
     solana_client_helpers::{Client, ClientResult, RpcClient},
     solana_sdk::{native_token::LAMPORTS_PER_SOL, signature::Keypair, signer::Signer},
 };
+
+pub mod utils;
+pub use utils::*;
+
+pub mod instructions;
+pub use instructions::*;
 
 fn main() -> ClientResult<()> {
     #[cfg(feature = "devnet")]
@@ -19,7 +22,7 @@ fn main() -> ClientResult<()> {
     client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
 
     let subscription =
-        subscriptions::state::Subscription::pubkey(payer_pubkey, "first".to_string());
+        subscriptions_program::state::Subscription::pubkey(payer_pubkey, "first".to_string());
     let subscriptions_queue =
         clockwork_crank::state::Queue::pubkey(subscription, "subscription".into());
 
