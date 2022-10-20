@@ -32,18 +32,18 @@ The workflow is pretty similar with devnet with the exception that you are runni
 - Run `cargo run`
 
 ## What is Happening? WIP
-Let's see observe our transaction thread...
-- solana queue get
-- explorer
+Let's see how we can observe our transaction thread...
+- solana queue get...
+- explorer...
 
 ## But How Does It Work? WIP
-1. First we define a handler, it's a bit like defining a function that we want to run.
-2. Deploy it as a program
-3. Create a queue 
+1. First we define a handler, it's a bit like defining a function that we want to run...
+2. Deploy it as a program...
+3. Create a queue...
 
 
-# FAQ WIP
+## FAQ WIP
 - foobar
 
-# Questions
+## Questions
 Let us know how we can help on [Discord](https://discord.gg/epHsTsnUre)!
