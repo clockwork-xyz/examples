@@ -788,10 +788,30 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "clockwork-crank",
+ "clockwork-sdk",
  "solana-client",
  "solana-client-helpers",
  "solana-sdk",
  "subscriptions-program",
+]
+
+[[package]]
+name = "clockwork-client"
+version = "1.2.14"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#2712e1322bdf14e277ab9888bf364f830a2080cb"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "bincode",
+ "borsh 0.9.3",
+ "clockwork-network-program",
+ "clockwork-queue-program",
+ "clockwork-utils",
+ "clockwork-webhook-program",
+ "solana-client",
+ "solana-sdk",
+ "spl-associated-token-account",
+ "thiserror",
 ]
 
 [[package]]
@@ -808,16 +828,6 @@ dependencies = [
 
 [[package]]
 name = "clockwork-cron"
-version = "1.2.12"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#0cbbaa158bd525f2f7614b2592217706b016c756"
-dependencies = [
- "chrono",
- "nom",
- "once_cell",
-]
-
-[[package]]
-name = "clockwork-cron"
 version = "1.2.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "74b662b46c9df81277a7316e00c04d78375af832fdef346f5d3a2c438b973e8c"
@@ -828,9 +838,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "clockwork-cron"
+version = "1.2.14"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#2712e1322bdf14e277ab9888bf364f830a2080cb"
+dependencies = [
+ "chrono",
+ "nom",
+ "once_cell",
+]
+
+[[package]]
 name = "clockwork-network-program"
-version = "1.2.12"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#0cbbaa158bd525f2f7614b2592217706b016c756"
+version = "1.2.14"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#2712e1322bdf14e277ab9888bf364f830a2080cb"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -848,12 +868,12 @@ dependencies = [
 
 [[package]]
 name = "clockwork-queue-program"
-version = "1.2.12"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#0cbbaa158bd525f2f7614b2592217706b016c756"
+version = "1.2.14"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#2712e1322bdf14e277ab9888bf364f830a2080cb"
 dependencies = [
  "anchor-lang",
  "chrono",
- "clockwork-cron 1.2.12",
+ "clockwork-cron 1.2.14",
  "clockwork-network-program",
  "clockwork-utils",
  "static-pubkey",
@@ -861,10 +881,11 @@ dependencies = [
 
 [[package]]
 name = "clockwork-sdk"
-version = "1.2.12"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#0cbbaa158bd525f2f7614b2592217706b016c756"
+version = "1.2.14"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#2712e1322bdf14e277ab9888bf364f830a2080cb"
 dependencies = [
  "chrono",
+ "clockwork-client",
  "clockwork-queue-program",
  "clockwork-utils",
  "nom",
@@ -873,11 +894,20 @@ dependencies = [
 
 [[package]]
 name = "clockwork-utils"
-version = "1.2.12"
-source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#0cbbaa158bd525f2f7614b2592217706b016c756"
+version = "1.2.14"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#2712e1322bdf14e277ab9888bf364f830a2080cb"
 dependencies = [
  "anchor-lang",
  "static-pubkey",
+]
+
+[[package]]
+name = "clockwork-webhook-program"
+version = "1.2.14"
+source = "git+https://github.com/clockwork-xyz/clockwork?branch=main#2712e1322bdf14e277ab9888bf364f830a2080cb"
+dependencies = [
+ "anchor-lang",
+ "clockwork-network-program",
 ]
 
 [[package]]

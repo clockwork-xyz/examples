@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 subscriptions-program = { path = "../programs/subscriptions", features = ["no-entrypoint"], version = "0.1.0" }
+clockwork-sdk = { branch = "main", git = "https://github.com/clockwork-xyz/clockwork", version = "1.2.13", features = ["client"] }
 clockwork-crank = "1.0.5"
 anchor-spl = "0.25.0"
 anchor-lang = "0.25.0"
