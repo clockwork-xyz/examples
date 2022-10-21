@@ -1,12 +1,11 @@
+mod contexts;
+pub mod error;
 pub mod id;
 pub mod state;
 
-mod contexts;
-use contexts::*;
-
-pub use id::ID;
-
 use anchor_lang::prelude::*;
+use contexts::*;
+use id::ID;
 
 #[program]
 pub mod subscriptions_program {
@@ -28,20 +27,41 @@ pub mod subscriptions_program {
     }
 
     /*
-     * subscribe to a subscription
+     * create subscriber
      */
-    pub fn subscribe<'info>(ctx: Context<Subscribe>, subscription_period: u8) -> Result<()> {
+    pub fn create_subscriber<'info>(ctx: Context<CreateSubscriber>) -> Result<()> {
+        ctx.accounts.process()
+    }
+
+    /*
+     * deppsit
+     */
+    pub fn deposit<'info>(ctx: Context<Deposit>, amount: u64) -> Result<()> {
+        ctx.accounts.process(amount)
+    }
+
+    /*
+     * withdraw
+     */
+    pub fn withdraw<'info>(ctx: Context<Withdraw>, amount: u64) -> Result<()> {
+        ctx.accounts.process(amount)
+    }
+
+    /*
+     * subscribe from a subscription
+     */
+    pub fn subscribe<'info>(ctx: Context<Subscribe>) -> Result<()> {
         let bump = *ctx.bumps.get("subscription").unwrap();
-        ctx.accounts.process(bump, subscription_period)
+        ctx.accounts.process(bump)
     }
 
     /*
      * unsubscribe from a subscription
      */
-    pub fn unsubscribe<'info>(ctx: Context<Unsubscribe>) -> Result<()> {
-        let bump = *ctx.bumps.get("subscription").unwrap();
-        ctx.accounts.process(bump)
-    }
+    // pub fn unsubscribe<'info>(ctx: Context<Unsubscribe>) -> Result<()> {
+    //     let bump = *ctx.bumps.get("subscription").unwrap();
+    //     ctx.accounts.process(bump)
+    // }
 
     /*
      * disburse payment from program authority's ATA to recipient's ATA
@@ -49,6 +69,7 @@ pub mod subscriptions_program {
     pub fn disburse_payment<'info>(
         ctx: Context<DisbursePayment>,
     ) -> Result<clockwork_sdk::CrankResponse> {
-        ctx.accounts.process()
+        let bump = *ctx.bumps.get("subscription").unwrap();
+        ctx.accounts.process(bump)
     }
 }

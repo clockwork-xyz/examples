@@ -1,6 +1,5 @@
 use {
-    crate::error::ErrorCode,
-    crate::state::*,
+    crate::{error::ErrorCode, state::*},
     anchor_lang::prelude::*,
     anchor_spl::token::{transfer, Token, TokenAccount, Transfer},
 };
