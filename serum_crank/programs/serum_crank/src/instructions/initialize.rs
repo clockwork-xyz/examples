@@ -131,10 +131,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Res
         ),
         "crank".into(),
         read_events_ix.into(),
-        Trigger::Cron {
-            schedule: "*/15 * * * * * *".into(),
-            skippable: true,
-        },
+        Trigger::Immediate,
     )?;
 
     Ok(())
