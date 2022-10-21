@@ -1,11 +1,11 @@
-mod contexts;
+pub mod contexts;
 pub mod error;
 pub mod id;
 pub mod state;
 
 use anchor_lang::prelude::*;
-use contexts::*;
-use id::ID;
+pub use contexts::*;
+pub use id::ID;
 
 #[program]
 pub mod subscriptions_program {
