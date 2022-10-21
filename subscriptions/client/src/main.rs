@@ -1,24 +1,22 @@
 use {
-    solana_client_helpers::{Client, ClientResult, RpcClient},
-    solana_sdk::{native_token::LAMPORTS_PER_SOL, signature::Keypair, signer::Signer},
+    clockwork_sdk::client::{Client, ClientResult},
+    solana_sdk::signer::Signer,
+    solana_sdk::{native_token::LAMPORTS_PER_SOL, signature::Keypair},
 };
 
+pub mod instructions;
 pub mod utils;
+
+pub use instructions::*;
 pub use utils::*;
 
-pub mod instructions;
-pub use instructions::*;
-
 fn main() -> ClientResult<()> {
-    #[cfg(feature = "devnet")]
-    let client = RpcClient::new("https://api.devnet.solana.com");
-
     let payer = Keypair::new();
     let payer_pubkey = payer.pubkey();
-    let client = Client {
-        client: RpcClient::new("http://localhost:8899"),
-        payer,
-    };
+    #[cfg(feature = "devnet")]
+    let client = Client::new(payer, "https://api.devnet.solana.com".into());
+    #[cfg(not(feature = "devnet"))]
+    let client = Client::new(payer, "http://localhost:8899".into());
     client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
 
     let subscription =
@@ -26,7 +24,7 @@ fn main() -> ClientResult<()> {
     let subscriptions_queue =
         clockwork_crank::state::Queue::pubkey(subscription, "subscription".into());
 
-    client.airdrop(&subscriptions_queue, LAMPORTS_PER_SOL)?;
+    // create_subscription(client, subscription_bank, mint, subscription, subscription_queue, recurrent_amount, schedule, is_active, subscription_id)
 
     Ok(())
 }

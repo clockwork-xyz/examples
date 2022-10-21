@@ -13,7 +13,7 @@ use {
     },
 };
 
-fn create_subscription(
+pub fn create_subscription(
     client: &Client,
     subscription_bank: Pubkey,
     mint: Pubkey,
@@ -51,7 +51,7 @@ fn create_subscription(
     send_and_confirm_tx(
         client,
         &[create_subscription_ix],
-        "create_payment_with_top_up".to_string(),
+        "create_subscription".to_string(),
     )?;
 
     println!(
