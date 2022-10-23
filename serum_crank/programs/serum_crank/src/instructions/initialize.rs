@@ -2,39 +2,35 @@ use {
     crate::state::*,
     anchor_lang::{
         prelude::*,
-        solana_program::{system_program, instruction::Instruction},
+        solana_program::{instruction::Instruction, system_program},
     },
-    anchor_spl::{dex::serum_dex::state::Market, token::{TokenAccount, Mint}},
-    clockwork_crank::{
-        program::ClockworkCrank,
-        state::{Trigger, SEED_QUEUE},
+    anchor_spl::{
+        dex::serum_dex::state::Market,
+        token::{Mint, TokenAccount},
+    },
+    clockwork_sdk::queue_program::{
+        self,
+        accounts::{Queue, Trigger},
+        QueueProgram,
     },
     std::mem::size_of,
 };
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
-    #[account(address = clockwork_crank::ID)]
-    pub clockwork_program: Program<'info, ClockworkCrank>,
-    
+    #[account(address = queue_program::ID)]
+    pub clockwork_program: Program<'info, QueueProgram>,
+
     #[account(
         init,
+        payer = payer,
         seeds = [SEED_CRANK, market.key().as_ref()],
         bump,
-        payer = payer,
         space = 8 + size_of::<Crank>(),
     )]
     pub crank: Account<'info, Crank>,
 
-    #[account(
-        seeds = [
-            SEED_QUEUE, 
-            crank.key().as_ref(), 
-            "crank".as_bytes()
-        ], 
-        seeds::program = clockwork_crank::ID,
-        bump
-     )]
+    #[account(address = Queue::pubkey(crank.key(), "crank".into()))]
     pub crank_queue: SystemAccount<'info>,
 
     #[account(address = anchor_spl::dex::ID)]
@@ -65,7 +61,7 @@ pub struct Initialize<'info> {
     pub mint_b_vault: Account<'info, TokenAccount>,
 
     #[account(mut)]
-    pub payer: Signer<'info>, 
+    pub payer: Signer<'info>,
 
     #[account(address = system_program::ID)]
     pub system_program: Program<'info, System>,
@@ -84,14 +80,22 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Res
     let payer = &ctx.accounts.payer;
     let system_program = &ctx.accounts.system_program;
 
-    // validate market 
+    // validate market
     let market_data = Market::load(market, &dex_program.key()).unwrap();
     let val = unsafe { std::ptr::addr_of!(market_data.event_q).read_unaligned() };
-    let market_event_queue = Pubkey::new(safe_transmute::to_bytes::transmute_one_to_bytes(core::convert::identity(&val)));
+    let market_event_queue = Pubkey::new(safe_transmute::to_bytes::transmute_one_to_bytes(
+        core::convert::identity(&val),
+    ));
     require_keys_eq!(event_queue.key(), market_event_queue);
 
     // initialize crank account
-    crank.new(market.key(), event_queue.key(), mint_a_vault.key(), mint_b_vault.key(), 10)?;
+    crank.new(
+        market.key(),
+        event_queue.key(),
+        mint_a_vault.key(),
+        mint_b_vault.key(),
+        10,
+    )?;
 
     // get authorit bump
     let bump = *ctx.bumps.get("crank").unwrap();
@@ -99,7 +103,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Res
     // define ix
     let read_events_ix = Instruction {
         program_id: crate::ID,
-        accounts: vec![ 
+        accounts: vec![
             AccountMeta::new(crank.key(), false),
             AccountMeta::new(crank_queue.key(), true),
             AccountMeta::new_readonly(dex_program.key(), false),
@@ -107,17 +111,17 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Res
             AccountMeta::new_readonly(market.key(), false),
             AccountMeta::new_readonly(mint_a_vault.key(), false),
             AccountMeta::new_readonly(mint_b_vault.key(), false),
-            AccountMeta::new(clockwork_crank::payer::ID, true),
+            AccountMeta::new(clockwork_sdk::queue_program::utils::PAYER_PUBKEY, true),
             AccountMeta::new_readonly(system_program.key(), false),
         ],
-        data: clockwork_crank::anchor::sighash("read_events").to_vec(),
+        data: clockwork_sdk::queue_program::utils::anchor_sighash("read_events").to_vec(),
     };
 
     // initialize queue
-    clockwork_crank::cpi::queue_create(
+    clockwork_sdk::queue_program::cpi::queue_create(
         CpiContext::new_with_signer(
             clockwork_program.to_account_info(),
-            clockwork_crank::cpi::accounts::QueueCreate {
+            clockwork_sdk::queue_program::cpi::accounts::QueueCreate {
                 authority: crank.to_account_info(),
                 payer: payer.to_account_info(),
                 queue: crank_queue.to_account_info(),
@@ -125,11 +129,9 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Res
             },
             &[&[SEED_CRANK, crank.market.as_ref(), &[bump]]],
         ),
-        read_events_ix.into(),
         "crank".into(),
-        Trigger::Cron {
-            schedule: "*/15 * * * * * *".into(),
-        },
+        read_events_ix.into(),
+        Trigger::Immediate,
     )?;
 
     Ok(())

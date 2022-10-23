@@ -8,13 +8,14 @@ use {
         associated_token::AssociatedToken,
         token::{self, Mint, MintTo, TokenAccount},
     },
-    clockwork_crank::{
-        state::{SEED_QUEUE, Queue, CrankResponse},
+    clockwork_sdk::{
+        queue_program::accounts::{Queue, QueueAccount},
+        CrankResponse,
     },
 };
 
 #[derive(Accounts)]
-pub struct MintToken<'info> {
+pub struct Distribute<'info> {
     #[account(address = anchor_spl::associated_token::ID)]
     pub associated_token_program: Program<'info, AssociatedToken>,
 
@@ -28,16 +29,11 @@ pub struct MintToken<'info> {
 
     #[account(
         signer,
-        seeds = [
-            SEED_QUEUE, 
-            distributor.key().as_ref(), 
-            "distributor".as_bytes()
-        ], 
-        seeds::program = clockwork_crank::ID,
-        bump
+        address = distributor_queue.pubkey(),
+        constraint = distributor_queue.id.eq("distributor")
      )]
     pub distributor_queue: Box<Account<'info, Queue>>,
-    
+
     #[account(mut)]
     pub mint: Account<'info, Mint>,
 
@@ -65,7 +61,7 @@ pub struct MintToken<'info> {
     pub token_program: Program<'info, anchor_spl::token::Token>,
 }
 
-pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, MintToken<'info>>) -> Result<CrankResponse> {
+pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Distribute<'info>>) -> Result<CrankResponse> {
     // get accounts
     let distributor = &ctx.accounts.distributor;
     let mint = &ctx.accounts.mint;
@@ -78,18 +74,24 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, MintToken<'info>>) -> Resu
     // mint to recipient' token account
     token::mint_to(
         CpiContext::new_with_signer(
-        token_program.to_account_info(), 
-        MintTo {
-            authority: distributor.to_account_info(), 
-            mint: mint.to_account_info(), 
-            to: recipient_token_account.to_account_info()
-        },             
-            &[&[SEED_DISTRIBUTOR, distributor.mint.as_ref(), distributor.authority.as_ref(), &[bump]]],
-        ), 
-        distributor.mint_amount
+            token_program.to_account_info(),
+            MintTo {
+                authority: distributor.to_account_info(),
+                mint: mint.to_account_info(),
+                to: recipient_token_account.to_account_info(),
+            },
+            &[&[
+                SEED_DISTRIBUTOR,
+                distributor.mint.as_ref(),
+                distributor.authority.as_ref(),
+                &[bump],
+            ]],
+        ),
+        distributor.mint_amount,
     )?;
-    
+
     Ok(CrankResponse {
-        next_instruction: None
+        next_instruction: None,
+        kickoff_instruction: None,
     })
 }

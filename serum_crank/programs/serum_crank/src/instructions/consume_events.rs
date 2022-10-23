@@ -6,14 +6,13 @@ use {
     },
     anchor_lang::solana_program::program::invoke_signed,
     anchor_spl::{token::TokenAccount, dex::serum_dex},
-    clockwork_crank::state::{CrankResponse, Queue, SEED_QUEUE},
+    clockwork_sdk::{queue_program::{self, accounts::{Queue, QueueAccount}}, CrankResponse},
 };
 
 #[derive(Accounts)]
 pub struct ConsumeEvents<'info> {
     #[account(
-        seeds = [SEED_CRANK, crank.market.key().as_ref()], 
-        bump,
+        address = Crank::pubkey(crank.market.key()),
         has_one = market,
         has_one = event_queue,
         has_one = mint_a_vault,
@@ -23,14 +22,9 @@ pub struct ConsumeEvents<'info> {
 
     #[account(
         signer, 
-        seeds = [
-            SEED_QUEUE, 
-            crank.key().as_ref(), 
-            "crank".as_bytes()
-        ], 
-        seeds::program = clockwork_crank::ID,
-        bump,
-        )]
+        address = crank_queue.pubkey(),
+        constraint = crank_queue.id.eq("crank"),
+    )]
     pub crank_queue: Account<'info, Queue>,
    
     #[account(address = anchor_spl::dex::ID)]
@@ -111,10 +105,10 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, ConsumeEvents<'info>>) -> 
                     AccountMeta::new_readonly(market.key(), false),
                     AccountMeta::new_readonly(mint_a_vault.key(), false),
                     AccountMeta::new_readonly(mint_b_vault.key(), false),
-                    AccountMeta::new(clockwork_crank::payer::ID, true),
+                    AccountMeta::new(queue_program::utils::PAYER_PUBKEY, true),
                     AccountMeta::new_readonly(system_program::ID, false),
                 ],
-                data: clockwork_crank::anchor::sighash("read_events").into(),
+                data: clockwork_sdk::queue_program::utils::anchor_sighash("read_events").into(),
             }
             .into()
         )

@@ -11,8 +11,8 @@ use {
         },
         token,
     },
+    clockwork_sdk::client::{queue_program, Client, ClientResult, SplToken},
     serum_common::client::rpc::mint_to_new_account,
-    solana_client_helpers::{Client, ClientResult, RpcClient, SplToken},
     solana_sdk::{
         instruction::Instruction, native_token::LAMPORTS_PER_SOL, signature::Keypair,
         signer::Signer,
@@ -23,10 +23,9 @@ use {
 
 fn main() -> ClientResult<()> {
     // Create Client
-    let client = RpcClient::new("http://localhost:8899");
     let payer = Keypair::new();
+    let client = Client::new(payer, "http://localhost:8899".into());
     let bob = Keypair::new();
-    let client = Client { client, payer };
 
     // airdrop a bunch bc it's expensive to setup a dex market and for all of the txs lol
     client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
@@ -49,11 +48,11 @@ fn main() -> ClientResult<()> {
         market_keys.coin_mint,
     );
     let investment_queue =
-        clockwork_crank::state::Queue::pubkey(investment, "investment".to_string());
+        clockwork_sdk::queue_program::accounts::Queue::pubkey(investment, "investment".to_string());
 
     // derive serum_crank PDAs
     let crank = serum_crank::state::Crank::pubkey(market_keys.market);
-    let crank_queue = clockwork_crank::state::Queue::pubkey(crank, "crank".into());
+    let crank_queue = clockwork_sdk::queue_program::accounts::Queue::pubkey(crank, "crank".into());
 
     print_explorer_link(investment_queue, "investment_queue".to_string())?;
     print_explorer_link(crank_queue, "crank_queue".to_string())?;
@@ -282,7 +281,7 @@ fn initialize_serum_crank(
     let initialize_ix = Instruction {
         program_id: serum_crank::ID,
         accounts: vec![
-            AccountMeta::new_readonly(clockwork_crank::ID, false),
+            AccountMeta::new_readonly(queue_program::ID, false),
             AccountMeta::new(crank, false),
             AccountMeta::new(crank_queue, false),
             AccountMeta::new_readonly(anchor_spl::dex::ID, false),
@@ -327,7 +326,7 @@ fn create_investment_and_deposit(
         program_id: investments_program::ID,
         accounts: vec![
             AccountMeta::new_readonly(associated_token::ID, false),
-            AccountMeta::new_readonly(clockwork_crank::ID, false),
+            AccountMeta::new_readonly(queue_program::ID, false),
             AccountMeta::new_readonly(anchor_spl::dex::ID, false),
             AccountMeta::new(investment, false),
             AccountMeta::new(investment_mint_a_token_account, false),

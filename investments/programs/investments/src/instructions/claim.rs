@@ -11,7 +11,12 @@ use {
 #[instruction(amount: u64)]
 pub struct Claim<'info> {
     #[account(
-        seeds = [SEED_INVESTMENT, investment.payer.as_ref(), investment.mint_a.as_ref(), investment.mint_b.as_ref()],
+        seeds = [
+            SEED_INVESTMENT, 
+            investment.payer.key().as_ref(), 
+            investment.mint_a.key().as_ref(), 
+            investment.mint_b.key().as_ref()
+        ], 
         bump,
         has_one = payer,
         has_one = mint_b
@@ -41,8 +46,8 @@ pub struct Claim<'info> {
     #[account(address = sysvar::rent::ID)]
     pub rent: Sysvar<'info, Rent>,
 
-    #[account(address = clockwork_crank::ID)]
-    pub scheduler_program: Program<'info, clockwork_crank::program::ClockworkCrank>,
+    #[account(address = clockwork_sdk::queue_program::ID)]
+    pub scheduler_program: Program<'info, clockwork_sdk::queue_program::QueueProgram>,
 
     #[account(address = system_program::ID)]
     pub system_program: Program<'info, System>,
@@ -53,7 +58,7 @@ pub struct Claim<'info> {
 
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Claim<'info>>, amount: u64) -> Result<()> {
     // Get accounts
-    let investment = &mut ctx.accounts.investment;
+    let investment = &ctx.accounts.investment;
     let investment_mint_b_token_accoount = &mut ctx.accounts.investment_mint_b_token_accoount;
     let payer_mint_b_token_account = &mut ctx.accounts.payer_mint_b_token_account;
     let token_program = &ctx.accounts.token_program;

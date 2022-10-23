@@ -1,17 +1,18 @@
 [features]
 seeds = false
-
-[programs.devnet]
-payments_program = "2NW97YfZ4hAbSoi8T5KFaiKnomJMDzyzJmRJhr8BYSfg"
+skip-lint = false
 
 [programs.localnet]
-payments_program = "2NW97YfZ4hAbSoi8T5KFaiKnomJMDzyzJmRJhr8BYSfg"
+payments = "Da42fsoWLyui6iwABCXNhu8R9JdqLQ9jXvCtCfrmouw9"
+
+[programs.devnet]
+payments = "Da42fsoWLyui6iwABCXNhu8R9JdqLQ9jXvCtCfrmouw9"
 
 [registry]
-url = "https://anchor.projectserum.com"
+url = "https://api.apr.dev"
 
 [provider]
-cluster = "devnet"
+cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

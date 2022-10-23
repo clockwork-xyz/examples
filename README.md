@@ -1,6 +1,6 @@
 # **Clockwork examples**
 
-This repo is contains a list of example programs built on the [Clockwork](https://clockwork.xyz) automation network.
+This repo contains example automated smart-contracts built with the [**Clockwork SDK**](https://docs.clockwork.xyz).
 - [**Hello Clockwork**](https://github.com/clockwork-xyz/examples/tree/main/hello_clockwork) – Prints "Hello world" and the current timestamp every 60 seconds
 - [**Recurring payments**](https://github.com/clockwork-xyz/examples/tree/main/payments) – Executes an SPL token transfer on a user-defined schedule.
 - [**Token distributor**](https://github.com/clockwork-xyz/examples/tree/main/distributor) – Mints a new token and sends it to a target user every 60 seconds.

@@ -6,15 +6,15 @@ use {
         solana_program::{system_program,instruction::Instruction},
     },
     anchor_spl::{dex::serum_dex::state::{strip_header, EventQueueHeader, Event, Queue as SerumDexQueue}, token::TokenAccount},
-    clockwork_crank::state::{CrankResponse, Queue, SEED_QUEUE},
+    clockwork_sdk::{queue_program::{self, accounts::{Queue, QueueAccount}}, CrankResponse}
 };
 
 #[derive(Accounts)]
 pub struct ReadEvents<'info> {
     #[account(
         mut, 
-        seeds = [SEED_CRANK, crank.market.key().as_ref()],
-        bump,
+        seeds = [SEED_CRANK, crank.market.as_ref()],
+        bump, 
         has_one = event_queue,
         has_one = market,
         has_one = mint_a_vault,
@@ -25,13 +25,8 @@ pub struct ReadEvents<'info> {
     #[account(
         signer, 
         mut,
-        seeds = [
-            SEED_QUEUE, 
-            crank.key().as_ref(), 
-            "crank".as_bytes()
-        ], 
-        seeds::program = clockwork_crank::ID,
-        bump,
+        address = crank_queue.pubkey(),
+        constraint = crank_queue.id.eq("crank"),
     )]
     pub crank_queue: Account<'info, Queue>,
 
@@ -121,7 +116,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, ReadEvents<'info>>) -> Res
             Instruction {
                 program_id: crate::ID,
                 accounts: next_ix_accounts,
-                data: clockwork_crank::anchor::sighash("consume_events").into(),
+                data: queue_program::utils::anchor_sighash("consume_events").into(),
             }
             .into()
         )

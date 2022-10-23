@@ -17,8 +17,7 @@ pub struct Deposit<'info> {
     pub associated_token_program: Program<'info, AssociatedToken>,
 
     #[account(
-        seeds = [SEED_INVESTMENT, investment.payer.as_ref(), investment.mint_a.as_ref(), investment.mint_b.as_ref()],
-        bump,
+        address = Investment::pubkey(investment.payer, investment.mint_a, investment.mint_b),
         has_one = payer,
         has_one = mint_a
     )]

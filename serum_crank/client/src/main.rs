@@ -1,3 +1,5 @@
+use clockwork_sdk::queue_program;
+
 mod utils;
 
 use {
@@ -12,8 +14,8 @@ use {
         },
         token,
     },
+    clockwork_sdk::client::{Client, ClientResult},
     serum_common::client::rpc::mint_to_new_account,
-    solana_client_helpers::{Client, ClientResult, RpcClient},
     solana_sdk::{
         instruction::Instruction, native_token::LAMPORTS_PER_SOL, signature::Keypair,
         signer::Signer,
@@ -24,12 +26,11 @@ use {
 
 fn main() -> ClientResult<()> {
     // Create Client
-    #[cfg(feature = "devnet")]
-    let client = RpcClient::new("https://api.devnet.solana.com");
-    #[cfg(not(feature = "devnet"))]
-    let client = RpcClient::new("http://localhost:8899");
     let payer = Keypair::new();
-    let client = Client { client, payer };
+    #[cfg(feature = "devnet")]
+    let client = Client::new(payer, "https://api.devnet.solana.com".into());
+    #[cfg(not(feature = "devnet"))]
+    let client = Client::new(payer, "http://localhost:8899".into());
 
     let bob = Keypair::new();
 
@@ -48,7 +49,7 @@ fn main() -> ClientResult<()> {
 
     // derive serum_crank PDAs
     let crank = serum_crank::state::Crank::pubkey(market_keys.market);
-    let crank_queue = clockwork_crank::state::Queue::pubkey(crank, "crank".into());
+    let crank_queue = clockwork_sdk::queue_program::accounts::Queue::pubkey(crank, "crank".into());
 
     print_explorer_link(crank, "crank".into())?;
     print_explorer_link(crank_queue, "crank_queue".into())?;
@@ -151,7 +152,7 @@ fn initialize_serum_crank(
     let initialize_ix = Instruction {
         program_id: serum_crank::ID,
         accounts: vec![
-            AccountMeta::new_readonly(clockwork_crank::ID, false),
+            AccountMeta::new_readonly(queue_program::ID, false),
             AccountMeta::new(crank, false),
             AccountMeta::new(crank_queue, false),
             AccountMeta::new_readonly(anchor_spl::dex::ID, false),

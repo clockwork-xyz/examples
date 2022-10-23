@@ -1,7 +1,7 @@
 [features]
 seeds = false
 [programs.localnet]
-distributor = "G3X9SZaKsqHvKX2xfHPa7dpj9DFAZu3VuGQ1c2jQweZu"
+distributor = "DTkA7K48pgiYmLEcERuGoruZoCSceFrJshJV6GBLQwYP"
 
 [registry]
 url = "https://anchor.projectserum.com"

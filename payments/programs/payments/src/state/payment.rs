@@ -15,9 +15,7 @@ pub struct Payment {
     pub sender: Pubkey,
     pub recipient: Pubkey,
     pub mint: Pubkey,
-    pub balance: u64,
-    pub disbursement_amount: u64,
-    pub schedule: String,
+    pub amount: u64,
 }
 
 impl Payment {
@@ -43,33 +41,15 @@ impl TryFrom<Vec<u8>> for Payment {
 }
 
 pub trait PaymentAccount {
-    fn new(
-        &mut self,
-        sender: Pubkey,
-        recipient: Pubkey,
-        mint: Pubkey,
-        balance: u64,
-        disbursement_amount: u64,
-        schedule: String,
-    ) -> Result<()>;
+    fn new(&mut self, sender: Pubkey, recipient: Pubkey, mint: Pubkey, amount: u64) -> Result<()>;
 }
 
 impl PaymentAccount for Account<'_, Payment> {
-    fn new(
-        &mut self,
-        sender: Pubkey,
-        recipient: Pubkey,
-        mint: Pubkey,
-        balance: u64,
-        disbursement_amount: u64,
-        schedule: String,
-    ) -> Result<()> {
+    fn new(&mut self, sender: Pubkey, recipient: Pubkey, mint: Pubkey, amount: u64) -> Result<()> {
         self.sender = sender;
         self.recipient = recipient;
         self.mint = mint;
-        self.balance = balance;
-        self.disbursement_amount = disbursement_amount;
-        self.schedule = schedule;
+        self.amount = amount;
         Ok(())
     }
 }

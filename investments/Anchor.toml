@@ -2,12 +2,12 @@
 seeds = false
 
 [programs.localnet]
-investments_program = "472667jjSrvesAWhBJ383RHqw66KME8JF6WEofXjRZ3q"
-serum_crank = "4GWPNbv2vrPsXzDT2wET11KhWazv455YBh8961Qj5p2t"
+investments_program = "6GMMCTzwskjDrTdwVJTQczYMQdyqUP62SmVh7sES2i4k"
+serum_crank = "FnfZCtHWbricL5HJYqX38Ln5pj5ws6QdCiDje32ysVxp"
 
 [programs.devnet]
-investments_program = "472667jjSrvesAWhBJ383RHqw66KME8JF6WEofXjRZ3q"
-serum_crank = "4GWPNbv2vrPsXzDT2wET11KhWazv455YBh8961Qj5p2t"
+investments_program = "6GMMCTzwskjDrTdwVJTQczYMQdyqUP62SmVh7sES2i4k"
+serum_crank = "FnfZCtHWbricL5HJYqX38Ln5pj5ws6QdCiDje32ysVxp"
 
 [registry]
 url = "https://anchor.projectserum.com"

@@ -7,7 +7,7 @@ use {
         },
     },
     anchor_spl::{token::{self, Mint, TokenAccount},associated_token::{self,AssociatedToken}},
-    clockwork_crank::{state::{SEED_QUEUE, Trigger}, program::ClockworkCrank},
+    clockwork_sdk::queue_program::{self, QueueProgram, accounts::{Queue, Trigger}},
     std::mem::size_of,
 };
 
@@ -17,20 +17,15 @@ pub struct CreateInvestment<'info> {
     #[account(address = anchor_spl::associated_token::ID)]
     pub associated_token_program: Program<'info, AssociatedToken>,
 
-    #[account(address = clockwork_crank::ID)]
-    pub clockwork_program: Program<'info, ClockworkCrank>,
+    #[account(address = queue_program::ID)]
+    pub clockwork_program: Program<'info, QueueProgram>,
 
     #[account(address = anchor_spl::dex::ID)]
     pub dex_program: Program<'info, anchor_spl::dex::Dex>,
 
     #[account(
         init,
-        seeds = [
-            SEED_INVESTMENT, 
-            payer.key().as_ref(), 
-            mint_a.key().as_ref(), 
-            mint_b.key().as_ref()
-        ],
+        seeds = [SEED_INVESTMENT, payer.key().as_ref(), mint_a.key().as_ref(), mint_b.key().as_ref()],
         bump,
         payer = payer,
         space = 8 + size_of::<Investment>(),
@@ -53,11 +48,7 @@ pub struct CreateInvestment<'info> {
     )]
     pub investment_mint_b_token_account: Box<Account<'info, TokenAccount>>,
 
-    #[account(
-        seeds = [SEED_QUEUE, investment.key().as_ref(), "investment".as_bytes()], 
-        seeds::program = clockwork_crank::ID, 
-        bump,
-	)]
+    #[account(address = Queue::pubkey(investment.key(), "investment".into()))]
     pub investment_queue: SystemAccount<'info>,
     
     #[account()]
@@ -137,7 +128,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CreateInvestment<'info>>, 
             AccountMeta::new_readonly(investment.key(), false),
             AccountMeta::new(investment_mint_a_token_account.key(), false),
             AccountMeta::new_readonly(investment_queue.key(), false),
-            AccountMeta::new(clockwork_crank::payer::ID, true),
+            AccountMeta::new(queue_program::utils::PAYER_PUBKEY, true),
             AccountMeta::new_readonly(sysvar::rent::ID, false),
             AccountMeta::new_readonly(system_program::ID, false),
             AccountMeta::new_readonly(token::ID, false),
@@ -151,14 +142,14 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CreateInvestment<'info>>, 
             AccountMeta::new(market_asks.key(), false),
             AccountMeta::new(open_orders.key(), false),
         ],
-        data: clockwork_crank::anchor::sighash("swap").into(),
+        data: queue_program::utils::anchor_sighash("swap").into(),
     };
 
     // Create queue
-    clockwork_crank::cpi::queue_create(
+    clockwork_sdk::queue_program::cpi::queue_create(
         CpiContext::new_with_signer(
             clockwork_program.to_account_info(),
-            clockwork_crank::cpi::accounts::QueueCreate {
+            clockwork_sdk::queue_program::cpi::accounts::QueueCreate {
                 authority: investment.to_account_info(),
                 payer: payer.to_account_info(),
                 queue: investment_queue.to_account_info(),
@@ -166,10 +157,11 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CreateInvestment<'info>>, 
             },
             &[&[SEED_INVESTMENT, investment.payer.as_ref(), investment.mint_a.as_ref(), investment.mint_b.as_ref(), &[bump]]],
         ),
-        swap_ix.into(),
         "investment".into(),
+        swap_ix.into(),
         Trigger::Cron { 
-            schedule: "*/15 * * * * * *".into() 
+            schedule: "*/15 * * * * * *".into(),
+            skippable: true
         }    
     )?;
 

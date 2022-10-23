@@ -1,0 +1,53 @@
+Arguments: 
+  /usr/local/bin/node /Users/garfield/.yarn/bin/yarn.js
+
+PATH: 
+  /Users/garfield/Developer/solana/bin:/usr/local/opt/libpq/bin:/Users/garfield/.yarn/bin:/Users/garfield/.config/yarn/global/node_modules/.bin:/opt/homebrew/opt/openssl@1.1/bin:/opt/homebrew/opt/openssl@1.1/bin:/Users/garfield/.local/share/solana/install/active_release/bin:/Library/Frameworks/Python.framework/Versions/3.9/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/go/bin:/Library/Apple/usr/bin:/usr/local/opt/libpq/bin:/Users/garfield/.yarn/bin:/Users/garfield/.config/yarn/global/node_modules/.bin:/opt/homebrew/opt/openssl@1.1/bin:/Users/garfield/.local/share/solana/install/active_release/bin:/Library/Frameworks/Python.framework/Versions/3.9/bin:/Users/garfield/.cargo/bin:/Users/garfield/Developer/solana/bin:/Users/garfield/Developer/solana/bin
+
+Yarn version: 
+  1.22.15
+
+Node version: 
+  14.18.0
+
+Platform: 
+  darwin x64
+
+Trace: 
+  Error: https://registry.yarnpkg.com/mocha: ESOCKETTIMEDOUT
+      at ClientRequest.<anonymous> (/Users/garfield/.yarn/lib/cli.js:141512:19)
+      at Object.onceWrapper (events.js:519:28)
+      at ClientRequest.emit (events.js:400:28)
+      at TLSSocket.emitRequestTimeout (_http_client.js:790:9)
+      at Object.onceWrapper (events.js:519:28)
+      at TLSSocket.emit (events.js:412:35)
+      at TLSSocket.Socket._onTimeout (net.js:495:8)
+      at listOnTimeout (internal/timers.js:557:17)
+      at processTimers (internal/timers.js:500:7)
+
+npm manifest: 
+  {
+      "scripts": {
+          "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
+          "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
+      },
+      "dependencies": {
+          "@project-serum/anchor": "^0.25.0"
+      },
+      "devDependencies": {
+          "chai": "^4.3.4",
+          "mocha": "^9.0.3",
+          "ts-mocha": "^10.0.0",
+          "@types/bn.js": "^5.1.0",
+          "@types/chai": "^4.3.0",
+          "@types/mocha": "^9.0.0",
+          "typescript": "^4.3.5",
+          "prettier": "^2.6.2"
+      }
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile

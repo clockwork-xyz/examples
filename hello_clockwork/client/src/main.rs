@@ -3,46 +3,55 @@ use {
         solana_program::{
             instruction::{AccountMeta, Instruction},
             native_token::LAMPORTS_PER_SOL,
-            system_program,
         },
         InstructionData,
     },
-    solana_client_helpers::{Client, ClientResult, RpcClient},
+    clockwork_sdk::client::{
+        queue_program::{
+            instruction::queue_create,
+            objects::{Queue, Trigger},
+        },
+        Client, ClientResult,
+    },
     solana_sdk::{signature::Keypair, transaction::Transaction},
 };
 
 fn main() -> ClientResult<()> {
     // Create Client
-    #[cfg(feature = "devnet")]
-    let client = RpcClient::new("https://api.devnet.solana.com");
-    #[cfg(not(feature = "devnet"))]
-    let client = RpcClient::new("http://localhost:8899");
-
     let payer = Keypair::new();
-    let client = Client { client, payer };
+    #[cfg(feature = "devnet")]
+    let client = Client::new(payer, "https://api.devnet.solana.com".into());
+    #[cfg(not(feature = "devnet"))]
+    let client = Client::new(payer, "http://localhost:8899".into());
+
     client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
 
     // Derive PDAs
-    let authority = hello_clockwork::state::Authority::pubkey();
-    let hello_queue = clockwork_crank::state::Queue::pubkey(authority, "hello".to_string());
+    let hello_queue = Queue::pubkey(client.payer_pubkey(), "hello".into());
 
     // airdrop to hello queue
     client.airdrop(&hello_queue, LAMPORTS_PER_SOL)?;
 
     // Create ix
-    let initialize_ix = Instruction {
+    let hello_world_ix = Instruction {
         program_id: hello_clockwork::ID,
-        accounts: vec![
-            AccountMeta::new(authority, false),
-            AccountMeta::new_readonly(clockwork_crank::ID, false),
-            AccountMeta::new(hello_queue, false),
-            AccountMeta::new(client.payer_pubkey(), true),
-            AccountMeta::new_readonly(system_program::ID, false),
-        ],
-        data: hello_clockwork::instruction::Initialize {}.data(),
+        accounts: vec![AccountMeta::new(hello_queue, true)],
+        data: hello_clockwork::instruction::HelloWorld { name: "Bob".into() }.data(),
     };
 
-    send_and_confirm_tx(&client, initialize_ix, "initialize".to_string())?;
+    let queue_create = queue_create(
+        client.payer_pubkey(),
+        "hello".into(),
+        hello_world_ix.into(),
+        client.payer_pubkey(),
+        hello_queue,
+        Trigger::Cron {
+            schedule: "*/10 * * * * * *".into(),
+            skippable: true,
+        },
+    );
+
+    send_and_confirm_tx(&client, queue_create, "queue_create".into())?;
 
     println!(
         "queue: https://explorer.solana.com/address/{}?cluster=custom",
