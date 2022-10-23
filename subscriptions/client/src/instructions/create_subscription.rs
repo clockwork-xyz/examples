@@ -2,14 +2,10 @@ use {
     crate::*,
     anchor_lang::{prelude::Pubkey, solana_program::sysvar, InstructionData},
     anchor_spl::{associated_token, token},
-    solana_client_helpers::{Client, ClientResult, RpcClient, SplToken},
+    clockwork_sdk::client::{Client, ClientResult},
     solana_sdk::{
         instruction::{AccountMeta, Instruction},
-        native_token::LAMPORTS_PER_SOL,
-        signature::Keypair,
-        signer::Signer,
         system_program,
-        transaction::Transaction,
     },
 };
 
@@ -39,18 +35,19 @@ pub fn create_subscription(
             AccountMeta::new_readonly(sysvar::rent::ID, false),
         ],
         data: subscriptions_program::instruction::CreateSubscription {
-            recurrent_amount: 12,
-            schedule: "12".to_string(),
+            recurrent_amount,
+            schedule,
             mint,
-            is_active: true,
-            subscription_id: "12".to_string(),
+            is_active,
+            subscription_id,
         }
         .data(),
     };
 
     send_and_confirm_tx(
         client,
-        &[create_subscription_ix],
+        [create_subscription_ix].to_vec(),
+        None,
         "create_subscription".to_string(),
     )?;
 

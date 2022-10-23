@@ -37,30 +37,48 @@ impl<'info> DisbursePayment<'_> {
             ..
         } = self;
 
-        let amount_left = subscriber
-            .locked_amount
-            .checked_sub(subscription.recurrent_amount);
+        if !subscriber.is_active || !subscription.is_active {
+            subscriber.is_subscribed = false;
+            clockwork_sdk::queue_program::cpi::queue_stop(CpiContext::new_with_signer(
+                clockwork_program.to_account_info(),
+                clockwork_sdk::queue_program::cpi::accounts::QueueStop {
+                    authority: subscription.to_account_info(),
+                    queue: subscriptions_queue.to_account_info(),
+                },
+                &[&[
+                    SEED_SUBSCRIPTION,
+                    subscription.owner.as_ref(),
+                    subscription.subscription_id.as_bytes(),
+                    &[bump],
+                ]],
+            ))?;
+        } else {
+            let amount_left = subscriber
+                .locked_amount
+                .checked_sub(subscription.recurrent_amount);
 
-        match amount_left {
-            Some(value) => {
-                subscriber.locked_amount = value;
-                subscriber.is_subscribed = true;
-            }
-            None => {
-                subscriber.is_subscribed = false;
-                clockwork_sdk::queue_program::cpi::queue_stop(CpiContext::new_with_signer(
-                    clockwork_program.to_account_info(),
-                    clockwork_sdk::queue_program::cpi::accounts::QueueStop {
-                        authority: subscription.to_account_info(),
-                        queue: subscriptions_queue.to_account_info(),
-                    },
-                    &[&[
-                        SEED_SUBSCRIPTION,
-                        subscription.owner.as_ref(),
-                        subscription.subscription_id.as_bytes(),
-                        &[bump],
-                    ]],
-                ))?;
+            match amount_left {
+                Some(value) => {
+                    subscriber.locked_amount = value;
+                    subscriber.is_subscribed = true;
+                    subscription.withdraw += subscription.recurrent_amount;
+                }
+                None => {
+                    subscriber.is_subscribed = false;
+                    clockwork_sdk::queue_program::cpi::queue_stop(CpiContext::new_with_signer(
+                        clockwork_program.to_account_info(),
+                        clockwork_sdk::queue_program::cpi::accounts::QueueStop {
+                            authority: subscription.to_account_info(),
+                            queue: subscriptions_queue.to_account_info(),
+                        },
+                        &[&[
+                            SEED_SUBSCRIPTION,
+                            subscription.owner.as_ref(),
+                            subscription.subscription_id.as_bytes(),
+                            &[bump],
+                        ]],
+                    ))?;
+                }
             }
         }
 

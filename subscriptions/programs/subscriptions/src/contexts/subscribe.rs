@@ -1,12 +1,7 @@
 use {
-    crate::state::*,
+    crate::{error::ErrorCode, state::*},
     anchor_lang::prelude::*,
-    anchor_lang::solana_program::instruction::Instruction,
-    clockwork_sdk::queue_program::{
-        self,
-        accounts::{Queue, Trigger},
-        QueueProgram,
-    },
+    clockwork_sdk::queue_program::{self, accounts::Queue, QueueProgram},
 };
 
 #[derive(Accounts)]
@@ -24,7 +19,6 @@ pub struct Subscribe<'info> {
     #[account(mut, address = Subscription::pubkey(subscription.owner.key(),subscription.subscription_id.clone()))]
     pub subscription: Account<'info, Subscription>,
 
-    pub system_program: Program<'info, System>,
     #[account(address = queue_program::ID)]
     pub clockwork_program: Program<'info, QueueProgram>,
 }
@@ -32,48 +26,37 @@ pub struct Subscribe<'info> {
 impl<'info> Subscribe<'_> {
     pub fn process(&mut self, bump: u8) -> Result<()> {
         let Self {
-            payer,
             subscriber,
             clockwork_program,
             subscription,
             subscriptions_queue,
-            system_program,
             ..
         } = self;
 
-        let disburse_payment_ix = Instruction {
-            program_id: crate::ID,
-            accounts: vec![
-                AccountMeta::new_readonly(subscriber.key(), false),
-                AccountMeta::new_readonly(subscription.key(), false),
-                AccountMeta::new_readonly(subscriptions_queue.key(), true),
-            ],
-            data: clockwork_sdk::anchor_sighash("disburse_payment").into(),
-        };
+        require!(
+            subscriber.locked_amount >= subscription.recurrent_amount,
+            ErrorCode::InsuffiscientAmountLocked
+        );
+        require!(subscription.is_active, ErrorCode::SubscriptionInactive);
 
-        clockwork_sdk::queue_program::cpi::queue_create(
-            CpiContext::new_with_signer(
-                clockwork_program.to_account_info(),
-                clockwork_sdk::queue_program::cpi::accounts::QueueCreate {
-                    authority: subscription.to_account_info(),
-                    payer: payer.to_account_info(),
-                    queue: subscriptions_queue.to_account_info(),
-                    system_program: system_program.to_account_info(),
-                },
-                &[&[
-                    SEED_SUBSCRIPTION,
-                    subscription.owner.as_ref(),
-                    subscription.subscription_id.as_bytes(),
-                    &[bump],
-                ]],
-            ),
-            "payment".into(),
-            disburse_payment_ix.into(),
-            Trigger::Cron {
-                schedule: subscription.schedule.clone(),
-                skippable: false,
+        subscriber.is_active = true;
+        subscriber.is_subscribed = true;
+        subscriber.locked_amount -= subscription.recurrent_amount;
+        subscription.withdraw += subscription.recurrent_amount;
+
+        clockwork_sdk::queue_program::cpi::queue_resume(CpiContext::new_with_signer(
+            clockwork_program.to_account_info(),
+            clockwork_sdk::queue_program::cpi::accounts::QueueResume {
+                authority: subscription.to_account_info(),
+                queue: subscriptions_queue.to_account_info(),
             },
-        )?;
+            &[&[
+                SEED_SUBSCRIPTION,
+                subscription.owner.as_ref(),
+                subscription.subscription_id.as_bytes(),
+                &[bump],
+            ]],
+        ))?;
 
         Ok(())
     }

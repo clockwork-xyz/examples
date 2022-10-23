@@ -68,6 +68,7 @@ impl<'info> CreateSubscription<'_> {
             schedule,
             is_active,
             subscription_id,
+            0,
         )?;
 
         Ok(())

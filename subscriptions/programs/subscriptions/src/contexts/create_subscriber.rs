@@ -27,7 +27,7 @@ impl<'info> CreateSubscriber<'_> {
             ..
         } = self;
 
-        subscriber.new(payer.key(), subscription.key(), 0, false)?;
+        subscriber.new(payer.key(), subscription.key(), 0, false, false)?;
 
         Ok(())
     }

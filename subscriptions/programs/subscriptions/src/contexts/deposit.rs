@@ -1,5 +1,5 @@
 use {
-    crate::state::*,
+    crate::{error::ErrorCode, state::*},
     anchor_lang::prelude::*,
     anchor_spl::token::{transfer, Token, TokenAccount, Transfer},
 };
@@ -37,9 +37,11 @@ impl<'info> Deposit<'_> {
             subscriber,
             subscriber_token_account,
             subscription_bank,
+            subscription,
             token_program,
             ..
         } = self;
+        require!(subscription.is_active, ErrorCode::SubscriptionInactive);
 
         transfer(
             CpiContext::new(

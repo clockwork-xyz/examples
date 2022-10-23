@@ -19,12 +19,35 @@ fn main() -> ClientResult<()> {
     let client = Client::new(payer, "http://localhost:8899".into());
     client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
 
+    // GENERATE VALID ADDRESSES
     let subscription =
         subscriptions_program::state::Subscription::pubkey(payer_pubkey, "first".to_string());
-    let subscriptions_queue =
+    let subscription_queue =
+        clockwork_crank::state::Queue::pubkey(subscription, "subscription".into());
+    let subscription_bank =
         clockwork_crank::state::Queue::pubkey(subscription, "subscription".into());
 
-    // create_subscription(client, subscription_bank, mint, subscription, subscription_queue, recurrent_amount, schedule, is_active, subscription_id)
+    let mint = clockwork_crank::state::Queue::pubkey(subscription, "subscription".into());
+    let recurrent_amount = 1500;
+    let schedule = "0 * * ? * *".to_string();
+    let is_active = true;
+    let subscription_id = "test id".to_string();
+
+    create_subscription(
+        &client,
+        subscription_bank,
+        mint,
+        subscription,
+        subscription_queue,
+        recurrent_amount,
+        schedule,
+        is_active,
+        subscription_id,
+    )?;
+
+    let subscriber = clockwork_crank::state::Queue::pubkey(subscription, "subscription".into());
+
+    create_subscriber(&client, subscriber, subscription)?;
 
     Ok(())
 }
