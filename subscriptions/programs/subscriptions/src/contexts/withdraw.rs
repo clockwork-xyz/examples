@@ -25,10 +25,9 @@ pub struct Withdraw<'info> {
     )]
     pub subscription_bank: Account<'info, TokenAccount>,
 
-    #[account(mut, address = Subscription::pubkey(subscription.owner.key(),subscription.subscription_id.clone()))]
+    #[account(address = Subscription::pubkey(subscription.owner.key(),subscription.subscription_id.clone()))]
     pub subscription: Account<'info, Subscription>,
 
-    pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
 }
 

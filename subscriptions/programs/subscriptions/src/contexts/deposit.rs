@@ -25,7 +25,7 @@ pub struct Deposit<'info> {
     )]
     pub subscription_bank: Account<'info, TokenAccount>,
 
-    #[account(mut, address = Subscription::pubkey(subscription.owner.key(),subscription.subscription_id.clone()))]
+    #[account(address = Subscription::pubkey(subscription.owner.key(),subscription.subscription_id.clone()))]
     pub subscription: Account<'info, Subscription>,
     pub token_program: Program<'info, Token>,
 }

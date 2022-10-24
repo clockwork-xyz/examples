@@ -6,7 +6,7 @@ use {
     solana_sdk::instruction::{AccountMeta, Instruction},
 };
 
-pub fn deposit(
+pub fn withdraw(
     client: &Client,
     subscriber: Pubkey,
     subscription: Pubkey,
@@ -14,7 +14,7 @@ pub fn deposit(
     subscriber_token_account: Pubkey,
     amount: u64,
 ) -> ClientResult<()> {
-    let deposit_ix = Instruction {
+    let withdraw_ix = Instruction {
         program_id: subscriptions_program::ID,
         accounts: vec![
             AccountMeta::new(client.payer_pubkey(), true),
@@ -24,10 +24,10 @@ pub fn deposit(
             AccountMeta::new_readonly(subscription, false),
             AccountMeta::new_readonly(token::ID, false),
         ],
-        data: subscriptions_program::instruction::Deposit { amount }.data(),
+        data: subscriptions_program::instruction::Withdraw { amount }.data(),
     };
 
-    send_and_confirm_tx(client, [deposit_ix].to_vec(), None, "deposit".to_string())?;
+    send_and_confirm_tx(client, [withdraw_ix].to_vec(), None, "withdraw".to_string())?;
 
     Ok(())
 }
