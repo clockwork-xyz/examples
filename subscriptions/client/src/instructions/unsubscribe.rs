@@ -5,29 +5,22 @@ use {
     solana_sdk::instruction::{AccountMeta, Instruction},
 };
 
-pub fn subscribe(
-    client: &Client,
-    subscriber: Pubkey,
-    subscription: Pubkey,
-    subscription_queue: Pubkey,
-) -> ClientResult<()> {
-    let subscribe_ix = Instruction {
+pub fn unsubscribe(client: &Client, subscriber: Pubkey, subscription: Pubkey) -> ClientResult<()> {
+    let unsubscribe_ix = Instruction {
         program_id: subscriptions_program::ID,
         accounts: vec![
             AccountMeta::new(client.payer_pubkey(), true),
             AccountMeta::new(subscriber, false),
-            AccountMeta::new(subscription_queue, false),
             AccountMeta::new(subscription, false),
-            AccountMeta::new_readonly(clockwork_crank::ID, false),
         ],
-        data: subscriptions_program::instruction::Subscribe {}.data(),
+        data: subscriptions_program::instruction::Unsubscribe {}.data(),
     };
 
     send_and_confirm_tx(
         client,
-        [subscribe_ix].to_vec(),
+        [unsubscribe_ix].to_vec(),
         None,
-        "subscribe".to_string(),
+        "unsubscribe".to_string(),
     )?;
 
     Ok(())
