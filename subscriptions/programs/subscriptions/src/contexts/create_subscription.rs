@@ -24,7 +24,6 @@ pub struct CreateSubscription<'info> {
     pub subscription_bank: Account<'info, TokenAccount>,
 
     pub mint: Account<'info, Mint>,
-
     #[account(
         init,
         address = Subscription::pubkey(owner.key(),subscription_id),
@@ -32,16 +31,10 @@ pub struct CreateSubscription<'info> {
         space = 8 + size_of::<Subscription>(),
     )]
     pub subscription: Account<'info, Subscription>,
-    #[account(address = Queue::pubkey(subscription.key(), "subscription".into()))]
-    pub subscriptions_queue: Box<Account<'info, Queue>>,
 
     pub system_program: Program<'info, System>,
     #[account(address = anchor_spl::token::ID)]
     pub token_program: Program<'info, anchor_spl::token::Token>,
-    #[account(address = anchor_spl::associated_token::ID)]
-    pub associated_token_program: Program<'info, AssociatedToken>,
-    #[account(address = queue_program::ID)]
-    pub clockwork_program: Program<'info, QueueProgram>,
     #[account(address = sysvar::rent::ID)]
     pub rent: Sysvar<'info, Rent>,
 }

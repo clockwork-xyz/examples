@@ -1,7 +1,7 @@
 use {
     crate::*,
     anchor_lang::{prelude::Pubkey, solana_program::sysvar, InstructionData},
-    anchor_spl::{associated_token, token},
+    anchor_spl::token,
     clockwork_sdk::client::{Client, ClientResult},
     solana_sdk::{
         instruction::{AccountMeta, Instruction},
@@ -27,11 +27,8 @@ pub fn create_subscription(
             AccountMeta::new(subscription_bank, false),
             AccountMeta::new_readonly(mint, false),
             AccountMeta::new(subscription, false),
-            AccountMeta::new(subscription_queue, false),
             AccountMeta::new_readonly(system_program::ID, false),
             AccountMeta::new_readonly(token::ID, false),
-            AccountMeta::new_readonly(associated_token::ID, false),
-            AccountMeta::new_readonly(clockwork_crank::ID, false),
             AccountMeta::new_readonly(sysvar::rent::ID, false),
         ],
         data: subscriptions_program::instruction::CreateSubscription {

@@ -1,38 +1,32 @@
 use {
     crate::*,
     anchor_lang::{prelude::Pubkey, InstructionData},
+    anchor_spl::token,
     clockwork_sdk::client::{Client, ClientResult},
-    solana_sdk::{
-        instruction::{AccountMeta, Instruction},
-        system_program,
-    },
+    solana_sdk::instruction::{AccountMeta, Instruction},
 };
 
-pub fn create_queue(
+pub fn deposit(
     client: &Client,
     subscriber: Pubkey,
     subscription: Pubkey,
-    subscription_queue: Pubkey,
+    subscription_bank: Pubkey,
+    subscriber_token_account: Pubkey,
 ) -> ClientResult<()> {
-    let create_queue_ix = Instruction {
+    let deposit_ix = Instruction {
         program_id: subscriptions_program::ID,
         accounts: vec![
             AccountMeta::new(client.payer_pubkey(), true),
             AccountMeta::new(subscriber, false),
-            AccountMeta::new(subscription_queue, false),
+            AccountMeta::new(subscriber_token_account, false),
+            AccountMeta::new(subscription_bank, false),
             AccountMeta::new_readonly(subscription, false),
-            AccountMeta::new_readonly(clockwork_crank::ID, false),
-            AccountMeta::new_readonly(system_program::ID, false),
+            AccountMeta::new_readonly(token::ID, false),
         ],
         data: subscriptions_program::instruction::CreateQueue {}.data(),
     };
 
-    send_and_confirm_tx(
-        client,
-        [create_queue_ix].to_vec(),
-        None,
-        "create_queue".to_string(),
-    )?;
+    send_and_confirm_tx(client, [deposit_ix].to_vec(), None, "deposit".to_string())?;
 
     Ok(())
 }

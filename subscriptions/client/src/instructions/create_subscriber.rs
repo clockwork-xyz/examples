@@ -18,7 +18,7 @@ pub fn create_subscriber(
         accounts: vec![
             AccountMeta::new(client.payer_pubkey(), true),
             AccountMeta::new(subscriber, false),
-            AccountMeta::new(subscription, false),
+            AccountMeta::new_readonly(subscription, false),
             AccountMeta::new_readonly(system_program::ID, false),
         ],
         data: subscriptions_program::instruction::CreateSubscriber {}.data(),

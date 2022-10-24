@@ -21,7 +21,7 @@ pub struct CreateQueue<'info> {
 
     #[account(address = Queue::pubkey(subscription.key(), "subscription".into()))]
     pub subscriptions_queue: Box<Account<'info, Queue>>,
-    #[account(mut, address = Subscription::pubkey(subscription.owner.key(),subscription.subscription_id.clone()))]
+    #[account(address = Subscription::pubkey(subscription.owner.key(),subscription.subscription_id.clone()))]
     pub subscription: Account<'info, Subscription>,
 
     #[account(address = queue_program::ID)]
