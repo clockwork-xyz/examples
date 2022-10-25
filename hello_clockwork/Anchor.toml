@@ -2,10 +2,10 @@
 seeds = false
 
 [programs.devnet]
-hello_clockwork = "HknGoyMfjnHLej2A7naPgeGfTfmUC3K6XZHrwB18u16y"
+hello_clockwork = "7ewJenSx5sX6DagEhBDvD76sUb5RUck7zZZ6iAqFBZyE"
 
 [programs.localnet]
-hello_clockwork = "HknGoyMfjnHLej2A7naPgeGfTfmUC3K6XZHrwB18u16y"
+hello_clockwork = "7ewJenSx5sX6DagEhBDvD76sUb5RUck7zZZ6iAqFBZyE"
 
 [registry]
 url = "https://anchor.projectserum.com"

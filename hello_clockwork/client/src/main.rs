@@ -7,9 +7,9 @@ use {
         InstructionData,
     },
     clockwork_sdk::client::{
-        queue_program::{
-            instruction::queue_create,
-            objects::{Queue, Trigger},
+        thread_program::{
+            instruction::thread_create,
+            objects::{Thread, Trigger},
         },
         Client, ClientResult,
     },
@@ -27,35 +27,35 @@ fn main() -> ClientResult<()> {
     client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
 
     // Derive PDAs
-    let hello_queue = Queue::pubkey(client.payer_pubkey(), "hello".into());
+    let hello_thread = Thread::pubkey(client.payer_pubkey(), "hello".into());
 
-    // airdrop to hello queue
-    client.airdrop(&hello_queue, LAMPORTS_PER_SOL)?;
+    // airdrop to hello thread
+    client.airdrop(&hello_thread, LAMPORTS_PER_SOL)?;
 
     // Create ix
     let hello_world_ix = Instruction {
         program_id: hello_clockwork::ID,
-        accounts: vec![AccountMeta::new(hello_queue, true)],
+        accounts: vec![AccountMeta::new(hello_thread, true)],
         data: hello_clockwork::instruction::HelloWorld { name: "Bob".into() }.data(),
     };
 
-    let queue_create = queue_create(
+    let thread_create = thread_create(
         client.payer_pubkey(),
         "hello".into(),
         hello_world_ix.into(),
         client.payer_pubkey(),
-        hello_queue,
+        hello_thread,
         Trigger::Cron {
             schedule: "*/10 * * * * * *".into(),
             skippable: true,
         },
     );
 
-    send_and_confirm_tx(&client, queue_create, "queue_create".into())?;
+    send_and_confirm_tx(&client, thread_create, "thread_create".into())?;
 
     println!(
-        "queue: https://explorer.solana.com/address/{}?cluster=custom",
-        hello_queue
+        "thread: https://explorer.solana.com/address/{}?cluster=custom",
+        hello_thread
     );
 
     Ok(())

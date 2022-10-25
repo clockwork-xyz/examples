@@ -1,15 +1,15 @@
 use {
     anchor_lang::prelude::*,
     clockwork_sdk::{
-        queue_program::accounts::{Queue, QueueAccount},
+        thread_program::accounts::{Thread, ThreadAccount},
         CrankResponse,
     },
 };
 #[derive(Accounts)]
 #[instruction(name: String)]
 pub struct HelloWorld<'info> {
-    #[account(address = hello_queue.pubkey(), signer)]
-    pub hello_queue: Account<'info, Queue>,
+    #[account(address = hello_thread.pubkey(), signer)]
+    pub hello_thread: Account<'info, Thread>,
 }
 
 pub fn handler(_ctx: Context<HelloWorld>, name: String) -> Result<CrankResponse> {
