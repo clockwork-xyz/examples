@@ -34,10 +34,10 @@ fn initialize(client: &Client) -> ClientResult<()> {
         program_id: event_stream::ID,
         accounts: vec![
             AccountMeta::new(authority_pubkey, false),
-            AccountMeta::new_readonly(clockwork_sdk::queue_program::ID, false),
+            AccountMeta::new_readonly(clockwork_sdk::thread_program::ID, false),
             AccountMeta::new(event_stream::state::Event::pubkey(), false),
             AccountMeta::new(
-                clockwork_sdk::queue_program::accounts::Queue::pubkey(
+                clockwork_sdk::thread_program::accounts::Thread::pubkey(
                     authority_pubkey,
                     "event".into(),
                 ),

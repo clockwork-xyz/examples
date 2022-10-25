@@ -1,7 +1,7 @@
 use {
     crate::state::*,
     anchor_lang::prelude::*,
-    clockwork_sdk::queue_program::accounts::{Queue, QueueAccount},
+    clockwork_sdk::thread_program::accounts::{Thread, ThreadAccount},
 };
 
 #[derive(Accounts)]
@@ -13,12 +13,12 @@ pub struct ProcessEvent<'info> {
     pub event: Account<'info, Event>,
 
     #[account(
-        address = queue.pubkey(),
-        constraint = queue.id.eq("event"),
+        address = thread.pubkey(),
+        constraint = thread.id.eq("event"),
         signer,
         has_one = authority
     )]
-    pub queue: Account<'info, Queue>,
+    pub thread: Account<'info, Thread>,
 }
 
 pub fn handler(ctx: Context<ProcessEvent>) -> Result<()> {

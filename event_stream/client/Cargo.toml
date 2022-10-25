@@ -5,8 +5,7 @@ edition = "2021"
 
 [dependencies]
 anchor-lang = "0.25.0"
-clockwork-sdk = { path = "../../../clockwork/sdk", version = "1.1.4", features = ["client"] }
-# clockwork-sdk = { branch = "main", git = "https://github.com/clockwork-xyz/clockwork", features = ["client"], version = "1.1.4" }
+clockwork-sdk = { branch = "main", git = "https://github.com/clockwork-xyz/clockwork", version = "1.2.14", features = ["client"] }
 event_stream = { path = "../programs/event_stream", features = ["no-entrypoint"], version = "0.1.0" }
 solana-sdk = "1.10.29"
 
