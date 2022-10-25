@@ -7,7 +7,7 @@ use {
         },
     },
     anchor_spl::{token::{self, Mint, TokenAccount},associated_token::{self,AssociatedToken}},
-    clockwork_sdk::queue_program::{self, QueueProgram, accounts::{Queue, Trigger}},
+    clockwork_sdk::thread_program::{self, ThreadProgram, accounts::{Thread, Trigger}},
     std::mem::size_of,
 };
 
@@ -17,8 +17,8 @@ pub struct CreateInvestment<'info> {
     #[account(address = anchor_spl::associated_token::ID)]
     pub associated_token_program: Program<'info, AssociatedToken>,
 
-    #[account(address = queue_program::ID)]
-    pub clockwork_program: Program<'info, QueueProgram>,
+    #[account(address = thread_program::ID)]
+    pub clockwork_program: Program<'info, ThreadProgram>,
 
     #[account(address = anchor_spl::dex::ID)]
     pub dex_program: Program<'info, anchor_spl::dex::Dex>,
@@ -48,8 +48,8 @@ pub struct CreateInvestment<'info> {
     )]
     pub investment_mint_b_token_account: Box<Account<'info, TokenAccount>>,
 
-    #[account(address = Queue::pubkey(investment.key(), "investment".into()))]
-    pub investment_queue: SystemAccount<'info>,
+    #[account(address = Thread::pubkey(investment.key(), "investment".into()))]
+    pub investment_thread: SystemAccount<'info>,
     
     #[account()]
     pub mint_a: Box<Account<'info, Mint>>,
@@ -95,15 +95,15 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CreateInvestment<'info>>, 
     let mint_a = &ctx.accounts.mint_a;
     let mint_b = &ctx.accounts.mint_b;
     let payer = &ctx.accounts.payer;
-    let investment_queue = &mut ctx.accounts.investment_queue;
+    let investment_thread = &mut ctx.accounts.investment_thread;
     let system_program = &ctx.accounts.system_program;
 
     // Get remaining accounts
     let market = ctx.remaining_accounts.get(0).unwrap();
     let mint_a_vault = ctx.remaining_accounts.get(1).unwrap();
     let mint_b_vault = ctx.remaining_accounts.get(2).unwrap();
-    let request_queue = ctx.remaining_accounts.get(3).unwrap();
-    let event_queue = ctx.remaining_accounts.get(4).unwrap();
+    let request_thread = ctx.remaining_accounts.get(3).unwrap();
+    let event_thread = ctx.remaining_accounts.get(4).unwrap();
     let market_bids = ctx.remaining_accounts.get(5).unwrap();
     let market_asks = ctx.remaining_accounts.get(6).unwrap();
     let open_orders = ctx.remaining_accounts.get(7).unwrap();
@@ -127,8 +127,8 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CreateInvestment<'info>>, 
             AccountMeta::new_readonly(dex_program.key(), false),
             AccountMeta::new_readonly(investment.key(), false),
             AccountMeta::new(investment_mint_a_token_account.key(), false),
-            AccountMeta::new_readonly(investment_queue.key(), false),
-            AccountMeta::new(queue_program::utils::PAYER_PUBKEY, true),
+            AccountMeta::new_readonly(investment_thread.key(), false),
+            AccountMeta::new(clockwork_sdk::PAYER_PUBKEY, true),
             AccountMeta::new_readonly(sysvar::rent::ID, false),
             AccountMeta::new_readonly(system_program::ID, false),
             AccountMeta::new_readonly(token::ID, false),
@@ -136,23 +136,23 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CreateInvestment<'info>>, 
             AccountMeta::new(market.key(), false),
             AccountMeta::new(mint_a_vault.key(), false),
             AccountMeta::new(mint_b_vault.key(), false),
-            AccountMeta::new(request_queue.key(), false),
-            AccountMeta::new(event_queue.key(), false),
+            AccountMeta::new(request_thread.key(), false),
+            AccountMeta::new(event_thread.key(), false),
             AccountMeta::new(market_bids.key(), false),
             AccountMeta::new(market_asks.key(), false),
             AccountMeta::new(open_orders.key(), false),
         ],
-        data: queue_program::utils::anchor_sighash("swap").into(),
+        data: clockwork_sdk::anchor_sighash("swap").into(),
     };
 
-    // Create queue
-    clockwork_sdk::queue_program::cpi::queue_create(
+    // Create thread
+    clockwork_sdk::thread_program::cpi::thread_create(
         CpiContext::new_with_signer(
             clockwork_program.to_account_info(),
-            clockwork_sdk::queue_program::cpi::accounts::QueueCreate {
+            clockwork_sdk::thread_program::cpi::accounts::ThreadCreate {
                 authority: investment.to_account_info(),
                 payer: payer.to_account_info(),
-                queue: investment_queue.to_account_info(),
+                thread: investment_thread.to_account_info(),
                 system_program: system_program.to_account_info(),
             },
             &[&[SEED_INVESTMENT, investment.payer.as_ref(), investment.mint_a.as_ref(), investment.mint_b.as_ref(), &[bump]]],
