@@ -67,7 +67,7 @@ pub fn handler(ctx: Context<Initialize>) -> Result<()> {
             AccountMeta::new_readonly(event.key(), false),
             AccountMeta::new_readonly(queue.key(), true),
         ],
-        data: clockwork_sdk::queue_program::utils::anchor_sighash("process_event").into(),
+        data: clockwork_sdk::anchor_sighash("process_event").into(),
     };
     clockwork_sdk::queue_program::cpi::queue_create(
         CpiContext::new_with_signer(
@@ -83,7 +83,9 @@ pub fn handler(ctx: Context<Initialize>) -> Result<()> {
         "event".into(),
         process_event_ix.into(),
         Trigger::Account {
-            pubkey: event.key(),
+            address: event.key(),
+            offset: 8,
+            size: 8 + 32,
         },
     )?;
 
