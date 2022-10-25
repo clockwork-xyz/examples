@@ -8,18 +8,18 @@ use {
         dex::serum_dex::state::Market,
         token::{Mint, TokenAccount},
     },
-    clockwork_sdk::queue_program::{
+    clockwork_sdk::thread_program::{
         self,
-        accounts::{Queue, Trigger},
-        QueueProgram,
+        accounts::{Thread, Trigger},
+        ThreadProgram,
     },
     std::mem::size_of,
 };
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
-    #[account(address = queue_program::ID)]
-    pub clockwork_program: Program<'info, QueueProgram>,
+    #[account(address = thread_program::ID)]
+    pub clockwork_program: Program<'info, ThreadProgram>,
 
     #[account(
         init,
@@ -30,8 +30,8 @@ pub struct Initialize<'info> {
     )]
     pub crank: Account<'info, Crank>,
 
-    #[account(address = Queue::pubkey(crank.key(), "crank".into()))]
-    pub crank_queue: SystemAccount<'info>,
+    #[account(address = Thread::pubkey(crank.key(), "crank".into()))]
+    pub crank_thread: SystemAccount<'info>,
 
     #[account(address = anchor_spl::dex::ID)]
     pub dex_program: Program<'info, anchor_spl::dex::Dex>,
@@ -71,7 +71,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Res
     // Get accounts
     let clockwork_program = &ctx.accounts.clockwork_program;
     let crank = &mut ctx.accounts.crank;
-    let crank_queue = &ctx.accounts.crank_queue;
+    let crank_thread = &ctx.accounts.crank_thread;
     let dex_program = &ctx.accounts.dex_program;
     let event_queue = &ctx.accounts.event_queue;
     let market = &ctx.accounts.market;
@@ -105,26 +105,26 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Res
         program_id: crate::ID,
         accounts: vec![
             AccountMeta::new(crank.key(), false),
-            AccountMeta::new(crank_queue.key(), true),
+            AccountMeta::new(crank_thread.key(), true),
             AccountMeta::new_readonly(dex_program.key(), false),
             AccountMeta::new_readonly(event_queue.key(), false),
             AccountMeta::new_readonly(market.key(), false),
             AccountMeta::new_readonly(mint_a_vault.key(), false),
             AccountMeta::new_readonly(mint_b_vault.key(), false),
-            AccountMeta::new(clockwork_sdk::queue_program::utils::PAYER_PUBKEY, true),
+            AccountMeta::new(clockwork_sdk::PAYER_PUBKEY, true),
             AccountMeta::new_readonly(system_program.key(), false),
         ],
-        data: clockwork_sdk::queue_program::utils::anchor_sighash("read_events").to_vec(),
+        data: clockwork_sdk::anchor_sighash("read_events").to_vec(),
     };
 
-    // initialize queue
-    clockwork_sdk::queue_program::cpi::queue_create(
+    // initialize thread
+    clockwork_sdk::thread_program::cpi::thread_create(
         CpiContext::new_with_signer(
             clockwork_program.to_account_info(),
-            clockwork_sdk::queue_program::cpi::accounts::QueueCreate {
+            clockwork_sdk::thread_program::cpi::accounts::ThreadCreate {
                 authority: crank.to_account_info(),
                 payer: payer.to_account_info(),
-                queue: crank_queue.to_account_info(),
+                thread: crank_thread.to_account_info(),
                 system_program: system_program.to_account_info(),
             },
             &[&[SEED_CRANK, crank.market.as_ref(), &[bump]]],

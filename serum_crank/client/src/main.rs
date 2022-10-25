@@ -1,4 +1,4 @@
-use clockwork_sdk::queue_program;
+use clockwork_sdk::thread_program;
 
 mod utils;
 
@@ -49,13 +49,14 @@ fn main() -> ClientResult<()> {
 
     // derive serum_crank PDAs
     let crank = serum_crank::state::Crank::pubkey(market_keys.market);
-    let crank_queue = clockwork_sdk::queue_program::accounts::Queue::pubkey(crank, "crank".into());
+    let crank_thread =
+        clockwork_sdk::thread_program::accounts::Thread::pubkey(crank, "crank".into());
 
     print_explorer_link(crank, "crank".into())?;
-    print_explorer_link(crank_queue, "crank_queue".into())?;
+    print_explorer_link(crank_thread, "crank_thread".into())?;
 
     // init serum_crank program
-    initialize_serum_crank(&client, crank, crank_queue, &market_keys)?;
+    initialize_serum_crank(&client, crank, crank_thread, &market_keys)?;
 
     // Create wallets for alice and bob
     let alice_mint_a_wallet = mint_to_new_account(
@@ -144,17 +145,17 @@ fn main() -> ClientResult<()> {
 fn initialize_serum_crank(
     client: &Client,
     crank: Pubkey,
-    crank_queue: Pubkey,
+    crank_thread: Pubkey,
     market_keys: &MarketKeys,
 ) -> ClientResult<()> {
-    client.airdrop(&crank_queue, LAMPORTS_PER_SOL)?;
+    client.airdrop(&crank_thread, LAMPORTS_PER_SOL)?;
 
     let initialize_ix = Instruction {
         program_id: serum_crank::ID,
         accounts: vec![
-            AccountMeta::new_readonly(queue_program::ID, false),
+            AccountMeta::new_readonly(thread_program::ID, false),
             AccountMeta::new(crank, false),
-            AccountMeta::new(crank_queue, false),
+            AccountMeta::new(crank_thread, false),
             AccountMeta::new_readonly(anchor_spl::dex::ID, false),
             AccountMeta::new_readonly(market_keys.event_q, false),
             AccountMeta::new_readonly(market_keys.market, false),

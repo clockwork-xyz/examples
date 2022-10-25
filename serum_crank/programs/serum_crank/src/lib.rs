@@ -13,7 +13,7 @@ pub mod serum_crank {
     use super::*;
 
     /*
-     * initialize clockwork queue
+     * initialize clockwork thread
      */
     pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Result<()> {
         initialize::handler(ctx)
