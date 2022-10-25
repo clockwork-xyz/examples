@@ -21,4 +21,4 @@ overflow-checks = true
 [dependencies]
 anchor-lang = { version = "0.25.0", features = ["init-if-needed"] }
 anchor-spl = { version = "0.25.0", features = ["token"] }
-clockwork-sdk = { branch = "main", git = "https://github.com/clockwork-xyz/clockwork", version = "1.2.9", features = ["queue"] }
+clockwork-sdk = { branch = "main", git = "https://github.com/clockwork-xyz/clockwork", version = "1.2.14", features = ["thread"] }

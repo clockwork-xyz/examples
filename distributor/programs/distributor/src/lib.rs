@@ -32,13 +32,13 @@ pub mod distributor {
     }
 
     /*
-     * update recipient, mint amount, and queue schedule
+     * update recipient, mint amount, and thread schedule
      */
     pub fn update<'info>(
         ctx: Context<'_, '_, '_, 'info, Update<'info>>,
         new_recipient: Option<Pubkey>,
         mint_amount: Option<u64>,
-        trigger: Option<clockwork_sdk::queue_program::accounts::Trigger>,
+        trigger: Option<clockwork_sdk::thread_program::accounts::Trigger>,
     ) -> Result<()> {
         update::handler(ctx, new_recipient, mint_amount, trigger)
     }
