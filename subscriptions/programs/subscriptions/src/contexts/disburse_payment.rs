@@ -48,7 +48,7 @@ impl<'info> DisbursePayment<'_> {
                 &[&[
                     SEED_SUBSCRIPTION,
                     subscription.owner.as_ref(),
-                    subscription.subscription_id.as_bytes(),
+                    &[subscription.subscription_id],
                     &[bump],
                 ]],
             ))?;
@@ -74,7 +74,7 @@ impl<'info> DisbursePayment<'_> {
                         &[&[
                             SEED_SUBSCRIPTION,
                             subscription.owner.as_ref(),
-                            subscription.subscription_id.as_bytes(),
+                            &[subscription.subscription_id],
                             &[bump],
                         ]],
                     ))?;

@@ -18,7 +18,7 @@ pub fn create_subscription(
     recurrent_amount: u64,
     schedule: String,
     is_active: bool,
-    subscription_id: String,
+    subscription_id: u8,
 ) -> ClientResult<()> {
     let create_subscription_ix = Instruction {
         program_id: subscriptions_program::ID,

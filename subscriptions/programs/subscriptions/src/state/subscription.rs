@@ -17,18 +17,14 @@ pub struct Subscription {
     pub recurrent_amount: u64,
     pub schedule: String,
     pub is_active: bool,
-    pub subscription_id: String,
+    pub subscription_id: u8,
     pub withdraw: u64,
 }
 
 impl Subscription {
-    pub fn pubkey(owner: Pubkey, subscription_id: String) -> Pubkey {
+    pub fn pubkey(owner: Pubkey, subscription_id: u8) -> Pubkey {
         Pubkey::find_program_address(
-            &[
-                SEED_SUBSCRIPTION,
-                owner.as_ref(),
-                subscription_id.as_bytes(),
-            ],
+            &[SEED_SUBSCRIPTION, owner.as_ref(), &[subscription_id]],
             &crate::ID,
         )
         .0
@@ -62,7 +58,7 @@ pub trait SubscriptionAccount {
         recurrent_amount: u64,
         schedule: String,
         is_active: bool,
-        subscription_id: String,
+        subscription_id: u8,
         withdraw: u64,
     ) -> Result<()>;
 }
@@ -75,7 +71,7 @@ impl SubscriptionAccount for Account<'_, Subscription> {
         recurrent_amount: u64,
         schedule: String,
         is_acitve: bool,
-        subscription_id: String,
+        subscription_id: u8,
         withdraw: u64,
     ) -> Result<()> {
         self.owner = owner;

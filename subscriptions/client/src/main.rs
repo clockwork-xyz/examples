@@ -1,4 +1,5 @@
 use {
+    clockwork_sdk::client::SplToken,
     clockwork_sdk::client::{Client, ClientResult},
     solana_sdk::signer::Signer,
     solana_sdk::{native_token::LAMPORTS_PER_SOL, signature::Keypair},
@@ -13,25 +14,29 @@ pub use utils::*;
 fn main() -> ClientResult<()> {
     let payer = Keypair::new();
     let payer_pubkey = payer.pubkey();
-    #[cfg(feature = "devnet")]
-    let client = Client::new(payer, "https://api.devnet.solana.com".into());
-    #[cfg(not(feature = "devnet"))]
     let client = Client::new(payer, "http://localhost:8899".into());
     client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
 
-    // GENERATE VALID ADDRESSES
+    let subscription_id = 4;
+
     let subscription =
-        subscriptions_program::state::Subscription::pubkey(payer_pubkey, "first".to_string());
+        subscriptions_program::state::Subscription::pubkey(payer_pubkey, subscription_id);
     let subscription_queue =
         clockwork_crank::state::Queue::pubkey(subscription, "subscription".into());
-    let subscription_bank =
-        clockwork_crank::state::Queue::pubkey(subscription, "subscription".into());
+    let subscription_bank = subscriptions_program::state::Subscription::bank_pubkey(
+        subscription,
+        client.payer_pubkey(),
+    );
 
-    let mint = clockwork_crank::state::Queue::pubkey(subscription, "subscription".into());
+    // create token mint
+    let mint = client
+        .create_token_mint(&client.payer_pubkey(), 9)
+        .unwrap()
+        .pubkey();
+
     let recurrent_amount = 1500;
     let schedule = "0 * * ? * *".to_string();
     let is_active = true;
-    let subscription_id = "test id".to_string();
 
     create_subscription(
         &client,
@@ -45,9 +50,9 @@ fn main() -> ClientResult<()> {
         subscription_id,
     )?;
 
-    let subscriber = clockwork_crank::state::Queue::pubkey(subscription, "subscription".into());
+    // let subscriber = clockwork_crank::state::Queue::pubkey(subscription, "subscription".into());
 
-    create_subscriber(&client, subscriber, subscription)?;
+    // create_subscriber(&client, subscriber, subscription)?;
 
     Ok(())
 }

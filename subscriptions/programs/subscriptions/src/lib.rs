@@ -20,7 +20,7 @@ pub mod subscriptions_program {
         schedule: String,
         mint: Pubkey,
         is_active: bool,
-        subscription_id: String,
+        subscription_id: u8,
     ) -> Result<()> {
         ctx.accounts
             .process(recurrent_amount, schedule, mint, is_active, subscription_id)

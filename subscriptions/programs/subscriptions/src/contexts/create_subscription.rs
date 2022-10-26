@@ -1,16 +1,12 @@
 use {
     crate::state::*,
     anchor_lang::{prelude::*, solana_program::sysvar},
-    anchor_spl::{
-        associated_token::AssociatedToken,
-        token::{Mint, TokenAccount},
-    },
-    clockwork_sdk::queue_program::{self, accounts::Queue, QueueProgram},
+    anchor_spl::token::{Mint, TokenAccount},
     std::mem::size_of,
 };
 
 #[derive(Accounts)]
-#[instruction(subscription_id: String)]
+#[instruction(recurrent_amount:u64,schedule:String,mint:Pubkey,is_active:bool,subscription_id: u8)]
 pub struct CreateSubscription<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
@@ -19,16 +15,26 @@ pub struct CreateSubscription<'info> {
         payer = owner,
         token::mint = mint,
         token::authority = subscription,
-        address = Subscription::bank_pubkey(subscription.key(),owner.key())
+        seeds=[
+            subscription.key().as_ref(),
+            owner.key().as_ref(),
+            "subscription_bank".as_bytes(),
+        ],
+        bump,
     )]
     pub subscription_bank: Account<'info, TokenAccount>,
-
     pub mint: Account<'info, Mint>,
+
     #[account(
         init,
-        address = Subscription::pubkey(owner.key(),subscription_id),
         payer = owner,
         space = 8 + size_of::<Subscription>(),
+        seeds=[
+            SEED_SUBSCRIPTION,
+            owner.key().as_ref(),
+            &[subscription_id]
+        ],
+        bump,
     )]
     pub subscription: Account<'info, Subscription>,
 
@@ -46,7 +52,7 @@ impl<'info> CreateSubscription<'_> {
         schedule: String,
         mint: Pubkey,
         is_active: bool,
-        subscription_id: String,
+        subscription_id: u8,
     ) -> Result<()> {
         let Self {
             owner,
