@@ -12,11 +12,8 @@ use instructions::*;
 pub mod pyth_feed {
     use super::*;
 
-    pub fn create_feed<'info>(
-        ctx: Context<'_, '_, '_, 'info, CreateFeed<'info>>,
-        pyth_feed: Pubkey,
-    ) -> Result<()> {
-        create_feed::handler(ctx, pyth_feed)
+    pub fn create_feed<'info>(ctx: Context<'_, '_, '_, 'info, CreateFeed<'info>>) -> Result<()> {
+        create_feed::handler(ctx)
     }
 
     pub fn process_feed(ctx: Context<ProcessFeed>) -> Result<()> {

@@ -14,7 +14,7 @@ fn main() -> ClientResult<()> {
     let client = Client::new(payer, "https://api.devnet.solana.com".into());
     client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
 
-    // create queue that listens for account changes for a pyth pricing feed
+    // create thread that listens for account changes for a pyth pricing feed
     create_feed(&client)?;
 
     Ok(())
@@ -22,28 +22,27 @@ fn main() -> ClientResult<()> {
 
 fn create_feed(client: &Client) -> ClientResult<()> {
     let feed_pubkey = pyth_feed::state::Feed::pubkey(client.payer_pubkey());
-    let feed_queue_pubkey =
-        clockwork_sdk::queue_program::accounts::Queue::pubkey(feed_pubkey, "feed".into());
+    let feed_thread_pubkey =
+        clockwork_sdk::thread_program::accounts::Thread::pubkey(feed_pubkey, "feed".into());
+    // SOL/USD price feed
+    let sol_usd_pubkey = Pubkey::from_str("J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix").unwrap();
 
-    print_explorer_link(feed_queue_pubkey, "feed_queue".into())?;
+    print_explorer_link(feed_thread_pubkey, "feed_thread".into())?;
 
-    // airdrop queue
-    client.airdrop(&feed_queue_pubkey, 2 * LAMPORTS_PER_SOL)?;
+    // airdrop thread
+    client.airdrop(&feed_thread_pubkey, 2 * LAMPORTS_PER_SOL)?;
 
     let create_feed_ix = Instruction {
         program_id: pyth_feed::ID,
         accounts: vec![
-            AccountMeta::new_readonly(clockwork_sdk::queue_program::ID, false),
+            AccountMeta::new_readonly(clockwork_sdk::thread_program::ID, false),
             AccountMeta::new(feed_pubkey, false),
-            AccountMeta::new(feed_queue_pubkey, false),
+            AccountMeta::new(feed_thread_pubkey, false),
+            AccountMeta::new_readonly(sol_usd_pubkey, false),
             AccountMeta::new(client.payer_pubkey(), true),
             AccountMeta::new_readonly(system_program::ID, false),
         ],
-        data: pyth_feed::instruction::CreateFeed {
-            // SOL/USD price feed
-            pyth_feed: Pubkey::from_str("J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix").unwrap(),
-        }
-        .data(),
+        data: pyth_feed::instruction::CreateFeed {}.data(),
     };
     sign_send_and_confirm_tx(
         &client,

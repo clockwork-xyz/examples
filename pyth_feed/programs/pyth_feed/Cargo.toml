@@ -17,5 +17,5 @@ default = []
 
 [dependencies]
 anchor-lang = "0.25.0"
-clockwork-sdk = { branch = "main", git = "https://github.com/clockwork-xyz/clockwork", version = "1.2.13", features = ["queue"] }
+clockwork-sdk = { branch = "main", git = "https://github.com/clockwork-xyz/clockwork", version = "1.2.15", features = ["thread"] }
 pyth-sdk-solana = "0.6.1"
