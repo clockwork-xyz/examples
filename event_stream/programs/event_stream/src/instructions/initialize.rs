@@ -84,8 +84,8 @@ pub fn handler(ctx: Context<Initialize>) -> Result<()> {
         process_event_ix.into(),
         Trigger::Account {
             address: event.key(),
-            offset: 8,
-            size: 8 + 32,
+            offset: 0,
+            size: 8,
         },
     )?;
 
