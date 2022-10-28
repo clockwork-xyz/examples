@@ -5,13 +5,24 @@ use {
         associated_token::AssociatedToken,
         token::{self, Mint, TokenAccount, Transfer}
     },
-    clockwork_sdk::{queue_program::accounts::{Queue, QueueAccount}, CrankResponse},
+    clockwork_sdk::{thread_program::accounts::{Thread, ThreadAccount}, CrankResponse},
 };
 
 #[derive(Accounts)]
 pub struct DisbursePayment<'info> {
     #[account(address = anchor_spl::associated_token::ID)]
     pub associated_token_program: Program<'info, AssociatedToken>,
+
+    /// CHECK: The authority is validated by the payment account
+    #[account(address = payment.authority)]
+    pub authority: AccountInfo<'info>,
+
+    #[account(
+        mut,
+        associated_token::authority = authority,
+        associated_token::mint = mint,
+    )]
+    pub authority_token_account: Account<'info, TokenAccount>,
 
     #[account(address = payment.mint)]
     pub mint: Box<Account<'info, Mint>>,
@@ -23,26 +34,26 @@ pub struct DisbursePayment<'info> {
         mut,
         seeds = [
             SEED_PAYMENT, 
-            payment.sender.as_ref(), 
+            payment.authority.as_ref(), 
+            payment.mint.as_ref(),
             payment.recipient.as_ref(), 
-            payment.mint.as_ref()
         ],
         bump,
-        has_one = sender,
-        has_one = recipient,
+        has_one = authority,
         has_one = mint,
+        has_one = recipient,
     )]
     pub payment: Box<Account<'info, Payment>>,
 
     #[account(
         signer, 
-        address = payment_queue.pubkey(),
-        constraint = payment_queue.authority.eq(&payment.sender),
+        address = thread.pubkey(),
+        constraint = thread.authority.eq(&payment.authority),
     )]
-    pub payment_queue: Box<Account<'info, Queue>>,
+    pub thread: Box<Account<'info, Thread>>,
 
-    /// CHECK: the recipient is validated by the payment account
-    #[account()]
+    /// CHECK: The recipient is validated by the payment account
+    #[account(address = payment.recipient)]
     pub recipient: AccountInfo<'info>,
 
     #[account( 
@@ -56,17 +67,6 @@ pub struct DisbursePayment<'info> {
     #[account(address = sysvar::rent::ID)]
     pub rent: Sysvar<'info, Rent>,
 
-    /// CHECK: the sender is validated by the payment account
-    #[account()]
-    pub sender: AccountInfo<'info>,
-
-    #[account(
-        mut,
-        token::authority = payment,
-        token::mint = mint,
-    )]
-    pub sender_token_account: Account<'info, TokenAccount>,
-
     #[account(address = system_program::ID)]
     pub system_program: Program<'info, System>,
 
@@ -74,28 +74,32 @@ pub struct DisbursePayment<'info> {
     pub token_program: Program<'info, anchor_spl::token::Token>,
 }
 
-pub fn handler(ctx: Context<'_, '_, '_, '_, DisbursePayment<'_>>) -> Result<CrankResponse> {
-    // Get accounts
+pub fn handler(ctx: Context<DisbursePayment>) -> Result<CrankResponse> {
+    // Get accounts.
+    let authority_token_account = &mut ctx.accounts.authority_token_account;
     let payment = &mut ctx.accounts.payment;
     let recipient_token_account = &ctx.accounts.recipient_token_account;
-    let sender_token_account = &mut ctx.accounts.sender_token_account;
     let token_program = &ctx.accounts.token_program;
 
-    // get payment bump
+    // Transfer tokens from authority's ATA to recipient's ATA.
     let bump = *ctx.bumps.get("payment").unwrap();
-
-    // transfer from sender's ATA to recipient's ATA
     token::transfer(
         CpiContext::new_with_signer(
             token_program.to_account_info(), 
             Transfer {
-                from: sender_token_account.to_account_info(),
+                from: authority_token_account.to_account_info(),
                 to: recipient_token_account.to_account_info(),
                 authority: payment.to_account_info(),
             },             
-            &[&[SEED_PAYMENT, payment.sender.as_ref(), payment.recipient.as_ref(), payment.mint.as_ref(), &[bump]]]),
+            &[&[
+                SEED_PAYMENT, 
+                payment.authority.as_ref(),
+                payment.mint.as_ref(),  
+                payment.recipient.as_ref(),
+                &[bump]]
+            ]),
         payment.amount,
     )?;
 
-    Ok(CrankResponse{ next_instruction: None, kickoff_instruction: None })
+    Ok(CrankResponse::default())
 }
