@@ -22,7 +22,7 @@ pub mod payments {
     /*
      * disburse payment from program authority's ATA to recipient's ATA
      */
-    pub fn disburse_payment(ctx: Context<DisbursePayment>) -> Result<clockwork_sdk::CrankResponse> {
+    pub fn disburse_payment(ctx: Context<DisbursePayment>) -> Result<clockwork_sdk::ExecResponse> {
         disburse_payment::handler(ctx)
     }
 
