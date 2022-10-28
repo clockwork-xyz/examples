@@ -44,9 +44,15 @@ fn initialize(client: &Client) -> ClientResult<()> {
             AccountMeta::new(authority_pubkey, false),
             AccountMeta::new_readonly(clockwork_sdk::thread_program::ID, false),
             AccountMeta::new(event_stream::state::Event::pubkey(), false),
-            AccountMeta::new(event_thread, false),
             AccountMeta::new(client.payer_pubkey(), true),
             AccountMeta::new_readonly(system_program::ID, false),
+            AccountMeta::new(
+                clockwork_sdk::thread_program::accounts::Thread::pubkey(
+                    authority_pubkey,
+                    "event".into(),
+                ),
+                false,
+            ),
         ],
         data: event_stream::instruction::Initialize {}.data(),
     };

@@ -12,20 +12,20 @@ pub const SEED_PAYMENT: &[u8] = b"payment";
 #[account]
 #[derive(Debug)]
 pub struct Payment {
-    pub sender: Pubkey,
-    pub recipient: Pubkey,
-    pub mint: Pubkey,
     pub amount: u64,
+    pub authority: Pubkey,
+    pub mint: Pubkey,
+    pub recipient: Pubkey,
 }
 
 impl Payment {
-    pub fn pubkey(sender: Pubkey, recipient: Pubkey, mint: Pubkey) -> Pubkey {
+    pub fn pubkey(authority: Pubkey, mint: Pubkey, recipient: Pubkey) -> Pubkey {
         Pubkey::find_program_address(
             &[
                 SEED_PAYMENT,
-                sender.as_ref(),
-                recipient.as_ref(),
+                authority.as_ref(),
                 mint.as_ref(),
+                recipient.as_ref(),
             ],
             &crate::ID,
         )
@@ -41,15 +41,27 @@ impl TryFrom<Vec<u8>> for Payment {
 }
 
 pub trait PaymentAccount {
-    fn new(&mut self, sender: Pubkey, recipient: Pubkey, mint: Pubkey, amount: u64) -> Result<()>;
+    fn new(
+        &mut self,
+        amount: u64,
+        authority: Pubkey,
+        mint: Pubkey,
+        recipient: Pubkey,
+    ) -> Result<()>;
 }
 
 impl PaymentAccount for Account<'_, Payment> {
-    fn new(&mut self, sender: Pubkey, recipient: Pubkey, mint: Pubkey, amount: u64) -> Result<()> {
-        self.sender = sender;
-        self.recipient = recipient;
-        self.mint = mint;
+    fn new(
+        &mut self,
+        amount: u64,
+        authority: Pubkey,
+        mint: Pubkey,
+        recipient: Pubkey,
+    ) -> Result<()> {
         self.amount = amount;
+        self.authority = authority;
+        self.mint = mint;
+        self.recipient = recipient;
         Ok(())
     }
 }

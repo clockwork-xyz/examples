@@ -35,14 +35,14 @@ pub struct Initialize<'info> {
     )]
     pub event: Account<'info, Event>,
 
-    #[account(address = Thread::pubkey(authority.key(), "event".into()))]
-    pub thread: SystemAccount<'info>,
-
     #[account(mut)]
     pub signer: Signer<'info>,
 
     #[account(address = system_program::ID)]
     pub system_program: Program<'info, System>,
+
+    #[account(address = Thread::pubkey(authority.key(), "event".into()))]
+    pub thread: SystemAccount<'info>,
 }
 
 pub fn handler(ctx: Context<Initialize>) -> Result<()> {
@@ -75,8 +75,8 @@ pub fn handler(ctx: Context<Initialize>) -> Result<()> {
             clockwork_sdk::thread_program::cpi::accounts::ThreadCreate {
                 authority: authority.to_account_info(),
                 payer: signer.to_account_info(),
-                thread: thread.to_account_info(),
                 system_program: system_program.to_account_info(),
+                thread: thread.to_account_info(),
             },
             &[&[SEED_AUTHORITY, &[bump]]],
         ),
