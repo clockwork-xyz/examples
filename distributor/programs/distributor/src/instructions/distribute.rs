@@ -9,7 +9,7 @@ use {
         token::{self, Mint, MintTo, TokenAccount},
     },
     clockwork_sdk::{
-        queue_program::accounts::{Queue, QueueAccount},
+        thread_program::accounts::{Thread, ThreadAccount},
         CrankResponse,
     },
 };
@@ -29,10 +29,10 @@ pub struct Distribute<'info> {
 
     #[account(
         signer,
-        address = distributor_queue.pubkey(),
-        constraint = distributor_queue.id.eq("distributor")
+        address = distributor_thread.pubkey(),
+        constraint = distributor_thread.id.eq("distributor")
      )]
-    pub distributor_queue: Box<Account<'info, Queue>>,
+    pub distributor_thread: Box<Account<'info, Thread>>,
 
     #[account(mut)]
     pub mint: Account<'info, Mint>,

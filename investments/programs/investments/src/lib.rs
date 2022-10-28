@@ -22,7 +22,7 @@ pub mod investments_program {
     }
 
     /*
-     * create investments account and initialize clockwork queue account
+     * create investments account and initialize clockwork thread account
      */
     pub fn create_investment<'info>(
         ctx: Context<'_, '_, '_, 'info, CreateInvestment<'info>>,

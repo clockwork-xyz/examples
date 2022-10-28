@@ -7,7 +7,7 @@ use {
     anchor_spl::{associated_token, token},
     clockwork_sdk::{
         client::{
-            queue_program::{self, instruction::queue_create, objects::Trigger},
+            thread_program::{self, instruction::thread_create, objects::Trigger},
             Client, ClientResult, SplToken,
         },
         PAYER_PUBKEY,
@@ -40,7 +40,7 @@ fn main() -> ClientResult<()> {
 
     // derive distributor program PDAs
     let distributor = distributor::state::Distributor::pubkey(mint, client.payer_pubkey());
-    let distributor_queue = clockwork_sdk::queue_program::accounts::Queue::pubkey(
+    let distributor_thread = clockwork_sdk::thread_program::accounts::Thread::pubkey(
         client.payer_pubkey(),
         "distributor".into(),
     );
@@ -56,15 +56,15 @@ fn main() -> ClientResult<()> {
 
     create_distributor(&client, distributor, mint, bob, bobs_token_account)?;
 
-    // airdrop distributor queue
-    client.airdrop(&distributor_queue, 2 * LAMPORTS_PER_SOL)?;
+    // airdrop distributor thread
+    client.airdrop(&distributor_thread, 2 * LAMPORTS_PER_SOL)?;
 
     let distribute_ix = Instruction {
         program_id: distributor::ID,
         accounts: vec![
             AccountMeta::new_readonly(associated_token::ID, false),
             AccountMeta::new_readonly(distributor, false),
-            AccountMeta::new(distributor_queue.key(), true),
+            AccountMeta::new(distributor_thread.key(), true),
             AccountMeta::new(mint.key(), false),
             AccountMeta::new(PAYER_PUBKEY, true),
             AccountMeta::new_readonly(bob.key(), false),
@@ -76,21 +76,21 @@ fn main() -> ClientResult<()> {
         data: distributor::instruction::Distribute.data(),
     };
 
-    let queue_create = queue_create(
+    let thread_create = thread_create(
         client.payer_pubkey(),
         "distributor".into(),
         distribute_ix.into(),
         client.payer_pubkey(),
-        distributor_queue,
+        distributor_thread,
         Trigger::Cron {
             schedule: "*/10 * * * * * *".into(),
             skippable: true,
         },
     );
 
-    sign_send_and_confirm_tx(&client, vec![queue_create], None, "queue_create".into())?;
+    sign_send_and_confirm_tx(&client, vec![thread_create], None, "thread_create".into())?;
 
-    print_explorer_link(distributor_queue, "distributor_queue".into())?;
+    print_explorer_link(distributor_thread, "distributor_thread".into())?;
 
     // wait 10 seconds to update distributor
     println!("wait 10 seconds to update distributor");
@@ -99,7 +99,7 @@ fn main() -> ClientResult<()> {
         std::thread::sleep(std::time::Duration::from_secs(1));
     }
 
-    update_distributor(&client, distributor, distributor_queue, mint, charlie)?;
+    update_distributor(&client, distributor, distributor_thread, mint, charlie)?;
 
     Ok(())
 }
@@ -143,7 +143,7 @@ fn create_distributor(
 fn update_distributor(
     client: &Client,
     distributor: Pubkey,
-    distributor_queue: Pubkey,
+    distributor_thread: Pubkey,
     mint: Pubkey,
     charlie: Pubkey,
 ) -> ClientResult<()> {
@@ -151,9 +151,9 @@ fn update_distributor(
         program_id: distributor::ID,
         accounts: vec![
             AccountMeta::new(client.payer_pubkey(), true),
-            AccountMeta::new_readonly(queue_program::ID, false),
+            AccountMeta::new_readonly(thread_program::ID, false),
             AccountMeta::new(distributor, false),
-            AccountMeta::new(distributor_queue, false),
+            AccountMeta::new(distributor_thread, false),
             AccountMeta::new_readonly(mint, false),
             AccountMeta::new_readonly(system_program::ID, false),
         ],

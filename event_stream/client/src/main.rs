@@ -30,6 +30,14 @@ fn main() -> ClientResult<()> {
 
 fn initialize(client: &Client) -> ClientResult<()> {
     let authority_pubkey = event_stream::state::Authority::pubkey();
+    let event_thread =
+        clockwork_sdk::thread_program::accounts::Thread::pubkey(authority_pubkey, "event".into());
+
+    // airdrop thread
+    client.airdrop(&event_thread, 2 * LAMPORTS_PER_SOL)?;
+
+    print_explorer_link(event_thread, "event_thread".into())?;
+
     let initialize_ix = Instruction {
         program_id: event_stream::ID,
         accounts: vec![
