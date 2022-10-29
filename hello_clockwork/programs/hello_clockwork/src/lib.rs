@@ -14,7 +14,7 @@ pub mod hello_clockwork {
     pub fn hello_world(
         ctx: Context<HelloWorld>,
         name: String,
-    ) -> Result<clockwork_sdk::CrankResponse> {
+    ) -> Result<clockwork_sdk::ExecResponse> {
         hello_world::handler(ctx, name)
     }
 }
