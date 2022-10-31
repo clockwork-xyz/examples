@@ -9,12 +9,12 @@ use {
     },
     clockwork_sdk::{
         PAYER_PUBKEY, 
-        queue_program::{
-            self, cpi::accounts::QueueUpdate, 
-            QueueProgram, 
+        thread_program::{
+            self, cpi::accounts::ThreadUpdate, 
+            ThreadProgram, 
             accounts::{
-                QueueAccount, Queue, 
-                Trigger, QueueSettings
+                ThreadAccount, Thread, 
+                Trigger, ThreadSettings
             }}},
 };
 
@@ -24,8 +24,8 @@ pub struct Update<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
 
-    #[account(address = queue_program::ID)]
-    pub clockwork_program: Program<'info, QueueProgram>,
+    #[account(address = thread_program::ID)]
+    pub clockwork_program: Program<'info, ThreadProgram>,
 
     #[account(
         mut,
@@ -38,10 +38,10 @@ pub struct Update<'info> {
 
     #[account(
         mut, 
-        address = distributor_queue.pubkey(),
-        constraint = distributor_queue.id.eq("distributor")
+        address = distributor_thread.pubkey(),
+        constraint = distributor_thread.id.eq("distributor")
      )]
-    pub distributor_queue: Account<'info, Queue>,
+    pub distributor_thread: Account<'info, Thread>,
     
     pub mint: Account<'info, Mint>,
 
@@ -59,7 +59,7 @@ pub fn handler<'info>(
     let clockwork_program = &ctx.accounts.clockwork_program;
     let authority = &ctx.accounts.authority;
     let distributor = &mut ctx.accounts.distributor;
-    let distributor_queue = &mut ctx.accounts.distributor_queue;
+    let distributor_thread = &mut ctx.accounts.distributor_thread;
     let mint = &ctx.accounts.mint;
     let system_program = &ctx.accounts.system_program;
 
@@ -84,7 +84,7 @@ pub fn handler<'info>(
         accounts: vec![
             AccountMeta::new_readonly(associated_token::ID, false),
             AccountMeta::new_readonly(distributor.key(), false),
-            AccountMeta::new(distributor_queue.key(), true),
+            AccountMeta::new(distributor_thread.key(), true),
             AccountMeta::new(mint.key(), false),
             AccountMeta::new(PAYER_PUBKEY, true),
             AccountMeta::new_readonly(distributor.recipient, false),
@@ -97,18 +97,18 @@ pub fn handler<'info>(
         data: clockwork_sdk::anchor_sighash("distribute").to_vec()
     };
 
-    // update distributor queue
-    clockwork_sdk::queue_program::cpi::queue_update(
+    // update distributor thread
+    clockwork_sdk::thread_program::cpi::thread_update(
     CpiContext::new_with_signer(
     clockwork_program.to_account_info(),
-        QueueUpdate {
+        ThreadUpdate {
                     authority: authority.to_account_info(), 
-                    queue: distributor_queue.to_account_info(), 
+                    thread: distributor_thread.to_account_info(), 
                     system_program: system_program.to_account_info()
                 },             
         &[&[SEED_DISTRIBUTOR, distributor.mint.as_ref(), distributor.authority.as_ref(), &[bump]]],
         ),
-    QueueSettings {
+    ThreadSettings {
                 kickoff_instruction: Some(mint_token_ix.into()), 
                 fee: None, 
                 rate_limit: None, 

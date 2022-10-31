@@ -10,7 +10,7 @@ pub const SEED_FEED: &[u8] = b"feed";
 #[derive(Debug)]
 pub struct Feed {
     pub authority: Pubkey,
-    pub price_feed: Pubkey,
+    pub pyth_price_feed: Pubkey,
     pub publish_time: i64,
 }
 
@@ -32,13 +32,13 @@ impl TryFrom<Vec<u8>> for Feed {
  */
 
 pub trait FeedAccount {
-    fn new(&mut self, authority: Pubkey, price_feed: Pubkey) -> Result<()>;
+    fn new(&mut self, authority: Pubkey, pyth_price_feed: Pubkey) -> Result<()>;
 }
 
 impl FeedAccount for Account<'_, Feed> {
-    fn new(&mut self, authority: Pubkey, price_feed: Pubkey) -> Result<()> {
+    fn new(&mut self, authority: Pubkey, pyth_price_feed: Pubkey) -> Result<()> {
         self.authority = authority;
-        self.price_feed = price_feed;
+        self.pyth_price_feed = pyth_price_feed;
         self.publish_time = 0;
         Ok(())
     }
