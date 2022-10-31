@@ -6,7 +6,7 @@ use {
     },
     anchor_lang::solana_program::program::invoke_signed,
     anchor_spl::{token::TokenAccount, dex::serum_dex},
-    clockwork_sdk::{thread_program::accounts::{Thread, ThreadAccount}, ExecResponse},
+    clockwork_sdk::{PAYER_PUBKEY, InstructionData, thread_program::accounts::{Thread, ThreadAccount}, ExecResponse},
 };
 
 #[derive(Accounts)]
@@ -68,7 +68,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, ConsumeEvents<'info>>) -> 
                 program_id: crate::ID,
                 accounts: vec![
                     AccountMeta::new(crank.key(), false),
-                    AccountMeta::new(crank_queue.key(), true),
+                    AccountMeta::new(crank_thread.key(), true),
                     AccountMeta::new_readonly(dex_program.key(), false),
                     AccountMeta::new_readonly(event_queue.key(), false),
                     AccountMeta::new_readonly(market.key(), false),

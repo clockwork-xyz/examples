@@ -10,20 +10,14 @@ use {
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
-    #[account(address = thread_program::ID)]
-    pub clockwork_program: Program<'info, ThreadProgram>,
-
     #[account(
         init,
-        payer = authority,
+        payer = signer,
         seeds = [SEED_CRANK, market.key().as_ref()],
         bump,
         space = 8 + size_of::<Crank>(),
     )]
     pub crank: Account<'info, Crank>,
-
-    #[account(address = Thread::pubkey(crank.key(), "crank".into()))]
-    pub crank_thread: SystemAccount<'info>,
 
     #[account(address = anchor_spl::dex::ID)]
     pub dex_program: Program<'info, anchor_spl::dex::Dex>,
@@ -52,6 +46,9 @@ pub struct Initialize<'info> {
     )]
     pub mint_b_vault: Account<'info, TokenAccount>,
 
+    #[account(mut)]
+    pub signer: Signer<'info>,
+
     #[account(address = system_program::ID)]
     pub system_program: Program<'info, System>,
 }
@@ -59,7 +56,6 @@ pub struct Initialize<'info> {
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Result<()> {
     // Get accounts
     let crank = &mut ctx.accounts.crank;
-    let crank_thread = &ctx.accounts.crank_thread;
     let dex_program = &ctx.accounts.dex_program;
     let event_queue = &ctx.accounts.event_queue;
     let market = &ctx.accounts.market;
@@ -82,43 +78,6 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Res
         mint_a_vault.key(),
         mint_b_vault.key(),
         10,
-    )?;
-
-    // get authorit bump
-    let bump = *ctx.bumps.get("crank").unwrap();
-
-    // define ix
-    let read_events_ix = Instruction {
-        program_id: crate::ID,
-        accounts: vec![
-            AccountMeta::new(crank.key(), false),
-            AccountMeta::new(crank_thread.key(), true),
-            AccountMeta::new_readonly(dex_program.key(), false),
-            AccountMeta::new_readonly(event_queue.key(), false),
-            AccountMeta::new_readonly(market.key(), false),
-            AccountMeta::new_readonly(mint_a_vault.key(), false),
-            AccountMeta::new_readonly(mint_b_vault.key(), false),
-            AccountMeta::new(clockwork_sdk::PAYER_PUBKEY, true),
-            AccountMeta::new_readonly(system_program.key(), false),
-        ],
-        data: clockwork_sdk::anchor_sighash("read_events").to_vec(),
-    };
-
-    // initialize thread
-    clockwork_sdk::thread_program::cpi::thread_create(
-        CpiContext::new_with_signer(
-            clockwork_program.to_account_info(),
-            clockwork_sdk::thread_program::cpi::accounts::ThreadCreate {
-                authority: crank.to_account_info(),
-                payer: payer.to_account_info(),
-                thread: crank_thread.to_account_info(),
-                system_program: system_program.to_account_info(),
-            },
-            &[&[SEED_CRANK, crank.market.as_ref(), &[bump]]],
-        ),
-        "crank".into(),
-        read_events_ix.into(),
-        Trigger::Immediate,
     )?;
 
     Ok(())
