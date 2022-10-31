@@ -27,7 +27,7 @@ pub mod distributor {
      */
     pub fn distribute<'info>(
         ctx: Context<'_, '_, '_, 'info, Distribute<'info>>,
-    ) -> Result<clockwork_sdk::CrankResponse> {
+    ) -> Result<clockwork_sdk::ExecResponse> {
         distribute::handler(ctx)
     }
 
