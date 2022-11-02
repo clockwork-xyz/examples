@@ -14,15 +14,11 @@ use {
     },
     clockwork_sdk::{
         client::{
-            thread_program::{
-                instruction::queue_create,
-                objects::{Queue, Trigger},
-            },
-            Client, ClientResult,
+            thread_program::{instruction::thread_create, objects::Trigger},
+            Client, ClientResult, SplToken,
         },
         PAYER_PUBKEY,
     },
-    serum_common::client::rpc::mint_to_new_account,
     solana_sdk::{
         instruction::Instruction, native_token::LAMPORTS_PER_SOL, signature::Keypair,
         signer::Signer,
@@ -48,6 +44,7 @@ fn main() -> ClientResult<()> {
     client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
     client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
     client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
+    client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
     client.airdrop(&bob.pubkey(), 2 * LAMPORTS_PER_SOL)?;
 
     // setup market
@@ -56,8 +53,10 @@ fn main() -> ClientResult<()> {
 
     // derive serum_crank PDAs
     let crank = serum_crank::state::Crank::pubkey(market_keys.market);
-    let crank_thread =
-        clockwork_sdk::thread_program::accounts::Thread::pubkey(crank, "crank".into());
+    let crank_thread = clockwork_sdk::thread_program::accounts::Thread::pubkey(
+        client.payer_pubkey(),
+        "crank".into(),
+    );
 
     print_explorer_link(crank, "crank".into())?;
     print_explorer_link(crank_thread, "crank_thread".into())?;
@@ -66,23 +65,34 @@ fn main() -> ClientResult<()> {
     initialize_serum_crank(&client, crank, crank_thread, &market_keys)?;
 
     // Create wallets for alice and bob
-    let alice_mint_a_wallet = mint_to_new_account(
-        &client,
-        &client.payer(),
-        &client.payer(),
+    let alice_mint_a_wallet = client.create_token_account_with_lamports(
+        &client.payer_pubkey(),
         &market_keys.pc_mint,
-        1_000_000_000_000_000,
-    )
-    .unwrap();
+        LAMPORTS_PER_SOL,
+    )?;
 
-    let bob_mint_b_wallet = mint_to_new_account(
-        &client,
-        &bob,
-        &client.payer(),
+    let bob_mint_b_wallet = client.create_token_account_with_lamports(
+        &bob.pubkey(),
         &market_keys.coin_mint,
+        LAMPORTS_PER_SOL,
+    )?;
+
+    // mint to alice and bob's wallets
+    client.mint_to(
+        client.payer(),
+        &market_keys.pc_mint,
+        &alice_mint_a_wallet.pubkey(),
         1_000_000_000_000_000,
-    )
-    .unwrap();
+        9,
+    )?;
+
+    client.mint_to(
+        client.payer(),
+        &market_keys.coin_mint,
+        &bob_mint_b_wallet.pubkey(),
+        1_000_000_000_000_000,
+        9,
+    )?;
 
     // initialize open order accounts for alice and bob
     let mut oo_account_alice = None;
@@ -172,9 +182,7 @@ fn initialize_serum_crank(
     let initialize_ix = Instruction {
         program_id: serum_crank::ID,
         accounts: vec![
-            AccountMeta::new_readonly(thread_program::ID, false),
             AccountMeta::new(crank, false),
-            AccountMeta::new(crank_thread, false),
             AccountMeta::new_readonly(anchor_spl::dex::ID, false),
             AccountMeta::new_readonly(event_q, false),
             AccountMeta::new_readonly(market, false),
@@ -182,20 +190,21 @@ fn initialize_serum_crank(
             AccountMeta::new_readonly(pc_vault, false),
             AccountMeta::new_readonly(coin_mint, false),
             AccountMeta::new_readonly(coin_vault, false),
+            AccountMeta::new(client.payer_pubkey(), true),
             AccountMeta::new_readonly(system_program::ID, false),
         ],
         data: serum_crank::instruction::Initialize.data(),
     };
 
-    // create queue with read events ix
-    let queue_create = queue_create(
+    // create thread with read events ix
+    let thread_create = thread_create(
         client.payer_pubkey(),
         "crank".into(),
         Instruction {
             program_id: serum_crank::ID,
             accounts: vec![
                 AccountMeta::new(crank.key(), false),
-                AccountMeta::new(crank_queue.key(), true),
+                AccountMeta::new(crank_thread.key(), true),
                 AccountMeta::new_readonly(anchor_spl::dex::ID, false),
                 AccountMeta::new_readonly(event_q, false),
                 AccountMeta::new_readonly(market, false),
@@ -208,7 +217,7 @@ fn initialize_serum_crank(
         }
         .into(),
         client.payer_pubkey(),
-        crank_queue,
+        crank_thread,
         Trigger::Account {
             address: event_q,
             offset: 23, // TODO: find actual offset and size
@@ -218,9 +227,9 @@ fn initialize_serum_crank(
 
     sign_send_and_confirm_tx(
         &client,
-        vec![initialize_ix, queue_create],
+        vec![initialize_ix, thread_create],
         None,
-        "initialize crank and queue_create".into(),
+        "initialize crank and thread_create".into(),
     )?;
 
     Ok(())
