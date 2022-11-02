@@ -6,7 +6,7 @@ use {
         solana_program::{system_program,instruction::Instruction},
     },
     anchor_spl::{dex::serum_dex::state::{strip_header, EventQueueHeader, Event, Queue as SerumDexQueue}, token::TokenAccount},
-    clockwork_sdk::{thread_program::accounts::{Thread, ThreadAccount}, ExecResponse}
+    clockwork_sdk::{thread_program::accounts::Thread, ExecResponse}
 };
 
 #[derive(Accounts)]
@@ -23,9 +23,8 @@ pub struct ReadEvents<'info> {
     pub crank: Box<Account<'info, Crank>>,
 
     #[account(
-        signer, 
-        mut,
-        address = crank_thread.pubkey(),
+        signer,
+        address = Thread::pubkey(crank_thread.authority, crank_thread.id.clone()),
         constraint = crank_thread.id.eq("crank"),
     )]
     pub crank_thread: Box<Account<'info, Thread>>,
@@ -39,9 +38,9 @@ pub struct ReadEvents<'info> {
     /// CHECK: this account is validated against the crank account
     pub market: AccountInfo<'info>,
 
-    pub mint_a_vault: Account<'info, TokenAccount>,
+    pub mint_a_vault: Box<Account<'info, TokenAccount>>,
 
-    pub mint_b_vault: Account<'info, TokenAccount>,
+    pub mint_b_vault: Box<Account<'info, TokenAccount>>,
 
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -120,6 +119,6 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, ReadEvents<'info>>) -> Res
                 data: clockwork_sdk::anchor_sighash("consume_events").into(),
             }
             .into()
-        )
+        ),
     }) 
 }

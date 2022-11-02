@@ -2,9 +2,9 @@ use {
     anchor_lang::{prelude::*, solana_program::sysvar},
     anchor_spl::dex::serum_dex::instruction::initialize_market,
     clockwork_sdk::client::{Client, ClientResult, SplToken},
-    serum_common::client::rpc::mint_to_new_account,
     solana_sdk::{
-        instruction::Instruction, signature::Keypair, signer::Signer, transaction::Transaction,
+        instruction::Instruction, native_token::LAMPORTS_PER_SOL, signature::Keypair,
+        signer::Signer, transaction::Transaction,
     },
 };
 
@@ -87,24 +87,34 @@ pub fn setup_market(client: &Client) -> ClientResult<MarketKeys> {
         "setup_market".to_string(),
     )?;
 
-    // create wallets to then mint to
-    let coin_wallet_key = mint_to_new_account(
-        &client,
-        &client.payer(),
-        &client.payer(),
+    // create coin and pc wallets
+    let coin_wallet_key = client.create_token_account_with_lamports(
+        &client.payer_pubkey(),
         &coin_mint,
-        1_000_000_000_000_000,
-    )
-    .unwrap();
+        LAMPORTS_PER_SOL,
+    )?;
 
-    let pc_wallet_key = mint_to_new_account(
-        &client,
-        &client.payer(),
-        &client.payer(),
+    let pc_wallet_key = client.create_token_account_with_lamports(
+        &client.payer_pubkey(),
         &pc_mint,
+        LAMPORTS_PER_SOL,
+    )?;
+
+    client.mint_to(
+        client.payer(),
+        &coin_mint,
+        &coin_wallet_key.pubkey(),
         1_000_000_000_000_000,
-    )
-    .unwrap();
+        9,
+    )?;
+
+    client.mint_to(
+        client.payer(),
+        &pc_mint,
+        &pc_wallet_key.pubkey(),
+        1_000_000_000_000_000,
+        9,
+    )?;
 
     Ok(MarketKeys {
         market: market_key.pubkey(),
