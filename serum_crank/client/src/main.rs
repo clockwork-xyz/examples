@@ -220,8 +220,8 @@ fn initialize_serum_crank(
         crank_thread,
         Trigger::Account {
             address: event_q,
-            offset: 23, // TODO: find actual offset and size
-            size: 23,
+            offset: 8 + 8,
+            size: 8,
         },
     );
 
