@@ -3,6 +3,7 @@ use {
     clockwork_sdk::client::{Client, ClientResult},
     solana_sdk::signer::Signer,
     solana_sdk::{native_token::LAMPORTS_PER_SOL, signature::Keypair},
+    std::env,
 };
 
 pub mod instructions;
@@ -12,6 +13,9 @@ pub use instructions::*;
 pub use utils::*;
 
 fn main() -> ClientResult<()> {
+    // let args: Vec<String> = env::args().collect();
+    // let command: &str = &args[1];
+
     let payer = Keypair::new();
     let payer_pubkey = payer.pubkey();
     let client = Client::new(payer, "http://localhost:8899".into());
@@ -50,9 +54,9 @@ fn main() -> ClientResult<()> {
         subscription_id,
     )?;
 
-    // let subscriber = clockwork_crank::state::Queue::pubkey(subscription, "subscription".into());
+    let subscriber = subscriptions_program::state::Subscriber::pubkey(payer_pubkey, subscription);
 
-    // create_subscriber(&client, subscriber, subscription)?;
+    create_subscriber(&client, subscriber, subscription)?;
 
     Ok(())
 }

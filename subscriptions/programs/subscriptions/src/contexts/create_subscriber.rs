@@ -4,15 +4,19 @@ use {crate::state::*, anchor_lang::prelude::*, std::mem::size_of};
 pub struct CreateSubscriber<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
+
     #[account(
         init,
-        address = Subscriber::pubkey(payer.key(),subscription.key()),
+        seeds =[
+            SEED_SUBSCRIBER, payer.key().as_ref(), subscription.key().as_ref()
+        ],
+        bump,
         payer = payer,
         space = 8 + size_of::<Subscriber>(),
     )]
     pub subscriber: Account<'info, Subscriber>,
 
-    #[account(mut, address = Subscription::pubkey(subscription.owner.key(),subscription.subscription_id.clone()))]
+    #[account(address = Subscription::pubkey(subscription.owner.key(),subscription.subscription_id.clone()))]
     pub subscription: Account<'info, Subscription>,
 
     pub system_program: Program<'info, System>,
