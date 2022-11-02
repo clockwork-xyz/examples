@@ -12,7 +12,8 @@ use {
 #[derive(Accounts)]
 pub struct ConsumeEvents<'info> {
     #[account(
-        address = Crank::pubkey(crank.market.key()),
+        seeds = [SEED_CRANK, crank.market.as_ref()],
+        bump,
         has_one = market,
         has_one = event_queue,
         has_one = mint_a_vault,
