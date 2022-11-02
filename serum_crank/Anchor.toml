@@ -2,7 +2,7 @@
 seeds = false
 
 [programs.localnet]
-serum_crank = "9BhecKZc6En8eaMRFE3QD5wdGwkp8QNUkufUtsP7Tb1B"
+serum_crank = "FSDGmgcCgTz2sZ37Ge5Wxi73iuQSrzGVTH2gx5MbYfB5"
 
 [registry]
 url = "https://anchor.projectserum.com"
