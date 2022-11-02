@@ -20,4 +20,4 @@ overflow-checks = true
 
 [dependencies]
 anchor-lang = "0.25.0"
-clockwork-sdk = { version = "1.3.1", features = ["thread"] }
+clockwork-sdk = { version = "1.3.8", features = ["thread"] }
