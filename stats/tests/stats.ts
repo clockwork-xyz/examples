@@ -1,12 +1,12 @@
 import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
-import { PythStats } from "../target/types/pyth_stats";
+import { Stats } from "../target/types/stats";
 
-describe("pyth_stats", () => {
+describe("stats", () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
 
-  const program = anchor.workspace.PythStats as Program<PythStats>;
+  const program = anchor.workspace.Stats as Program<Stats>;
 
   it("Is initialized!", async () => {
     // Add your test here.
