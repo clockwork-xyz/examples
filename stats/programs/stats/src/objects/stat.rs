@@ -12,14 +12,20 @@ pub const SEED_STAT: &[u8] = b"stat";
 #[account]
 #[derive(Debug)]
 pub struct Stat {
-    price_history: HashMap<u64, i64>,
-    lookback_window: u64,
-    twap: i64,
+    pub price_feed: Pubkey,
+    pub authority: Pubkey,
+    pub price_history: HashMap<i64, i64>,
+    pub lookback_window: i64,
+    pub twap: i64,
 }
 
 impl Stat {
-    pub fn pubkey() -> Pubkey {
-        Pubkey::find_program_address(&[SEED_STAT], &crate::ID).0
+    pub fn pubkey(price_feed: Pubkey, authority: Pubkey) -> Pubkey {
+        Pubkey::find_program_address(
+            &[SEED_STAT, price_feed.as_ref(), authority.as_ref()],
+            &crate::ID,
+        )
+        .0
     }
 }
 
@@ -35,25 +41,30 @@ impl TryFrom<Vec<u8>> for Stat {
  */
 
 pub trait StatAccount {
-    fn new(&mut self, lookback_window: u64) -> Result<()>;
-    fn twap(&mut self, price: u64, timestamp: u64) -> Result<()>;
+    fn new(&mut self, price_feed: Pubkey, authority: Pubkey, lookback_window: i64) -> Result<()>;
+    fn twap(&mut self, timestamp: i64, price: i64) -> Result<()>;
 }
 
 impl StatAccount for Account<'_, Stat> {
-    fn new(&mut self, lookback_window: u64) -> Result<()> {
+    fn new(&mut self, price_feed: Pubkey, authority: Pubkey, lookback_window: i64) -> Result<()> {
+        self.price_feed = price_feed;
+        self.authority = authority;
         self.price_history = HashMap::new();
         self.lookback_window = lookback_window;
         self.twap = 0;
         Ok(())
     }
 
-    fn twap(&mut self, price: u64, timestamp: u64) -> Result<()> {
-        //   TODO:
+    fn twap(&mut self, timestamp: i64, price: i64) -> Result<()> {
+        let lookback_window = self.lookback_window.clone();
         // - index new price value into dashmap
-        // self.price_history
+        self.price_history.insert(timestamp, price);
+        // - retain prices only within the lookback window
+        self.price_history.retain(|&k, _| k > lookback_window);
 
-        // - shave dashmap to only allow values within the lookback window
-        // - calculate TWAP
+        let len = self.price_history.len();
+        let sum: i64 = self.price_history.values().sum();
+        self.twap = sum.saturating_div(len as i64);
 
         Ok(())
     }
