@@ -60,7 +60,8 @@ impl StatAccount for Account<'_, Stat> {
         // - index new price value into dashmap
         self.price_history.insert(timestamp, price);
         // - retain prices only within the lookback window
-        self.price_history.retain(|&k, _| k > lookback_window);
+        self.price_history
+            .retain(|&k, _| k > Clock::get().unwrap().unix_timestamp - lookback_window);
 
         let len = self.price_history.len();
         let sum: i64 = self.price_history.values().sum();
