@@ -56,16 +56,23 @@ impl StatAccount for Account<'_, Stat> {
     }
 
     fn twap(&mut self, timestamp: i64, price: i64) -> Result<()> {
-        let lookback_window = self.lookback_window.clone();
-        // - index new price value into dashmap
+        // add newest price to hashmap
         self.price_history.insert(timestamp, price);
-        // - retain prices only within the lookback window
+
+        let lookback_window = self.lookback_window.clone();
+
+        // keep prices within the lookback window
         self.price_history
             .retain(|&k, _| k > Clock::get().unwrap().unix_timestamp - lookback_window);
 
-        let len = self.price_history.len();
+        // calculate TWA
+        let len: i64 = self.price_history.len().try_into().unwrap();
         let sum: i64 = self.price_history.values().sum();
-        self.twap = sum.saturating_div(len as i64);
+
+        match sum.checked_div(len) {
+            Some(twap) => self.twap = twap,
+            None => {}
+        }
 
         Ok(())
     }
