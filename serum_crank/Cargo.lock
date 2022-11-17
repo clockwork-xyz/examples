@@ -56,12 +56,6 @@ dependencies = [
 
 [[package]]
 name = "ahash"
-version = "0.4.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "739f4a8db6605981345c5654f3a85b056ce52f37a39d34da03f25bf2151ea16e"
-
-[[package]]
-name = "ahash"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fcb51a0695d8f838b1ee009b3fbf66bda078cd64590202a864a8f3e8c4315c47"
@@ -242,7 +236,7 @@ dependencies = [
  "serum_dex",
  "solana-program",
  "spl-associated-token-account",
- "spl-token 3.5.0",
+ "spl-token",
 ]
 
 [[package]]
@@ -482,21 +476,8 @@ version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "15bf3650200d8bffa99015595e10f1fbd17de07abbc25bb067da79e769939bfa"
 dependencies = [
- "borsh-derive 0.9.3",
+ "borsh-derive",
  "hashbrown 0.11.2",
-]
-
-[[package]]
-name = "borsh-derive"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "307f3740906bac2c118a8122fe22681232b244f1369273e45f1156b45c43d2dd"
-dependencies = [
- "borsh-derive-internal 0.8.2",
- "borsh-schema-derive-internal 0.8.2",
- "proc-macro-crate 0.1.5",
- "proc-macro2 1.0.46",
- "syn 1.0.101",
 ]
 
 [[package]]
@@ -505,21 +486,10 @@ version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6441c552f230375d18e3cc377677914d2ca2b0d36e52129fe15450a2dce46775"
 dependencies = [
- "borsh-derive-internal 0.9.3",
- "borsh-schema-derive-internal 0.9.3",
+ "borsh-derive-internal",
+ "borsh-schema-derive-internal",
  "proc-macro-crate 0.1.5",
  "proc-macro2 1.0.46",
- "syn 1.0.101",
-]
-
-[[package]]
-name = "borsh-derive-internal"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2104c73179359431cc98e016998f2f23bc7a05bc53e79741bcba705f30047bc"
-dependencies = [
- "proc-macro2 1.0.46",
- "quote 1.0.21",
  "syn 1.0.101",
 ]
 
@@ -528,17 +498,6 @@ name = "borsh-derive-internal"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5449c28a7b352f2d1e592a8a28bf139bc71afb0764a14f3c02500935d8c44065"
-dependencies = [
- "proc-macro2 1.0.46",
- "quote 1.0.21",
- "syn 1.0.101",
-]
-
-[[package]]
-name = "borsh-schema-derive-internal"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae29eb8418fcd46f723f8691a2ac06857d31179d33d2f2d91eb13967de97c728"
 dependencies = [
  "proc-macro2 1.0.46",
  "quote 1.0.21",
@@ -1428,20 +1387,11 @@ dependencies = [
 
 [[package]]
 name = "hashbrown"
-version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7afe4a420e3fe79967a00898cc1f4db7c8a49a9333a29f8a4bd76a253d5cd04"
-dependencies = [
- "ahash 0.4.7",
-]
-
-[[package]]
-name = "hashbrown"
 version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ab5ef0d4909ef3724cc8cce6ccc8572c5c817592e9285f5464f8e86f8bd3726e"
 dependencies = [
- "ahash 0.7.6",
+ "ahash",
 ]
 
 [[package]]
@@ -1450,7 +1400,7 @@ version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
 dependencies = [
- "ahash 0.7.6",
+ "ahash",
 ]
 
 [[package]]
@@ -2852,36 +2802,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "serum-borsh"
-version = "0.8.1-serum.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4fed3f601b23f15dc890f6e52ffdbfe2dcf16418a41e0aa016b5f10cf30c892"
-dependencies = [
- "borsh-derive 0.8.2",
- "hashbrown 0.9.1",
- "solana-program",
-]
-
-[[package]]
-name = "serum-common"
-version = "0.4.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a744b9dbfae5a90f78f519b6beb729fa57abf49685abc0da4d4d5001f6c6bea"
-dependencies = [
- "anyhow",
- "arrayref",
- "bincode",
- "bs58 0.3.1",
- "rand 0.7.3",
- "serde",
- "serde_json",
- "serum-borsh",
- "solana-client",
- "solana-sdk",
- "spl-token 2.0.8",
-]
-
-[[package]]
 name = "serum-crank"
 version = "0.1.0"
 dependencies = [
@@ -2898,7 +2818,6 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "clockwork-sdk",
- "serum-common",
  "serum-crank",
  "solana-client",
  "solana-sdk",
@@ -2921,7 +2840,7 @@ dependencies = [
  "safe-transmute",
  "serde",
  "solana-program",
- "spl-token 3.5.0",
+ "spl-token",
  "static_assertions",
  "thiserror",
  "without-alloc",
@@ -3052,7 +2971,7 @@ dependencies = [
  "solana-config-program",
  "solana-sdk",
  "solana-vote-program",
- "spl-token 3.5.0",
+ "spl-token",
  "spl-token-2022",
  "thiserror",
  "zstd",
@@ -3282,7 +3201,7 @@ version = "1.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc4f894bdd66555a4b0943c7d5e6d4a41b290388babbf2fb7b431ee7b2d1691a"
 dependencies = [
- "ahash 0.7.6",
+ "ahash",
  "bincode",
  "bv",
  "caps",
@@ -3314,7 +3233,7 @@ dependencies = [
  "bitflags",
  "blake3",
  "borsh",
- "borsh-derive 0.9.3",
+ "borsh-derive",
  "bs58 0.4.0",
  "bv",
  "bytemuck",
@@ -3514,7 +3433,7 @@ dependencies = [
  "solana-vote-program",
  "spl-associated-token-account",
  "spl-memo",
- "spl-token 3.5.0",
+ "spl-token",
  "spl-token-2022",
  "thiserror",
 ]
@@ -3613,7 +3532,7 @@ dependencies = [
  "num-derive",
  "num-traits",
  "solana-program",
- "spl-token 3.5.0",
+ "spl-token",
  "spl-token-2022",
  "thiserror",
 ]
@@ -3625,21 +3544,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd0dc6f70db6bacea7ff25870b016a65ba1d1b6013536f08e4fd79a8f9005325"
 dependencies = [
  "solana-program",
-]
-
-[[package]]
-name = "spl-token"
-version = "2.0.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eaa27ab75067c63b8804d9fff30bd2e8bfb5be448bea8067ed768381e70ca181"
-dependencies = [
- "arrayref",
- "num-derive",
- "num-traits",
- "num_enum",
- "remove_dir_all",
- "solana-sdk",
- "thiserror",
 ]
 
 [[package]]
@@ -3671,7 +3575,7 @@ dependencies = [
  "solana-program",
  "solana-zk-token-sdk",
  "spl-memo",
- "spl-token 3.5.0",
+ "spl-token",
  "thiserror",
 ]
 

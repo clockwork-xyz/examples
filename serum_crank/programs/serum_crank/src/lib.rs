@@ -13,7 +13,7 @@ pub mod serum_crank {
     use super::*;
 
     /*
-     * initialize clockwork thread
+     * initialize crank account
      */
     pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Result<()> {
         initialize::handler(ctx)
@@ -29,7 +29,7 @@ pub mod serum_crank {
     }
 
     /*
-     * crank events event queue
+     * crank open orders
      */
     pub fn consume_events<'info>(
         ctx: Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,
