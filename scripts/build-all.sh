@@ -17,6 +17,7 @@ EXAMPLES=(
 
 for ex in "${EXAMPLES[@]}"; do
   cd "$ex"
+  echo "building $ex"
   anchor build
   cd -
 done
