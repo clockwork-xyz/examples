@@ -1,10 +1,6 @@
 use {
     clockwork_sdk::client::{
-        thread_program::{
-            instruction::{thread_create, thread_pause},
-            objects::Thread,
-            objects::Trigger,
-        },
+        thread_program::{objects::Thread, objects::Trigger},
         Client, ClientResult, SplToken,
     },
     solana_sdk::signer::Signer,
