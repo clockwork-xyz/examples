@@ -2,8 +2,13 @@ use {
     crate::state::*,
     anchor_lang::prelude::*,
     clockwork_sdk::{
-        queue_program::{self, accounts::Queue, QueueProgram},
-        CrankResponse,
+        ExecResponse,
+        thread_program::{
+            self,
+            ThreadProgram, 
+            accounts::{
+                ThreadAccount, Thread, 
+            }},
     },
 };
 
@@ -20,30 +25,34 @@ pub struct DisbursePayment<'info> {
         address = Subscription::pubkey(subscription.owner,subscription.subscription_id.clone())
     )]
     pub subscription: Account<'info, Subscription>,
-    #[account(address = Queue::pubkey(subscription.key(), "subscription".into()))]
-    pub subscriptions_queue: Account<'info, Queue>,
+    #[account(
+        signer, 
+        address = thread.pubkey(),
+        constraint = thread.authority.eq(&subscription.owner),
+    )]
+    pub thread: Box<Account<'info, Thread>>,
 
-    #[account(address = queue_program::ID)]
-    pub clockwork_program: Program<'info, QueueProgram>,
+    #[account(address = thread_program::ID)]
+    pub clockwork_program: Program<'info, ThreadProgram>,
 }
 
 impl<'info> DisbursePayment<'_> {
-    pub fn process(&mut self, bump: u8) -> Result<CrankResponse> {
+    pub fn process(&mut self, bump: u8) -> Result<ExecResponse> {
         let Self {
             subscriber,
             subscription,
-            subscriptions_queue,
+            thread,
             clockwork_program,
             ..
         } = self;
 
         if !subscriber.is_active || !subscription.is_active {
             subscriber.is_subscribed = false;
-            clockwork_sdk::queue_program::cpi::queue_stop(CpiContext::new_with_signer(
+            clockwork_sdk::thread_program::cpi::thread_stop(CpiContext::new_with_signer(
                 clockwork_program.to_account_info(),
-                clockwork_sdk::queue_program::cpi::accounts::QueueStop {
+                clockwork_sdk::thread_program::cpi::accounts::ThreadStop {
                     authority: subscription.to_account_info(),
-                    queue: subscriptions_queue.to_account_info(),
+                    thread: thread.to_account_info(),
                 },
                 &[&[
                     SEED_SUBSCRIPTION,
@@ -65,11 +74,11 @@ impl<'info> DisbursePayment<'_> {
                 }
                 None => {
                     subscriber.is_subscribed = false;
-                    clockwork_sdk::queue_program::cpi::queue_stop(CpiContext::new_with_signer(
+                    clockwork_sdk::thread_program::cpi::thread_stop(CpiContext::new_with_signer(
                         clockwork_program.to_account_info(),
-                        clockwork_sdk::queue_program::cpi::accounts::QueueStop {
+                        clockwork_sdk::thread_program::cpi::accounts::ThreadStop {
                             authority: subscription.to_account_info(),
-                            queue: subscriptions_queue.to_account_info(),
+                            thread: thread.to_account_info(),
                         },
                         &[&[
                             SEED_SUBSCRIPTION,
@@ -82,9 +91,6 @@ impl<'info> DisbursePayment<'_> {
             }
         }
 
-        Ok(CrankResponse {
-            next_instruction: None,
-            kickoff_instruction: None,
-        })
+        Ok(ExecResponse::default())
     }
 }

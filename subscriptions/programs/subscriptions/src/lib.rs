@@ -27,14 +27,6 @@ pub mod subscriptions_program {
     }
 
     /*
-     * create subscription queue
-     */
-    pub fn create_queue<'info>(ctx: Context<CreateQueue>) -> Result<()> {
-        let bump = *ctx.bumps.get("subscription").unwrap();
-        ctx.accounts.process(bump)
-    }
-
-    /*
      * create subscriber
      */
     pub fn create_subscriber<'info>(ctx: Context<CreateSubscriber>) -> Result<()> {
@@ -75,7 +67,7 @@ pub mod subscriptions_program {
      */
     pub fn disburse_payment<'info>(
         ctx: Context<DisbursePayment>,
-    ) -> Result<clockwork_sdk::CrankResponse> {
+    ) -> Result<clockwork_sdk::ExecResponse> {
         let bump = *ctx.bumps.get("subscription").unwrap();
         ctx.accounts.process(bump)
     }

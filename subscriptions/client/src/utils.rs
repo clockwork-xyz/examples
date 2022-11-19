@@ -1,4 +1,5 @@
 use {
+    anchor_lang::prelude::Pubkey,
     clockwork_sdk::client::{Client, ClientResult},
     solana_sdk::{instruction::Instruction, signature::Keypair, transaction::Transaction},
 };
@@ -35,5 +36,15 @@ pub fn send_and_confirm_tx(
         ),
         Err(err) => println!("{} tx: ❌ {:#?}", label, err),
     }
+    Ok(())
+}
+
+pub fn print_explorer_link(address: Pubkey, label: String) -> ClientResult<()> {
+    println!(
+        "{}: https://explorer.solana.com/address/{}?cluster=custom",
+        label.to_string(),
+        address
+    );
+
     Ok(())
 }
