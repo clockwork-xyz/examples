@@ -12,22 +12,22 @@ use {
 #[derive(Accounts)]
 pub struct ConsumeEvents<'info> {
     #[account(
-        seeds = [SEED_CRANK, crank.market.as_ref()],
-        bump,
-        has_one = market,
-        has_one = event_queue,
-        has_one = mint_a_vault,
-        has_one = mint_b_vault,
+    seeds = [SEED_CRANK, crank.market.as_ref()],
+    bump,
+    has_one = market,
+    has_one = event_queue,
+    has_one = mint_a_vault,
+    has_one = mint_b_vault,
     )]
     pub crank: Box<Account<'info, Crank>>,
 
     #[account(
-        signer, 
-        address = crank_thread.pubkey(),
-        constraint = crank_thread.id.eq("crank"),
+    signer,
+    address = crank_thread.pubkey(),
+    constraint = crank_thread.id.eq("crank"),
     )]
     pub crank_thread: Box<Account<'info, Thread>>,
-   
+
     #[account(address = anchor_spl::dex::ID)]
     pub dex_program: Program<'info, anchor_spl::dex::Dex>,
 
@@ -39,7 +39,7 @@ pub struct ConsumeEvents<'info> {
     #[account(mut)]
     pub market: AccountInfo<'info>,
 
-    #[account(mut)] 
+    #[account(mut)]
     pub mint_a_vault: Account<'info, TokenAccount>,
 
     #[account(mut)]
@@ -63,7 +63,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, ConsumeEvents<'info>>) -> 
     let bump = *ctx.bumps.get("crank").unwrap();
 
     // derive read events ix
-    let read_events_ix: Option<InstructionData> = 
+    let read_events_ix: Option<InstructionData> =
         Some(
             Instruction {
                 program_id: crate::ID,
@@ -80,33 +80,33 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, ConsumeEvents<'info>>) -> 
                 ],
                 data: clockwork_sdk::anchor_sighash("read_events").into(),
             }
-            .into()
+                .into()
         );
-    
+
     // coerce open orders type
     let open_orders_accounts = crank.open_orders.iter().map(|pk| pk).collect::<Vec<&Pubkey>>();
-    
+
     // if there are orders that need to be cranked
-    if open_orders_accounts.len() > 0 {   
+    if open_orders_accounts.len() > 0 {
         // derive consume events ix
-        let consume_events_ix = 
+        let consume_events_ix =
             serum_dex::instruction::consume_events(
                 &dex_program.key(),
                 open_orders_accounts,
-                &market.key(), 
+                &market.key(),
                 &event_queue.key(),
-                &mint_b_vault.key(), 
-                &mint_a_vault.key(), 
+                &mint_b_vault.key(),
+                &mint_a_vault.key(),
                 crank.limit
             ).unwrap();
 
         // construct account infos vec
-        let mut cpi_account_infos = ctx.remaining_accounts.clone().to_vec(); 
+        let mut cpi_account_infos = ctx.remaining_accounts.clone().to_vec();
         let mut rest_account_infos = vec![
-            market.to_account_info(), 
-            event_queue.to_account_info(), 
-            mint_a_vault.to_account_info(), 
-            mint_b_vault.to_account_info(), 
+            market.to_account_info(),
+            event_queue.to_account_info(),
+            mint_a_vault.to_account_info(),
+            mint_b_vault.to_account_info(),
             dex_program.to_account_info()
         ];
         cpi_account_infos.append(&mut rest_account_infos);
@@ -115,14 +115,14 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, ConsumeEvents<'info>>) -> 
         invoke_signed(&consume_events_ix, &cpi_account_infos,&[&[SEED_CRANK, crank.market.as_ref(), &[bump]]])?;
 
         // read events again bc there might be more open orders
-        return Ok(ExecResponse { 
+        return Ok(ExecResponse {
             kickoff_instruction: None,
             next_instruction: read_events_ix
-        });     
+        });
     }
-    
+
     // end execution context because there are no more events to consume
-    Ok(ExecResponse { 
+    Ok(ExecResponse {
         kickoff_instruction: read_events_ix,
         next_instruction: None,
     })

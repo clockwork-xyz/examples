@@ -6,7 +6,7 @@ use {
         solana_program::{system_program,instruction::Instruction},
     },
     anchor_spl::{dex::serum_dex::state::{strip_header, EventQueueHeader, Event, Queue as SerumDexQueue}, token::TokenAccount},
-    clockwork_sdk::{thread_program::accounts::Thread, ExecResponse}
+    clockwork_sdk::{thread_program::accounts::{Thread}, ExecResponse}
 };
 
 #[derive(Accounts)]
