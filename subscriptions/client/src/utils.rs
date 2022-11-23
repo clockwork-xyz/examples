@@ -1,7 +1,9 @@
 use {
     anchor_lang::prelude::Pubkey,
     clockwork_sdk::client::{Client, ClientResult},
-    solana_sdk::{instruction::Instruction, signature::Keypair, transaction::Transaction},
+    serde_json::Value,
+    solana_sdk::signature::Keypair,
+    solana_sdk::{instruction::Instruction, transaction::Transaction},
 };
 
 pub fn send_and_confirm_tx(
@@ -47,4 +49,42 @@ pub fn print_explorer_link(address: Pubkey, label: String) -> ClientResult<()> {
     );
 
     Ok(())
+}
+
+pub fn get_client() -> Client {
+    let client_private_str = &*std::env::var("CLIENT_PRIVATE").unwrap();
+    let client_private: Value = serde_json::from_str(client_private_str).unwrap();
+    let mut key = vec![];
+
+    if let Value::Array(arr) = &client_private {
+        for val in arr {
+            if let Value::Number(value) = val {
+                let a = value.as_u64().unwrap() as u8;
+                key.push(a);
+            }
+        }
+    }
+
+    let keypair = Keypair::from_bytes(&key).unwrap();
+    let client = Client::new(keypair, "https://api.devnet.solana.com".into());
+    return client;
+}
+
+pub fn print_config(
+    subscription: Pubkey,
+    subscription_thread: Pubkey,
+    subscription_bank: Pubkey,
+    subscriber: Pubkey,
+    subscriber_token_account: Pubkey,
+    mint: Pubkey,
+    subscription_id: u64,
+) {
+    println!("UPDATE YOUR .ENV FILE");
+    println!("SUBSCRIPTION={:?}", subscription);
+    println!("SUBSCRIPTION_THREAD={:?}", subscription_thread);
+    println!("SUBSCRIPTION_BANK={:?}", subscription_bank);
+    println!("SUBSCRIBER={:?}", subscriber);
+    println!("SUBSCRIBER_TOKEN_ACCOUNT={:?}", subscriber_token_account);
+    println!("MINT={:?}", mint);
+    println!("SUBSCRIPTION_ID={}", subscription_id);
 }

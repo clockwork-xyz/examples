@@ -30,7 +30,7 @@ pub fn create_queue(
 
     let thread_create = thread_create(
         client.payer_pubkey(),
-        "payment".into(),
+        "subscription".into(),
         disburse_payment_ix.into(),
         client.payer_pubkey(),
         subscription_thread,

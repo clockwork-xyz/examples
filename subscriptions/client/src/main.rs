@@ -3,8 +3,9 @@ use {
         thread_program::{objects::Thread, objects::Trigger},
         Client, ClientResult, SplToken,
     },
+    dotenv::dotenv,
+    rand::Rng,
     solana_sdk::signer::Signer,
-    solana_sdk::{native_token::LAMPORTS_PER_SOL, signature::Keypair},
 };
 
 pub mod instructions;
@@ -16,25 +17,24 @@ pub use utils::*;
 fn main() -> ClientResult<()> {
     // let args: Vec<String> = env::args().collect();
     // let command: &str = &args[1];
+    dotenv().ok();
+    let client = get_client();
+    let mut rng = rand::thread_rng();
 
-    let payer = Keypair::new();
-    let client = Client::new(payer, "http://localhost:8899".into());
-    client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
-
-    let subscription_id = 4;
+    let subscription_id = rng.gen::<u64>();
     let deposit_amount = 14000;
+    let recurrent_amount = 1500;
+    let schedule = "0 * * ? * *".to_string();
+    let is_active = true;
 
-    let subscription =
-        subscriptions_program::state::Subscription::pubkey(client.payer_pubkey(), subscription_id);
+    let (subscription, subscription_bump) =
+        subscriptions_program::state::Subscription::pda(client.payer_pubkey(), subscription_id);
 
-    let subscription_thread = Thread::pubkey(client.payer_pubkey(), "payment".into());
+    let subscription_thread = Thread::pubkey(client.payer_pubkey(), "subscription".into());
 
-    let subscription_bank = subscriptions_program::state::Subscription::bank_pubkey(
-        subscription,
-        client.payer_pubkey(),
-    );
+    let (subscription_bank, _) =
+        subscriptions_program::state::Subscription::bank_pda(subscription, client.payer_pubkey());
 
-    // create token mint
     let mint = client
         .create_token_mint(&client.payer_pubkey(), 9)
         .unwrap()
@@ -46,7 +46,7 @@ fn main() -> ClientResult<()> {
         .pubkey();
 
     let subscriber =
-        subscriptions_program::state::Subscriber::pubkey(client.payer_pubkey(), subscription);
+        subscriptions_program::state::Subscriber::pda(client.payer_pubkey(), subscription).0;
 
     client
         .mint_to(
@@ -58,10 +58,6 @@ fn main() -> ClientResult<()> {
         )
         .unwrap();
 
-    let recurrent_amount = 1500;
-    let schedule = "0 * * ? * *".to_string();
-    let is_active = true;
-
     create_subscription(
         &client,
         subscription_bank,
@@ -72,20 +68,40 @@ fn main() -> ClientResult<()> {
         schedule,
         is_active,
         subscription_id,
+        subscription_bump,
     )?;
 
     create_subscriber(&client, subscriber, subscription)?;
 
-    create_queue(&client, subscriber, subscription, subscription_thread)?;
+    // create_queue(&client, subscriber, subscription, subscription_thread)?;
 
-    // deposit(
-    //     &client,
-    //     subscriber,
-    //     subscription,
-    //     subscription_bank,
-    //     subscriber_token_account,
-    //     deposit_amount,
-    // )?;
+    deposit(
+        &client,
+        subscriber,
+        subscription,
+        subscription_bank,
+        subscriber_token_account,
+        deposit_amount,
+    )?;
+
+    withdraw(
+        &client,
+        subscriber,
+        subscription,
+        subscription_bank,
+        subscriber_token_account,
+        deposit_amount,
+    )?;
+
+    print_config(
+        subscription,
+        subscription_thread,
+        subscription_bank,
+        subscriber,
+        subscriber_token_account,
+        mint,
+        subscription_id,
+    );
 
     Ok(())
 }

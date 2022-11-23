@@ -18,7 +18,8 @@ pub fn create_subscription(
     recurrent_amount: u64,
     schedule: String,
     is_active: bool,
-    subscription_id: u8,
+    subscription_id: u64,
+    bump: u8,
 ) -> ClientResult<()> {
     let create_subscription_ix = Instruction {
         program_id: subscriptions_program::ID,
@@ -37,6 +38,7 @@ pub fn create_subscription(
             mint,
             is_active,
             subscription_id,
+            bump,
         }
         .data(),
     };
