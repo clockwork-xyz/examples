@@ -5,20 +5,13 @@ use {
     solana_sdk::instruction::{AccountMeta, Instruction},
 };
 
-pub fn subscribe(
-    client: &Client,
-    subscriber: Pubkey,
-    subscription: Pubkey,
-    subscription_queue: Pubkey,
-) -> ClientResult<()> {
+pub fn subscribe(client: &Client, subscriber: Pubkey, subscription: Pubkey) -> ClientResult<()> {
     let subscribe_ix = Instruction {
         program_id: subscriptions_program::ID,
         accounts: vec![
             AccountMeta::new(client.payer_pubkey(), true),
             AccountMeta::new(subscriber, false),
-            AccountMeta::new(subscription_queue, false),
             AccountMeta::new(subscription, false),
-            AccountMeta::new_readonly(clockwork_crank::ID, false),
         ],
         data: subscriptions_program::instruction::Subscribe {}.data(),
     };

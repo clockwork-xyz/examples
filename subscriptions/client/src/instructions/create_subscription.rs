@@ -14,7 +14,6 @@ pub fn create_subscription(
     subscription_bank: Pubkey,
     mint: Pubkey,
     subscription: Pubkey,
-    subscription_queue: Pubkey,
     recurrent_amount: u64,
     schedule: String,
     is_active: bool,
@@ -49,11 +48,6 @@ pub fn create_subscription(
         None,
         "create_subscription".to_string(),
     )?;
-
-    println!(
-        "queue: https://explorer.solana.com/address/{}?cluster=custom",
-        subscription_queue
-    );
 
     Ok(())
 }

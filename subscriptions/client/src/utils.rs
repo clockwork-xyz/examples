@@ -33,7 +33,7 @@ pub fn send_and_confirm_tx(
     // Send and confirm initialize tx
     match client.send_and_confirm_transaction(&tx) {
         Ok(sig) => println!(
-            "{} tx: ✅ https://explorer.solana.com/tx/{}?cluster=custom",
+            "{} tx: ✅ https://explorer.solana.com/tx/{}?cluster=devnet",
             label, sig
         ),
         Err(err) => println!("{} tx: ❌ {:#?}", label, err),
@@ -43,7 +43,7 @@ pub fn send_and_confirm_tx(
 
 pub fn print_explorer_link(address: Pubkey, label: String) -> ClientResult<()> {
     println!(
-        "{}: https://explorer.solana.com/address/{}?cluster=custom",
+        "{}: https://explorer.solana.com/address/{}?cluster=devnet",
         label.to_string(),
         address
     );
@@ -79,7 +79,7 @@ pub fn print_config(
     mint: Pubkey,
     subscription_id: u64,
 ) {
-    println!("UPDATE YOUR .ENV FILE");
+    println!("- - - - - - - - - - UPDATE YOUR .ENV FILE - - - - - - - - - -");
     println!("SUBSCRIPTION={:?}", subscription);
     println!("SUBSCRIPTION_THREAD={:?}", subscription_thread);
     println!("SUBSCRIPTION_BANK={:?}", subscription_bank);
@@ -87,4 +87,5 @@ pub fn print_config(
     println!("SUBSCRIBER_TOKEN_ACCOUNT={:?}", subscriber_token_account);
     println!("MINT={:?}", mint);
     println!("SUBSCRIPTION_ID={}", subscription_id);
+    println!("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
 }

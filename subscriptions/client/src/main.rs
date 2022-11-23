@@ -1,7 +1,7 @@
 use {
     clockwork_sdk::client::{
         thread_program::{objects::Thread, objects::Trigger},
-        Client, ClientResult, SplToken,
+        ClientResult, SplToken,
     },
     dotenv::dotenv,
     rand::Rng,
@@ -63,7 +63,6 @@ fn main() -> ClientResult<()> {
         subscription_bank,
         mint,
         subscription,
-        subscription_thread,
         recurrent_amount,
         schedule,
         is_active,
@@ -73,7 +72,7 @@ fn main() -> ClientResult<()> {
 
     create_subscriber(&client, subscriber, subscription)?;
 
-    // create_queue(&client, subscriber, subscription, subscription_thread)?;
+    create_queue(&client, subscriber, subscription, subscription_thread)?;
 
     deposit(
         &client,
@@ -84,13 +83,17 @@ fn main() -> ClientResult<()> {
         deposit_amount,
     )?;
 
+    subscribe(&client, subscriber, subscription)?;
+
+    unsubscribe(&client, subscriber, subscription)?;
+
     withdraw(
         &client,
         subscriber,
         subscription,
         subscription_bank,
         subscriber_token_account,
-        deposit_amount,
+        recurrent_amount,
     )?;
 
     print_config(
