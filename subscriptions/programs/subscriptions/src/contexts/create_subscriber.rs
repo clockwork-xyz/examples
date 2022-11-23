@@ -16,7 +16,7 @@ pub struct CreateSubscriber<'info> {
     )]
     pub subscriber: Account<'info, Subscriber>,
 
-    #[account(address = Subscription::pubkey(subscription.owner.key(),subscription.subscription_id.clone()))]
+    #[account(address = Subscription::pda(subscription.owner.key(),subscription.subscription_id.clone()).0)]
     pub subscription: Account<'info, Subscription>,
 
     pub system_program: Program<'info, System>,

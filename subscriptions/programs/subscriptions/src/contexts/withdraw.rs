@@ -10,22 +10,18 @@ pub struct Withdraw<'info> {
     pub payer: Signer<'info>,
     #[account(
         mut,
-        address = Subscriber::pubkey(payer.key(),subscription.key()),
+        address = Subscriber::pda(payer.key(),subscription.key()).0,
     )]
     pub subscriber: Account<'info, Subscriber>,
-    #[account(
-        mut,
-        associated_token::authority = payer,
-        associated_token::mint = subscription.mint,
-    )]
+    #[account(mut)]
     pub subscriber_token_account: Account<'info, TokenAccount>,
     #[account(
         mut,
-        address=Subscription::bank_pubkey(subscription.key(),subscription.owner.key())
+        address=Subscription::bank_pda(subscription.key(),subscription.owner.key()).0
     )]
     pub subscription_bank: Account<'info, TokenAccount>,
 
-    #[account(address = Subscription::pubkey(subscription.owner.key(),subscription.subscription_id.clone()))]
+    #[account(address = Subscription::pda(subscription.owner.key(),subscription.subscription_id.clone()).0)]
     pub subscription: Account<'info, Subscription>,
 
     pub token_program: Program<'info, Token>,
@@ -58,9 +54,10 @@ impl<'info> Withdraw<'_> {
                     authority: subscription.to_account_info(),
                 },
                 &[&[
-                    subscription.key().as_ref(),
+                    SEED_SUBSCRIPTION,
                     subscription.owner.as_ref(),
-                    "subscription_bank".as_bytes(),
+                    &subscription.subscription_id.to_be_bytes(),
+                    &[subscription.bump],
                 ]],
             ),
             amount,

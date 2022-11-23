@@ -20,10 +20,17 @@ pub mod subscriptions_program {
         schedule: String,
         mint: Pubkey,
         is_active: bool,
-        subscription_id: u8,
+        subscription_id: u64,
+        bump: u8,
     ) -> Result<()> {
-        ctx.accounts
-            .process(recurrent_amount, schedule, mint, is_active, subscription_id)
+        ctx.accounts.process(
+            recurrent_amount,
+            schedule,
+            mint,
+            is_active,
+            subscription_id,
+            bump,
+        )
     }
 
     /*
@@ -51,8 +58,7 @@ pub mod subscriptions_program {
      * subscribe from a subscription
      */
     pub fn subscribe<'info>(ctx: Context<Subscribe>) -> Result<()> {
-        let bump = *ctx.bumps.get("subscription").unwrap();
-        ctx.accounts.process(bump)
+        ctx.accounts.process()
     }
 
     /*
@@ -68,7 +74,6 @@ pub mod subscriptions_program {
     pub fn disburse_payment<'info>(
         ctx: Context<DisbursePayment>,
     ) -> Result<clockwork_sdk::ExecResponse> {
-        let bump = *ctx.bumps.get("subscription").unwrap();
-        ctx.accounts.process(bump)
+        ctx.accounts.process()
     }
 }

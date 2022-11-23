@@ -6,11 +6,11 @@ pub struct Unsubscribe<'info> {
     pub payer: Signer<'info>,
     #[account(
         mut,
-        address = Subscriber::pubkey(payer.key(),subscription.key()),
+        address = Subscriber::pda(payer.key(),subscription.key()).0,
     )]
     pub subscriber: Account<'info, Subscriber>,
 
-    #[account(mut, address = Subscription::pubkey(subscription.owner.key(),subscription.subscription_id.clone()))]
+    #[account(mut, address = Subscription::pda(subscription.owner.key(),subscription.subscription_id.clone()).0)]
     pub subscription: Account<'info, Subscription>,
 }
 

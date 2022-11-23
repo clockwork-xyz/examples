@@ -16,13 +16,13 @@ use {
 pub struct DisbursePayment<'info> {
     #[account(
         mut,
-        address = Subscriber::pubkey(subscriber.owner.key(),subscription.key()),
+        address = Subscriber::pda(subscriber.owner.key(),subscription.key()).0,
     )]
     pub subscriber: Account<'info, Subscriber>,
 
     #[account(
         mut,
-        address = Subscription::pubkey(subscription.owner,subscription.subscription_id.clone())
+        address = Subscription::pda(subscription.owner,subscription.subscription_id.clone()).0
     )]
     pub subscription: Account<'info, Subscription>,
     #[account(
@@ -37,7 +37,7 @@ pub struct DisbursePayment<'info> {
 }
 
 impl<'info> DisbursePayment<'_> {
-    pub fn process(&mut self, bump: u8) -> Result<ExecResponse> {
+    pub fn process(&mut self) -> Result<ExecResponse> {
         let Self {
             subscriber,
             subscription,
@@ -57,8 +57,8 @@ impl<'info> DisbursePayment<'_> {
                 &[&[
                     SEED_SUBSCRIPTION,
                     subscription.owner.as_ref(),
-                    &[subscription.subscription_id],
-                    &[bump],
+                    &subscription.subscription_id.to_be_bytes(),
+                    &[subscription.bump],
                 ]],
             ))?;
         } else {
@@ -83,8 +83,8 @@ impl<'info> DisbursePayment<'_> {
                         &[&[
                             SEED_SUBSCRIPTION,
                             subscription.owner.as_ref(),
-                            &[subscription.subscription_id],
-                            &[bump],
+                            &subscription.subscription_id.to_be_bytes(),
+                            &[subscription.bump],
                         ]],
                     ))?;
                 }

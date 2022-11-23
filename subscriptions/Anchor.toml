@@ -1,15 +1,15 @@
 [features]
 seeds = false
 skip-lint = false
-[programs.localnet]
-subscriptions_program = "4P2UMDSuetyvGQ5xHnzJdcr6XjfaKto6fRD6gjZUhjeA"
+[programs.devnet]
+subscriptions_program = "Dhznaw95UUbADF49e4AXqjFo56nTFttFUtWU3ptEN7Ch"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
-wallet = "/Users/vicyyn/.config/solana/id.json"
+cluster = "devnet"
+wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

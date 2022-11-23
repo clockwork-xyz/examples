@@ -17,20 +17,24 @@ pub struct Subscription {
     pub recurrent_amount: u64,
     pub schedule: String,
     pub is_active: bool,
-    pub subscription_id: u8,
+    pub subscription_id: u64,
     pub withdraw: u64,
+    pub bump: u8,
 }
 
 impl Subscription {
-    pub fn pubkey(owner: Pubkey, subscription_id: u8) -> Pubkey {
+    pub fn pda(owner: Pubkey, subscription_id: u64) -> (Pubkey, u8) {
         Pubkey::find_program_address(
-            &[SEED_SUBSCRIPTION, owner.as_ref(), &[subscription_id]],
+            &[
+                SEED_SUBSCRIPTION,
+                owner.as_ref(),
+                &subscription_id.to_be_bytes(),
+            ],
             &crate::ID,
         )
-        .0
     }
 
-    pub fn bank_pubkey(subscription: Pubkey, owner: Pubkey) -> Pubkey {
+    pub fn bank_pda(subscription: Pubkey, owner: Pubkey) -> (Pubkey, u8) {
         Pubkey::find_program_address(
             &[
                 subscription.as_ref(),
@@ -39,7 +43,6 @@ impl Subscription {
             ],
             &crate::ID,
         )
-        .0
     }
 }
 
@@ -58,8 +61,9 @@ pub trait SubscriptionAccount {
         recurrent_amount: u64,
         schedule: String,
         is_active: bool,
-        subscription_id: u8,
+        subscription_id: u64,
         withdraw: u64,
+        bump: u8,
     ) -> Result<()>;
 }
 
@@ -71,8 +75,9 @@ impl SubscriptionAccount for Account<'_, Subscription> {
         recurrent_amount: u64,
         schedule: String,
         is_acitve: bool,
-        subscription_id: u8,
+        subscription_id: u64,
         withdraw: u64,
+        bump: u8,
     ) -> Result<()> {
         self.owner = owner;
         self.mint = mint;
@@ -81,6 +86,7 @@ impl SubscriptionAccount for Account<'_, Subscription> {
         self.is_active = is_acitve;
         self.subscription_id = subscription_id;
         self.withdraw = withdraw;
+        self.bump = bump;
         Ok(())
     }
 }

@@ -14,7 +14,7 @@ pub struct Subscribe<'info> {
     pub payer: Signer<'info>,
     #[account(
         mut,
-        address = Subscriber::pubkey(payer.key(),subscription.key()),
+        address = Subscriber::pda(payer.key(),subscription.key()).0,
     )]
     pub subscriber: Account<'info, Subscriber>,
 
@@ -24,7 +24,7 @@ pub struct Subscribe<'info> {
         constraint = thread.authority.eq(&subscription.owner),
     )]
     pub thread: Box<Account<'info, Thread>>,
-    #[account(mut, address = Subscription::pubkey(subscription.owner.key(),subscription.subscription_id.clone()))]
+    #[account(mut, address = Subscription::pda(subscription.owner.key(),subscription.subscription_id.clone()).0)]
     pub subscription: Account<'info, Subscription>,
 
     #[account(address = thread_program::ID)]
@@ -32,7 +32,7 @@ pub struct Subscribe<'info> {
 }
 
 impl<'info> Subscribe<'_> {
-    pub fn process(&mut self, bump: u8) -> Result<()> {
+    pub fn process(&mut self) -> Result<()> {
         let Self {
             subscriber,
             clockwork_program,
@@ -61,8 +61,8 @@ impl<'info> Subscribe<'_> {
             &[&[
                 SEED_SUBSCRIPTION,
                 subscription.owner.as_ref(),
-                &[subscription.subscription_id],
-                &[bump],
+                &subscription.subscription_id.to_be_bytes(),
+                &[subscription.bump],
             ]],
         ))?;
 

@@ -6,7 +6,7 @@ use {
 };
 
 #[derive(Accounts)]
-#[instruction(recurrent_amount:u64,schedule:String,mint:Pubkey,is_active:bool,subscription_id: u8)]
+#[instruction(recurrent_amount:u64,schedule:String,mint:Pubkey,is_active:bool,subscription_id: u64)]
 pub struct CreateSubscription<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
@@ -32,7 +32,7 @@ pub struct CreateSubscription<'info> {
         seeds=[
             SEED_SUBSCRIPTION,
             owner.key().as_ref(),
-            &[subscription_id]
+            &subscription_id.to_be_bytes()
         ],
         bump,
     )]
@@ -52,7 +52,8 @@ impl<'info> CreateSubscription<'_> {
         schedule: String,
         mint: Pubkey,
         is_active: bool,
-        subscription_id: u8,
+        subscription_id: u64,
+        bump: u8,
     ) -> Result<()> {
         let Self {
             owner,
@@ -68,6 +69,7 @@ impl<'info> CreateSubscription<'_> {
             is_active,
             subscription_id,
             0,
+            bump,
         )?;
 
         Ok(())

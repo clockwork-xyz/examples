@@ -20,12 +20,11 @@ pub struct Subscriber {
 }
 
 impl Subscriber {
-    pub fn pubkey(owner: Pubkey, subscription: Pubkey) -> Pubkey {
+    pub fn pda(owner: Pubkey, subscription: Pubkey) -> (Pubkey, u8) {
         Pubkey::find_program_address(
             &[SEED_SUBSCRIBER, owner.as_ref(), subscription.as_ref()],
             &crate::ID,
         )
-        .0
     }
 }
 
