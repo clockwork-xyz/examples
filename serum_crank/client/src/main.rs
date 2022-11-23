@@ -1,5 +1,3 @@
-use clockwork_sdk::queue_program;
-
 mod utils;
 
 use {
@@ -14,8 +12,13 @@ use {
         },
         token,
     },
-    clockwork_sdk::client::{Client, ClientResult},
-    serum_common::client::rpc::mint_to_new_account,
+    clockwork_sdk::{
+        client::{
+            thread_program::{instruction::thread_create, objects::Trigger},
+            Client, ClientResult, SplToken,
+        },
+        PAYER_PUBKEY,
+    },
     solana_sdk::{
         instruction::Instruction, native_token::LAMPORTS_PER_SOL, signature::Keypair,
         signer::Signer,
@@ -41,6 +44,7 @@ fn main() -> ClientResult<()> {
     client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
     client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
     client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
+    client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
     client.airdrop(&bob.pubkey(), 2 * LAMPORTS_PER_SOL)?;
 
     // setup market
@@ -49,32 +53,46 @@ fn main() -> ClientResult<()> {
 
     // derive serum_crank PDAs
     let crank = serum_crank::state::Crank::pubkey(market_keys.market);
-    let crank_queue = clockwork_sdk::queue_program::accounts::Queue::pubkey(crank, "crank".into());
+    let crank_thread = clockwork_sdk::thread_program::accounts::Thread::pubkey(
+        client.payer_pubkey(),
+        "crank".into(),
+    );
 
     print_explorer_link(crank, "crank".into())?;
-    print_explorer_link(crank_queue, "crank_queue".into())?;
+    print_explorer_link(crank_thread, "crank_thread".into())?;
 
     // init serum_crank program
-    initialize_serum_crank(&client, crank, crank_queue, &market_keys)?;
+    initialize_serum_crank(&client, crank, crank_thread, &market_keys)?;
 
     // Create wallets for alice and bob
-    let alice_mint_a_wallet = mint_to_new_account(
-        &client,
-        &client.payer(),
-        &client.payer(),
+    let alice_mint_a_wallet = client.create_token_account_with_lamports(
+        &client.payer_pubkey(),
         &market_keys.pc_mint,
-        1_000_000_000_000_000,
-    )
-    .unwrap();
+        LAMPORTS_PER_SOL,
+    )?;
 
-    let bob_mint_b_wallet = mint_to_new_account(
-        &client,
-        &bob,
-        &client.payer(),
+    let bob_mint_b_wallet = client.create_token_account_with_lamports(
+        &bob.pubkey(),
         &market_keys.coin_mint,
+        LAMPORTS_PER_SOL,
+    )?;
+
+    // mint to alice and bob's wallets
+    client.mint_to(
+        client.payer(),
+        &market_keys.pc_mint,
+        &alice_mint_a_wallet.pubkey(),
         1_000_000_000_000_000,
-    )
-    .unwrap();
+        9,
+    )?;
+
+    client.mint_to(
+        client.payer(),
+        &market_keys.coin_mint,
+        &bob_mint_b_wallet.pubkey(),
+        1_000_000_000_000_000,
+        9,
+    )?;
 
     // initialize open order accounts for alice and bob
     let mut oo_account_alice = None;
@@ -144,35 +162,74 @@ fn main() -> ClientResult<()> {
 fn initialize_serum_crank(
     client: &Client,
     crank: Pubkey,
-    crank_queue: Pubkey,
+    crank_thread: Pubkey,
     market_keys: &MarketKeys,
 ) -> ClientResult<()> {
-    client.airdrop(&crank_queue, LAMPORTS_PER_SOL)?;
+    client.airdrop(&crank_thread, LAMPORTS_PER_SOL)?;
 
+    // destructor struct for convenience
+    let MarketKeys {
+        event_q,
+        market,
+        pc_mint,
+        pc_vault,
+        coin_mint,
+        coin_vault,
+        ..
+    } = *market_keys;
+
+    // define initialize ix
     let initialize_ix = Instruction {
         program_id: serum_crank::ID,
         accounts: vec![
-            AccountMeta::new_readonly(queue_program::ID, false),
             AccountMeta::new(crank, false),
-            AccountMeta::new(crank_queue, false),
             AccountMeta::new_readonly(anchor_spl::dex::ID, false),
-            AccountMeta::new_readonly(market_keys.event_q, false),
-            AccountMeta::new_readonly(market_keys.market, false),
-            AccountMeta::new_readonly(market_keys.pc_mint, false),
-            AccountMeta::new_readonly(market_keys.pc_vault, false),
-            AccountMeta::new_readonly(market_keys.coin_mint, false),
-            AccountMeta::new_readonly(market_keys.coin_vault, false),
-            AccountMeta::new_readonly(client.payer_pubkey(), true),
+            AccountMeta::new_readonly(event_q, false),
+            AccountMeta::new_readonly(market, false),
+            AccountMeta::new_readonly(pc_mint, false),
+            AccountMeta::new_readonly(pc_vault, false),
+            AccountMeta::new_readonly(coin_mint, false),
+            AccountMeta::new_readonly(coin_vault, false),
+            AccountMeta::new(client.payer_pubkey(), true),
             AccountMeta::new_readonly(system_program::ID, false),
         ],
         data: serum_crank::instruction::Initialize.data(),
     };
 
+    // create thread with read events ix
+    let thread_create = thread_create(
+        client.payer_pubkey(),
+        "crank".into(),
+        Instruction {
+            program_id: serum_crank::ID,
+            accounts: vec![
+                AccountMeta::new(crank.key(), false),
+                AccountMeta::new(crank_thread.key(), true),
+                AccountMeta::new_readonly(anchor_spl::dex::ID, false),
+                AccountMeta::new_readonly(event_q, false),
+                AccountMeta::new_readonly(market, false),
+                AccountMeta::new_readonly(pc_vault, false),
+                AccountMeta::new_readonly(coin_vault, false),
+                AccountMeta::new(PAYER_PUBKEY, true),
+                AccountMeta::new_readonly(system_program::ID, false),
+            ],
+            data: serum_crank::instruction::ReadEvents.data(),
+        }
+        .into(),
+        client.payer_pubkey(),
+        crank_thread,
+        Trigger::Account {
+            address: event_q,
+            offset: 8 + 8,
+            size: 8,
+        },
+    );
+
     sign_send_and_confirm_tx(
         &client,
-        [initialize_ix].to_vec(),
+        vec![initialize_ix, thread_create],
         None,
-        "initialize_serum_crank".to_string(),
+        "initialize crank and thread_create".into(),
     )?;
 
     Ok(())

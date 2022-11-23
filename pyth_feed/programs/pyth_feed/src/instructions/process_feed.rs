@@ -1,7 +1,7 @@
 use {
     crate::state::*,
     anchor_lang::prelude::*,
-    clockwork_sdk::queue_program::accounts::{Queue, QueueAccount},
+    clockwork_sdk::thread_program::accounts::{Thread, ThreadAccount},
     pyth_sdk_solana::load_price_feed_from_account_info,
 };
 
@@ -12,22 +12,22 @@ pub struct ProcessFeed<'info> {
 
     /// CHECK: this account is manually being checked against the feed account's feed field
     #[account(
-        constraint = pyth_data_feed.key() == feed.price_feed
+        constraint = pyth_price_feed.key() == feed.pyth_price_feed
     )]
-    pub pyth_data_feed: AccountInfo<'info>,
+    pub pyth_price_feed: AccountInfo<'info>,
 
     #[account(
-        address = queue.pubkey(),
-        constraint = queue.id.eq("feed"),
+        address = thread.pubkey(),
+        constraint = thread.id.eq("feed"),
         signer,
-        constraint = queue.authority == feed.key()
+        constraint = thread.authority == feed.key()
     )]
-    pub queue: Account<'info, Queue>,
+    pub thread: Account<'info, Thread>,
 }
 
 pub fn handler<'info>(ctx: Context<ProcessFeed>) -> Result<()> {
     let feed = &mut ctx.accounts.feed;
-    let pyth_data_feed = &ctx.accounts.pyth_data_feed;
+    let pyth_data_feed = &ctx.accounts.pyth_price_feed;
 
     // load price feed
     let price_feed = load_price_feed_from_account_info(&pyth_data_feed.to_account_info()).unwrap();
@@ -40,7 +40,7 @@ pub fn handler<'info>(ctx: Context<ProcessFeed>) -> Result<()> {
             msg!(
                 "Price change for {}: {}",
                 price_feed.product_id.to_string(),
-                price.price
+                price.price,
             );
         }
         None => {}

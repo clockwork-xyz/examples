@@ -11,7 +11,7 @@ use {
         },
         token,
     },
-    clockwork_sdk::client::{queue_program, Client, ClientResult, SplToken},
+    clockwork_sdk::client::{thread_program, Client, ClientResult, SplToken},
     serum_common::client::rpc::mint_to_new_account,
     solana_sdk::{
         instruction::Instruction, native_token::LAMPORTS_PER_SOL, signature::Keypair,
@@ -47,18 +47,21 @@ fn main() -> ClientResult<()> {
         market_keys.pc_mint,
         market_keys.coin_mint,
     );
-    let investment_queue =
-        clockwork_sdk::queue_program::accounts::Queue::pubkey(investment, "investment".to_string());
+    let investment_thread = clockwork_sdk::thread_program::accounts::Thread::pubkey(
+        investment,
+        "investment".to_string(),
+    );
 
     // derive serum_crank PDAs
     let crank = serum_crank::state::Crank::pubkey(market_keys.market);
-    let crank_queue = clockwork_sdk::queue_program::accounts::Queue::pubkey(crank, "crank".into());
+    let crank_thread =
+        clockwork_sdk::thread_program::accounts::Thread::pubkey(crank, "crank".into());
 
-    print_explorer_link(investment_queue, "investment_queue".to_string())?;
-    print_explorer_link(crank_queue, "crank_queue".to_string())?;
+    print_explorer_link(investment_thread, "investment_thread".to_string())?;
+    print_explorer_link(crank_thread, "crank_thread".to_string())?;
 
     // init serum_crank program
-    initialize_serum_crank(&client, crank, crank_queue, &market_keys)?;
+    initialize_serum_crank(&client, crank, crank_thread, &market_keys)?;
 
     let bob_mint_b_wallet = mint_to_new_account(
         &client,
@@ -146,7 +149,7 @@ fn main() -> ClientResult<()> {
         investment,
         investment_mint_a_token_account,
         investment_mint_b_token_account,
-        investment_queue,
+        investment_thread,
         &market_keys,
         &mut oo_account_alice,
         payer_mint_a_token_account,
@@ -273,17 +276,17 @@ fn setup_market(client: &Client) -> ClientResult<MarketKeys> {
 fn initialize_serum_crank(
     client: &Client,
     crank: Pubkey,
-    crank_queue: Pubkey,
+    crank_thread: Pubkey,
     market_keys: &MarketKeys,
 ) -> ClientResult<()> {
-    client.airdrop(&crank_queue, LAMPORTS_PER_SOL)?;
+    client.airdrop(&crank_thread, LAMPORTS_PER_SOL)?;
 
     let initialize_ix = Instruction {
         program_id: serum_crank::ID,
         accounts: vec![
-            AccountMeta::new_readonly(queue_program::ID, false),
+            AccountMeta::new_readonly(thread_program::ID, false),
             AccountMeta::new(crank, false),
-            AccountMeta::new(crank_queue, false),
+            AccountMeta::new(crank_thread, false),
             AccountMeta::new_readonly(anchor_spl::dex::ID, false),
             AccountMeta::new_readonly(market_keys.event_q, false),
             AccountMeta::new_readonly(market_keys.market, false),
@@ -312,7 +315,7 @@ fn create_investment_and_deposit(
     investment: Pubkey,
     investment_mint_a_token_account: Pubkey,
     investment_mint_b_token_account: Pubkey,
-    investment_queue: Pubkey,
+    investment_thread: Pubkey,
     market_keys: &MarketKeys,
     orders: &mut Option<Pubkey>,
     payer_mint_a_token_account: Pubkey,
@@ -320,18 +323,18 @@ fn create_investment_and_deposit(
 ) -> ClientResult<()> {
     init_dex_account(client, orders)?;
 
-    client.airdrop(&investment_queue, LAMPORTS_PER_SOL)?;
+    client.airdrop(&investment_thread, LAMPORTS_PER_SOL)?;
 
     let create_investment_ix = Instruction {
         program_id: investments_program::ID,
         accounts: vec![
             AccountMeta::new_readonly(associated_token::ID, false),
-            AccountMeta::new_readonly(queue_program::ID, false),
+            AccountMeta::new_readonly(thread_program::ID, false),
             AccountMeta::new_readonly(anchor_spl::dex::ID, false),
             AccountMeta::new(investment, false),
             AccountMeta::new(investment_mint_a_token_account, false),
             AccountMeta::new(investment_mint_b_token_account, false),
-            AccountMeta::new(investment_queue, false),
+            AccountMeta::new(investment_thread, false),
             AccountMeta::new_readonly(market_keys.pc_mint, false),
             AccountMeta::new_readonly(market_keys.coin_mint, false),
             AccountMeta::new(client.payer_pubkey(), true),

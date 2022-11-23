@@ -15,7 +15,7 @@ use {
         },
         token::{Token, TokenAccount},
     },
-    clockwork_sdk::{queue_program::accounts::{Queue, QueueAccount}, CrankResponse},
+    clockwork_sdk::{thread_program::accounts::{Thread, ThreadAccount}, ExecResponse},
     std::num::NonZeroU64,
 };
 
@@ -46,10 +46,10 @@ pub struct Swap<'info> {
     pub investment_mint_a_token_account: Box<Account<'info, TokenAccount>>,
 
     #[account(
-      address = investment_queue.pubkey(),
-      constraint = investment_queue.id.eq("investment")
+      address = investment_thread.pubkey(),
+      constraint = investment_thread.id.eq("investment")
     )]
-    pub investment_queue: Box<Account<'info, Queue>>,
+    pub investment_thread: Box<Account<'info, Thread>>,
 
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -64,7 +64,7 @@ pub struct Swap<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<CrankResponse> {
+pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<ExecResponse> {
     // get accounts
     let dex_program = &ctx.accounts.dex_program;
     let investment = &ctx.accounts.investment;
@@ -122,7 +122,8 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<Cr
     )?;
 
     // return None
-    Ok(CrankResponse { 
+    Ok(ExecResponse { 
+        kickoff_instruction: None,
         next_instruction: None
     }) 
 }

@@ -22,7 +22,7 @@ pub mod investments_program {
     }
 
     /*
-     * create investments account and initialize clockwork queue account
+     * create investments account and initialize clockwork thread account
      */
     pub fn create_investment<'info>(
         ctx: Context<'_, '_, '_, 'info, CreateInvestment<'info>>,
@@ -63,7 +63,7 @@ pub mod investments_program {
      */
     pub fn swap<'info>(
         ctx: Context<'_, '_, '_, 'info, Swap<'info>>,
-    ) -> Result<clockwork_sdk::CrankResponse> {
+    ) -> Result<clockwork_sdk::ExecResponse> {
         swap::handler(ctx)
     }
 }

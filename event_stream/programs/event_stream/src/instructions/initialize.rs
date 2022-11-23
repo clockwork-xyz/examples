@@ -4,10 +4,10 @@ use {
         prelude::*,
         solana_program::{instruction::Instruction, system_program},
     },
-    clockwork_sdk::queue_program::{
+    clockwork_sdk::thread_program::{
         self,
-        accounts::{Queue, Trigger},
-        QueueProgram,
+        accounts::{Thread, Trigger},
+        ThreadProgram,
     },
     std::mem::size_of,
 };
@@ -23,8 +23,8 @@ pub struct Initialize<'info> {
     )]
     pub authority: Account<'info, Authority>,
 
-    #[account(address = queue_program::ID)]
-    pub clockwork: Program<'info, QueueProgram>,
+    #[account(address = thread_program::ID)]
+    pub clockwork: Program<'info, ThreadProgram>,
 
     #[account(
         init,
@@ -35,14 +35,14 @@ pub struct Initialize<'info> {
     )]
     pub event: Account<'info, Event>,
 
-    #[account(address = Queue::pubkey(authority.key(), "event".into()))]
-    pub queue: SystemAccount<'info>,
-
     #[account(mut)]
     pub signer: Signer<'info>,
 
     #[account(address = system_program::ID)]
     pub system_program: Program<'info, System>,
+
+    #[account(address = Thread::pubkey(authority.key(), "event".into()))]
+    pub thread: SystemAccount<'info>,
 }
 
 pub fn handler(ctx: Context<Initialize>) -> Result<()> {
@@ -50,7 +50,7 @@ pub fn handler(ctx: Context<Initialize>) -> Result<()> {
     let authority = &ctx.accounts.authority;
     let clockwork = &ctx.accounts.clockwork;
     let event = &mut ctx.accounts.event;
-    let queue = &ctx.accounts.queue;
+    let thread = &ctx.accounts.thread;
     let signer = &ctx.accounts.signer;
     let system_program = &ctx.accounts.system_program;
 
@@ -58,32 +58,34 @@ pub fn handler(ctx: Context<Initialize>) -> Result<()> {
     event.timestamp = Clock::get().unwrap().unix_timestamp;
     event.user = signer.key();
 
-    // Create a queue to process the events
+    // Create a thread to process the events
     let bump = *ctx.bumps.get("authority").unwrap();
     let process_event_ix = Instruction {
         program_id: crate::ID,
         accounts: vec![
             AccountMeta::new_readonly(authority.key(), false),
             AccountMeta::new_readonly(event.key(), false),
-            AccountMeta::new_readonly(queue.key(), true),
+            AccountMeta::new_readonly(thread.key(), true),
         ],
-        data: clockwork_sdk::queue_program::utils::anchor_sighash("process_event").into(),
+        data: clockwork_sdk::anchor_sighash("process_event").into(),
     };
-    clockwork_sdk::queue_program::cpi::queue_create(
+    clockwork_sdk::thread_program::cpi::thread_create(
         CpiContext::new_with_signer(
             clockwork.to_account_info(),
-            clockwork_sdk::queue_program::cpi::accounts::QueueCreate {
+            clockwork_sdk::thread_program::cpi::accounts::ThreadCreate {
                 authority: authority.to_account_info(),
                 payer: signer.to_account_info(),
-                queue: queue.to_account_info(),
                 system_program: system_program.to_account_info(),
+                thread: thread.to_account_info(),
             },
             &[&[SEED_AUTHORITY, &[bump]]],
         ),
         "event".into(),
         process_event_ix.into(),
         Trigger::Account {
-            pubkey: event.key(),
+            address: event.key(),
+            offset: 0,
+            size: 8,
         },
     )?;
 

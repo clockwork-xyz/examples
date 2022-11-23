@@ -50,7 +50,7 @@ pub fn print_market_keys(market_keys: &MarketKeys) -> ClientResult<()> {
     );
     println!(
         "{}: https://explorer.solana.com/address/{}?cluster=custom",
-        "event_queue".to_string(),
+        "event_thread".to_string(),
         market_keys.event_q
     );
     println!(
