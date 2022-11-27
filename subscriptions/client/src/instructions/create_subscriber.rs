@@ -1,3 +1,5 @@
+use clockwork_sdk::thread_program;
+
 use {
     crate::*,
     anchor_lang::{prelude::Pubkey, InstructionData},
@@ -12,6 +14,7 @@ pub fn create_subscriber(
     client: &Client,
     subscriber: Pubkey,
     subscription: Pubkey,
+    subscription_thread: Pubkey,
 ) -> ClientResult<()> {
     let create_subscriber_ix = Instruction {
         program_id: subscriptions_program::ID,
@@ -19,6 +22,8 @@ pub fn create_subscriber(
             AccountMeta::new(client.payer_pubkey(), true),
             AccountMeta::new(subscriber, false),
             AccountMeta::new_readonly(subscription, false),
+            AccountMeta::new(subscription_thread, false),
+            AccountMeta::new_readonly(thread_program::ID, false),
             AccountMeta::new_readonly(system_program::ID, false),
         ],
         data: subscriptions_program::instruction::CreateSubscriber {}.data(),

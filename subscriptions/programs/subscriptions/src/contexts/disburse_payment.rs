@@ -13,7 +13,7 @@ use {
 };
 
 #[derive(Accounts)]
-pub struct ThreadTriggered<'info> {
+pub struct DisbursePayment<'info> {
     #[account(
         mut,
         address = Subscriber::pda(subscriber.owner.key(),subscription.key()).0,
@@ -37,7 +37,7 @@ pub struct ThreadTriggered<'info> {
     pub clockwork_program: Program<'info, ThreadProgram>,
 }
 
-impl<'info> ThreadTriggered<'_> {
+impl<'info> DisbursePayment<'_> {
     pub fn process(&mut self) -> Result<ExecResponse> {
         let Self {
             subscriber,

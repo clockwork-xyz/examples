@@ -71,8 +71,8 @@ pub mod subscriptions_program {
     /*
      * disburse payment from program authority's ATA to recipient's ATA
      */
-    pub fn thread_triggered<'info>(
-        ctx: Context<ThreadTriggered>,
+    pub fn disburse_payment<'info>(
+        ctx: Context<DisbursePayment>,
     ) -> Result<clockwork_sdk::ExecResponse> {
         ctx.accounts.process()
     }

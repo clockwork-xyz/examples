@@ -1,8 +1,5 @@
 use {
-    clockwork_sdk::client::{
-        thread_program::{objects::Thread, objects::Trigger},
-        ClientResult, SplToken,
-    },
+    clockwork_sdk::client::{thread_program::objects::Thread, ClientResult, SplToken},
     dotenv::dotenv,
     rand::Rng,
     solana_sdk::signer::Signer,
@@ -30,7 +27,10 @@ fn main() -> ClientResult<()> {
     let (subscription, subscription_bump) =
         subscriptions_program::state::Subscription::pda(client.payer_pubkey(), subscription_id);
 
-    let subscription_thread = Thread::pubkey(client.payer_pubkey(), "subscription".into());
+    let subscriber =
+        subscriptions_program::state::Subscriber::pda(client.payer_pubkey(), subscription).0;
+
+    let subscription_thread = Thread::pubkey(subscription, subscription_id.to_string());
 
     let (subscription_bank, _) =
         subscriptions_program::state::Subscription::bank_pda(subscription, client.payer_pubkey());
@@ -44,9 +44,6 @@ fn main() -> ClientResult<()> {
         .create_token_account(&client.payer_pubkey(), &mint)
         .unwrap()
         .pubkey();
-
-    let subscriber =
-        subscriptions_program::state::Subscriber::pda(client.payer_pubkey(), subscription).0;
 
     client
         .mint_to(
@@ -70,9 +67,7 @@ fn main() -> ClientResult<()> {
         subscription_bump,
     )?;
 
-    create_subscriber(&client, subscriber, subscription)?;
-
-    create_queue(&client, subscriber, subscription, subscription_thread)?;
+    create_subscriber(&client, subscriber, subscription, subscription_thread)?;
 
     deposit(
         &client,
