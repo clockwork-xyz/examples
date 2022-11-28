@@ -17,12 +17,18 @@ pub struct Stat {
     pub price_history: HashMap<i64, i64>,
     pub lookback_window: i64,
     pub twap: i64,
+    pub id: String,
 }
 
 impl Stat {
-    pub fn pubkey(price_feed: Pubkey, authority: Pubkey) -> Pubkey {
+    pub fn pubkey(price_feed: Pubkey, authority: Pubkey, id: String) -> Pubkey {
         Pubkey::find_program_address(
-            &[SEED_STAT, price_feed.as_ref(), authority.as_ref()],
+            &[
+                SEED_STAT,
+                price_feed.as_ref(),
+                authority.as_ref(),
+                id.as_bytes(),
+            ],
             &crate::ID,
         )
         .0
@@ -41,17 +47,30 @@ impl TryFrom<Vec<u8>> for Stat {
  */
 
 pub trait StatAccount {
-    fn new(&mut self, price_feed: Pubkey, authority: Pubkey, lookback_window: i64) -> Result<()>;
+    fn new(
+        &mut self,
+        price_feed: Pubkey,
+        authority: Pubkey,
+        lookback_window: i64,
+        id: String,
+    ) -> Result<()>;
     fn twap(&mut self, timestamp: i64, price: i64) -> Result<()>;
 }
 
 impl StatAccount for Account<'_, Stat> {
-    fn new(&mut self, price_feed: Pubkey, authority: Pubkey, lookback_window: i64) -> Result<()> {
+    fn new(
+        &mut self,
+        price_feed: Pubkey,
+        authority: Pubkey,
+        lookback_window: i64,
+        id: String,
+    ) -> Result<()> {
         self.price_feed = price_feed;
         self.authority = authority;
         self.price_history = HashMap::new();
         self.lookback_window = lookback_window;
         self.twap = 0;
+        self.id = id;
         Ok(())
     }
 

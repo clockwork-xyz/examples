@@ -12,8 +12,8 @@ use instructions::*;
 pub mod stats {
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>, lookback_window: i64) -> Result<()> {
-        initialize::handler(ctx, lookback_window)
+    pub fn initialize(ctx: Context<Initialize>, lookback_window: i64, id: String) -> Result<()> {
+        initialize::handler(ctx, lookback_window, id)
     }
     pub fn calc(ctx: Context<Calc>) -> Result<()> {
         calc::handler(ctx)
