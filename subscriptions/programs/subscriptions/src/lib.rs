@@ -41,20 +41,6 @@ pub mod subscriptions_program {
     }
 
     /*
-     * deppsit
-     */
-    pub fn deposit<'info>(ctx: Context<Deposit>, amount: u64) -> Result<()> {
-        ctx.accounts.process(amount)
-    }
-
-    /*
-     * withdraw
-     */
-    pub fn withdraw<'info>(ctx: Context<Withdraw>, amount: u64) -> Result<()> {
-        ctx.accounts.process(amount)
-    }
-
-    /*
      * subscribe from a subscription
      */
     pub fn subscribe<'info>(ctx: Context<Subscribe>) -> Result<()> {

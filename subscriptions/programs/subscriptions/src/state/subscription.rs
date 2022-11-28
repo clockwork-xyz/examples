@@ -18,7 +18,6 @@ pub struct Subscription {
     pub schedule: String,
     pub is_active: bool,
     pub subscription_id: u64,
-    pub withdraw: u64,
     pub bump: u8,
 }
 
@@ -62,7 +61,6 @@ pub trait SubscriptionAccount {
         schedule: String,
         is_active: bool,
         subscription_id: u64,
-        withdraw: u64,
         bump: u8,
     ) -> Result<()>;
 }
@@ -76,7 +74,6 @@ impl SubscriptionAccount for Account<'_, Subscription> {
         schedule: String,
         is_acitve: bool,
         subscription_id: u64,
-        withdraw: u64,
         bump: u8,
     ) -> Result<()> {
         self.owner = owner;
@@ -85,7 +82,6 @@ impl SubscriptionAccount for Account<'_, Subscription> {
         self.schedule = schedule;
         self.is_active = is_acitve;
         self.subscription_id = subscription_id;
-        self.withdraw = withdraw;
         self.bump = bump;
         Ok(())
     }

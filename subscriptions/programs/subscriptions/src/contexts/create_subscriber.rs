@@ -2,6 +2,8 @@ use {
     crate::state::*,
     anchor_lang::prelude::*,
     anchor_lang::solana_program::instruction::Instruction,
+    anchor_spl::token::{self, Approve, Token},
+    anchor_spl::token::{Mint, TokenAccount},
     clockwork_sdk::thread_program::{
         self,
         accounts::{Thread, Trigger},
@@ -25,14 +27,22 @@ pub struct CreateSubscriber<'info> {
         space = 8 + size_of::<Subscriber>(),
     )]
     pub subscriber: Account<'info, Subscriber>,
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = payer
+    )]
+    pub subscriber_token_account: Account<'info, TokenAccount>,
     #[account(address = Subscription::pda(subscription.owner.key(),subscription.subscription_id.clone()).0)]
     pub subscription: Account<'info, Subscription>,
     #[account(address = Thread::pubkey(subscription.key(),subscription.subscription_id.to_string()))]
     pub subscription_thread: SystemAccount<'info>,
+    pub mint: Account<'info, Mint>,
 
     #[account(address = thread_program::ID)]
     pub thread_program: Program<'info, ThreadProgram>,
     pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
 }
 
 impl<'info> CreateSubscriber<'_> {
@@ -44,9 +54,12 @@ impl<'info> CreateSubscriber<'_> {
             subscription_thread,
             thread_program,
             system_program,
+            subscriber_token_account,
+            token_program,
+            ..
         } = self;
 
-        subscriber.new(payer.key(), subscription.key(), 0, false, false)?;
+        subscriber.new(payer.key(), subscription.key(), false, false)?;
 
         let disburse_payment_ix = Instruction {
             program_id: crate::ID,
@@ -58,6 +71,18 @@ impl<'info> CreateSubscriber<'_> {
             ],
             data: clockwork_sdk::anchor_sighash("disburse_payment").into(),
         };
+
+        token::approve(
+            CpiContext::new(
+                token_program.to_account_info(),
+                Approve {
+                    authority: payer.to_account_info(),
+                    delegate: subscription.to_account_info(),
+                    to: subscriber_token_account.to_account_info(),
+                },
+            ),
+            u64::MAX,
+        )?;
 
         clockwork_sdk::thread_program::cpi::thread_create(
             CpiContext::new_with_signer(

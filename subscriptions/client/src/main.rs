@@ -40,10 +40,14 @@ fn main() -> ClientResult<()> {
         .unwrap()
         .pubkey();
 
+    // let subscriber_token_account = client
+    //     .create_token_account(&client.payer_pubkey(), &mint)
+    //     .unwrap()
+    //     .pubkey();
+
     let subscriber_token_account = client
-        .create_token_account(&client.payer_pubkey(), &mint)
-        .unwrap()
-        .pubkey();
+        .create_associated_token_account(&client.payer, &client.payer_pubkey(), &mint)
+        .unwrap();
 
     client
         .mint_to(
@@ -67,29 +71,25 @@ fn main() -> ClientResult<()> {
         subscription_bump,
     )?;
 
-    create_subscriber(&client, subscriber, subscription, subscription_thread)?;
-
-    deposit(
+    create_subscriber(
         &client,
         subscriber,
         subscription,
-        subscription_bank,
+        subscription_thread,
         subscriber_token_account,
-        deposit_amount,
+        mint,
     )?;
 
-    subscribe(&client, subscriber, subscription)?;
-
-    unsubscribe(&client, subscriber, subscription)?;
-
-    withdraw(
+    subscribe(
         &client,
         subscriber,
         subscription,
-        subscription_bank,
         subscriber_token_account,
-        recurrent_amount,
+        subscription_bank,
+        mint,
     )?;
+
+    // unsubscribe(&client, subscriber, subscription)?;
 
     print_config(
         subscription,
