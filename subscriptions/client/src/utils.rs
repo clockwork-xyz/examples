@@ -51,12 +51,59 @@ pub fn print_explorer_link(address: Pubkey, label: String) -> ClientResult<()> {
     Ok(())
 }
 
+pub fn get_env_vars() -> (
+    Client,
+    Option<Pubkey>,
+    Option<Pubkey>,
+    Option<Pubkey>,
+    Option<Pubkey>,
+    Option<Pubkey>,
+    Option<Pubkey>,
+    Option<u64>,
+) {
+    let client = get_client();
+    let subscription = get_address_env("SUBSCRIPTION".to_string());
+    let subscription_thread = get_address_env("SUBSCRIPTION_THREAD".to_string());
+    let subscription_bank = get_address_env("SUBSCRIPTION_BANK".to_string());
+    let subscriber = get_address_env("SUBSCRIBER".to_string());
+    let subscriber_token_account = get_address_env("SUBSCRIBER_TOKEN_ACCOUNT".to_string());
+    let mint = get_address_env("MINT".to_string());
+    let subscriber_id = get_id();
+    return (
+        client,
+        subscription,
+        subscription_thread,
+        subscription_bank,
+        subscriber,
+        subscriber_token_account,
+        mint,
+        subscriber_id,
+    );
+}
+
+pub fn get_id() -> Option<u64> {
+    let id = std::env::var("SUBSCRIPTION_ID");
+    if id.is_err() {
+        return None;
+    }
+    let id = id.unwrap().parse::<u64>().unwrap();
+    return Some(id);
+}
+
+pub fn get_address_env(address: String) -> Option<Pubkey> {
+    let address = std::env::var(address);
+    if address.is_err() {
+        return None;
+    }
+    let decoded = &bs58::decode(address.unwrap()).into_vec().unwrap();
+    return Some(Pubkey::new(decoded));
+}
+
 pub fn get_client() -> Client {
     let client_private_str = &*std::env::var("CLIENT_PRIVATE").unwrap();
-    let client_private: Value = serde_json::from_str(client_private_str).unwrap();
+    let client_private = &serde_json::from_str(client_private_str).unwrap();
     let mut key = vec![];
-
-    if let Value::Array(arr) = &client_private {
+    if let Value::Array(arr) = client_private {
         for val in arr {
             if let Value::Number(value) = val {
                 let a = value.as_u64().unwrap() as u8;
@@ -80,12 +127,15 @@ pub fn print_config(
     subscription_id: u64,
 ) {
     println!("- - - - - - - - - - UPDATE YOUR .ENV FILE - - - - - - - - - -");
-    println!("SUBSCRIPTION={:?}", subscription);
-    println!("SUBSCRIPTION_THREAD={:?}", subscription_thread);
-    println!("SUBSCRIPTION_BANK={:?}", subscription_bank);
-    println!("SUBSCRIBER={:?}", subscriber);
-    println!("SUBSCRIBER_TOKEN_ACCOUNT={:?}", subscriber_token_account);
-    println!("MINT={:?}", mint);
-    println!("SUBSCRIPTION_ID={}", subscription_id);
+    println!("SUBSCRIPTION=\"{:?}\"", subscription);
+    println!("SUBSCRIPTION_THREAD=\"{:?}\"", subscription_thread);
+    println!("SUBSCRIPTION_BANK=\"{:?}\"", subscription_bank);
+    println!("SUBSCRIBER=\"{:?}\"", subscriber);
+    println!(
+        "SUBSCRIBER_TOKEN_ACCOUNT=\"{:?}\"",
+        subscriber_token_account
+    );
+    println!("MINT=\"{:?}\"", mint);
+    println!("SUBSCRIPTION_ID=\"{}\"", subscription_id);
     println!("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
 }

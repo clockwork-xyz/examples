@@ -15,8 +15,18 @@ fn main() -> ClientResult<()> {
     // let args: Vec<String> = env::args().collect();
     // let command: &str = &args[1];
     dotenv().ok();
-    let client = get_client();
     let mut rng = rand::thread_rng();
+
+    let (
+        client,
+        subscription,
+        subscription_thread,
+        subscription_bank,
+        subscriber,
+        subscriber_token_account,
+        mint,
+        subscription_id,
+    ) = get_env_vars();
 
     let subscription_id = rng.gen::<u64>();
     let deposit_amount = 14000;
@@ -39,11 +49,6 @@ fn main() -> ClientResult<()> {
         .create_token_mint(&client.payer_pubkey(), 9)
         .unwrap()
         .pubkey();
-
-    // let subscriber_token_account = client
-    //     .create_token_account(&client.payer_pubkey(), &mint)
-    //     .unwrap()
-    //     .pubkey();
 
     let subscriber_token_account = client
         .create_associated_token_account(&client.payer, &client.payer_pubkey(), &mint)
@@ -89,7 +94,7 @@ fn main() -> ClientResult<()> {
         mint,
     )?;
 
-    // unsubscribe(&client, subscriber, subscription)?;
+    unsubscribe(&client, subscriber, subscription)?;
 
     print_config(
         subscription,
