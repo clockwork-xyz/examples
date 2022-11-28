@@ -1,17 +1,21 @@
 [features]
 seeds = false
 skip-lint = false
+
 [programs.localnet]
 stats = "5cj44QGY53QhgiqWYaFMQuGtLieeR4gH6rJzCU9iLoAR"
 
 [programs.devnet]
 stats = "5cj44QGY53QhgiqWYaFMQuGtLieeR4gH6rJzCU9iLoAR"
 
+[programs.mainnet]
+stats = "5cj44QGY53QhgiqWYaFMQuGtLieeR4gH6rJzCU9iLoAR"
+
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "devnet"
+cluster = "mainnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

@@ -1,65 +1,112 @@
-use clockwork_sdk::thread_program::accounts::Trigger;
-
 use {
     anchor_lang::{prelude::*, solana_program::system_program, InstructionData},
-    clockwork_sdk::client::{Client, ClientResult},
-    solana_sdk::{
-        instruction::Instruction, native_token::LAMPORTS_PER_SOL, signature::Keypair,
-        transaction::Transaction,
+    clockwork_sdk::{
+        client::{thread_program::instruction::thread_create, Client, ClientResult},
+        thread_program::accounts::Trigger,
     },
+    solana_sdk::{instruction::Instruction, signature::Keypair, transaction::Transaction},
     std::str::FromStr,
 };
 
+#[cfg(not(feature = "mainnet"))]
 fn main() -> ClientResult<()> {
     // Create Client
     let payer = Keypair::new();
     let client = Client::new(payer, "https://api.devnet.solana.com".into());
-    client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
+    client.airdrop(
+        &client.payer_pubkey(),
+        2 * solana_sdk::native_token::LAMPORTS_PER_SOL,
+    )?;
 
-    create_feed(&client)?;
+    // SOL/USD price feed
+    let sol_usd_pubkey = Pubkey::from_str("J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix").unwrap();
+
+    create_feed(
+        &client,
+        sol_usd_pubkey,
+        Cluster::Devnet,
+        "sol_usd_stat".into(),
+    )?;
 
     Ok(())
 }
 
-fn create_feed(client: &Client) -> ClientResult<()> {
-    // SOL/USD price feed
-    let sol_usd_pubkey = Pubkey::from_str("J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix").unwrap();
+#[cfg(feature = "mainnet")]
+fn main() -> ClientResult<()> {
+    use {solana_sdk::signature::read_keypair_file, std::env};
 
-    let stat_pubkey = stats::objects::Stat::pubkey(sol_usd_pubkey, client.payer_pubkey());
+    let args: Vec<String> = env::args().collect();
+
+    if args.len() < 2 {
+        panic!("Keypair path not provided");
+    }
+
+    let payer = read_keypair_file(&args[1]).expect("invalid keypair path");
+    let client = Client::new(payer, "https://api.mainnet-beta.solana.com".into());
+
+    // SOL/USD price feed
+    let sol_usd_pubkey = Pubkey::from_str("H6ARHf6YXhGYeQfUzQNGk6rDNnLBQKrenN712K4AQJEG").unwrap();
+
+    create_feed(
+        &client,
+        sol_usd_pubkey,
+        Cluster::Mainnet,
+        "sol_usd_stat_test_4".into(),
+    )?;
+
+    Ok(())
+}
+
+fn create_feed(
+    client: &Client,
+    price_feed_pubkey: Pubkey,
+    cluster: Cluster,
+    stat_id: &str,
+) -> ClientResult<()> {
+    let stat_pubkey =
+        stats::objects::Stat::pubkey(price_feed_pubkey, client.payer_pubkey(), stat_id.into());
     let stat_thread_pubkey = clockwork_sdk::thread_program::accounts::Thread::pubkey(
         client.payer_pubkey(),
-        "stats".into(),
+        stat_id.into(),
     );
 
-    print_explorer_link(stat_thread_pubkey, "stat_thread".into())?;
+    print_explorer_link(stat_pubkey, "stat account".into(), cluster)?;
+    print_explorer_link(stat_thread_pubkey, "stat_thread".into(), cluster)?;
 
     // airdrop thread
-    client.airdrop(&stat_thread_pubkey, 2 * LAMPORTS_PER_SOL)?;
+    #[cfg(not(feature = "mainnet"))]
+    client.airdrop(
+        &stat_thread_pubkey,
+        2 * solana_sdk::native_token::LAMPORTS_PER_SOL,
+    )?;
 
     let initialize_ix = Instruction {
         program_id: stats::ID,
         accounts: vec![
-            AccountMeta::new_readonly(sol_usd_pubkey, false),
+            AccountMeta::new_readonly(price_feed_pubkey, false),
             AccountMeta::new(stat_pubkey, false),
             AccountMeta::new(client.payer_pubkey(), true),
             AccountMeta::new_readonly(system_program::ID, false),
         ],
         data: stats::instruction::Initialize {
-            lookback_window: 3600 as i64,
+            // 24 hours in seconds
+            lookback_window: 86400 as i64,
+            id: stat_id.into(),
         }
         .data(),
     };
 
-    let create_thread_ix = clockwork_sdk::client::thread_program::instruction::thread_create(
+    let create_thread_ix = thread_create(
         client.payer_pubkey(),
-        "stats".into(),
+        stat_id.into(),
         Instruction {
             program_id: stats::ID,
             accounts: vec![
                 AccountMeta::new(stat_pubkey, false),
-                AccountMeta::new(sol_usd_pubkey, false),
+                AccountMeta::new(clockwork_sdk::PAYER_PUBKEY, true),
+                AccountMeta::new_readonly(price_feed_pubkey, false),
+                AccountMeta::new_readonly(system_program::ID, false),
                 AccountMeta::new(stat_thread_pubkey, true),
-                AccountMeta::new_readonly(sol_usd_pubkey, false),
             ],
             data: stats::instruction::Calc {}.data(),
         }
@@ -67,8 +114,8 @@ fn create_feed(client: &Client) -> ClientResult<()> {
         client.payer_pubkey(),
         stat_thread_pubkey,
         Trigger::Account {
-            address: sol_usd_pubkey,
-            offset: 4 + 8 + 8 + 4 + 4 + 4 + 4,
+            address: price_feed_pubkey,
+            offset: 32,
             size: 8,
         },
     );
@@ -78,16 +125,18 @@ fn create_feed(client: &Client) -> ClientResult<()> {
         [initialize_ix, create_thread_ix].to_vec(),
         None,
         "init stat account and stat thread".into(),
+        cluster,
     )?;
 
     Ok(())
 }
 
-pub fn print_explorer_link(address: Pubkey, label: String) -> ClientResult<()> {
+pub fn print_explorer_link(address: Pubkey, label: String, cluster: Cluster) -> ClientResult<()> {
     println!(
-        "{}: https://explorer.solana.com/address/{}?cluster=devnet",
+        "{}: https://explorer.solana.com/address/{}?cluster={}",
         label.to_string(),
-        address
+        address,
+        cluster.value()
     );
 
     Ok(())
@@ -98,6 +147,7 @@ pub fn sign_send_and_confirm_tx(
     ix: Vec<Instruction>,
     signers: Option<Vec<&Keypair>>,
     label: String,
+    cluster: Cluster,
 ) -> ClientResult<()> {
     let mut tx;
 
@@ -120,10 +170,29 @@ pub fn sign_send_and_confirm_tx(
     // Send and confirm tx
     match client.send_and_confirm_transaction(&tx) {
         Ok(sig) => println!(
-            "{} tx: ✅ https://explorer.solana.com/tx/{}?cluster=custom",
-            label, sig
+            "{} tx: ✅ https://explorer.solana.com/tx/{}?cluster={}",
+            label,
+            sig,
+            cluster.value()
         ),
         Err(err) => println!("{} tx: ❌ {:#?}", label, err),
     }
     Ok(())
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum Cluster {
+    Localnet,
+    Devnet,
+    Mainnet,
+}
+
+impl Cluster {
+    fn value(&self) -> &str {
+        match *self {
+            Cluster::Localnet => "custom",
+            Cluster::Devnet => "devnet",
+            Cluster::Mainnet => "null",
+        }
+    }
 }
