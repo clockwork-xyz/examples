@@ -1,5 +1,5 @@
 use {
-    crate::objects::*,
+    crate::state::*,
     anchor_lang::{prelude::*, solana_program::system_program, system_program::{transfer, Transfer}},
     clockwork_sdk::thread_program::accounts::{Thread, ThreadAccount},
     pyth_sdk_solana::load_price_feed_from_account_info,
@@ -71,11 +71,10 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<()> {
                 )?;
             }
 
-            msg!(
-                "TWA Price: {} for lookback window: {}",
-                stat.twap,
-                stat.lookback_window
-            );
+            msg!("      TWA Price: {}", stat.twap);
+            msg!("lookback window: {} seconds", stat.lookback_window);
+            msg!("   sample count: {}", stat.sample_count);
+            msg!("     sample sum: {}", stat.sample_sum);
         }
         Err(_) => {}
     }
