@@ -51,7 +51,7 @@ fn main() -> ClientResult<()> {
         &client,
         sol_usd_pubkey,
         Cluster::Mainnet,
-        "sol_usd_stat_test_4".into(),
+        "sol_usd_stat_test_5".into(),
     )?;
 
     Ok(())
@@ -64,7 +64,7 @@ fn create_feed(
     stat_id: &str,
 ) -> ClientResult<()> {
     let stat_pubkey =
-        stats::objects::Stat::pubkey(price_feed_pubkey, client.payer_pubkey(), stat_id.into());
+        stats::state::Stat::pubkey(price_feed_pubkey, client.payer_pubkey(), stat_id.into());
     let stat_thread_pubkey = clockwork_sdk::thread_program::accounts::Thread::pubkey(
         client.payer_pubkey(),
         stat_id.into(),
@@ -90,7 +90,8 @@ fn create_feed(
         ],
         data: stats::instruction::Initialize {
             // 24 hours in seconds
-            lookback_window: 86400 as i64,
+            lookback_window: 86400,
+            sample_rate: 10,
             id: stat_id.into(),
         }
         .data(),
