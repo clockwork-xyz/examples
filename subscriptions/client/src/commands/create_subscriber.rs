@@ -40,6 +40,9 @@ pub fn create_subscriber(
         None,
         "create_subscriber".to_string(),
     )?;
+    println!("- - - - - - - - - - UPDATE YOUR .ENV FILE - - - - - - - - - -");
+    println!("SUBSCRIPTION_THREAD=\"{:?}\"", subscription_thread);
+    println!("SUBSCRIBER=\"{:?}\"", subscriber);
 
     Ok(())
 }

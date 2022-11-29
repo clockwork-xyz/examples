@@ -82,20 +82,20 @@ pub fn get_env_vars() -> (
 }
 
 pub fn get_id() -> Option<u64> {
-    let id = std::env::var("SUBSCRIPTION_ID");
-    if id.is_err() {
+    let id = std::env::var("SUBSCRIPTION_ID").unwrap();
+    if id.is_empty() {
         return None;
     }
-    let id = id.unwrap().parse::<u64>().unwrap();
+    let id = id.parse::<u64>().unwrap();
     return Some(id);
 }
 
 pub fn get_address_env(address: String) -> Option<Pubkey> {
-    let address = std::env::var(address);
-    if address.is_err() {
+    let arg = std::env::var(address).unwrap();
+    if arg.is_empty() {
         return None;
     }
-    let decoded = &bs58::decode(address.unwrap()).into_vec().unwrap();
+    let decoded = &bs58::decode(arg).into_vec().unwrap();
     return Some(Pubkey::new(decoded));
 }
 

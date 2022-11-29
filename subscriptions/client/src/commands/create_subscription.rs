@@ -48,6 +48,10 @@ pub fn create_subscription(
         None,
         "create_subscription".to_string(),
     )?;
+    println!("- - - - - - - - - - UPDATE YOUR .ENV FILE - - - - - - - - - -");
+    println!("SUBSCRIPTION=\"{:?}\"", subscription);
+    println!("SUBSCRIPTION_BANK=\"{:?}\"", subscription_bank);
+    println!("SUBSCRIPTION_ID=\"{:?}\"", subscription_id);
 
     Ok(())
 }

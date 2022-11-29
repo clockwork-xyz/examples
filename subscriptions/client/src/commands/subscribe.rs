@@ -34,6 +34,5 @@ pub fn subscribe(
         None,
         "subscribe".to_string(),
     )?;
-
     Ok(())
 }
