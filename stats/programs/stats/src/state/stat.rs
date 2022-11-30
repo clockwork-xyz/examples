@@ -110,6 +110,17 @@ impl StatAccount for Account<'_, Stat> {
                 self.sample_sum = self.sample_sum.checked_sub(popped_element.1).unwrap();
                 self.sample_count = self.sample_count.checked_sub(1).unwrap();
             }
+
+            msg!(
+                "     oldest - ts: {}, price: {}",
+                oldest_price.0,
+                oldest_price.1
+            );
+            msg!(
+                "     newest - ts: {}, price: {}",
+                newest_price.0,
+                newest_price.1
+            );
         }
 
         match self.sample_sum.checked_div(self.sample_count) {
