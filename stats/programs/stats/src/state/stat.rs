@@ -86,6 +86,8 @@ impl StatAccount for Account<'_, Stat> {
         // always insert first encountered pricing data
         if self.sample_count == 0 {
             self.price_history.push_back((timestamp, price));
+            self.sample_sum = self.sample_sum.checked_add(price).unwrap();
+            self.sample_count = self.sample_count.checked_add(1).unwrap();
         } else {
             let newest_price = *self
                 .price_history
@@ -95,18 +97,20 @@ impl StatAccount for Account<'_, Stat> {
 
             // if the latest price is after sample rate threshhold then insert new pricing data
             if timestamp >= newest_price.0 + self.sample_rate {
-                self.price_history.push_back((timestamp, price))
+                self.price_history.push_back((timestamp, price));
+                self.sample_sum = self.sample_sum.checked_add(price).unwrap();
+                self.sample_count = self.sample_count.checked_add(1).unwrap();
             }
-            let lookback_window = self.lookback_window.clone();
 
-            // if the oldest pricing data is less lookback window then pop that element
-            if oldest_price.0 < Clock::get().unwrap().unix_timestamp - lookback_window {
-                self.price_history.pop_front();
+            // while oldest pricing data is less lookback window then pop that element
+            while oldest_price.0
+                < Clock::get().unwrap().unix_timestamp - self.lookback_window.clone()
+            {
+                let popped_element = self.price_history.pop_front().unwrap();
+                self.sample_sum = self.sample_sum.checked_sub(popped_element.1).unwrap();
+                self.sample_count = self.sample_count.checked_sub(1).unwrap();
             }
         }
-
-        self.sample_count = self.price_history.len() as i64;
-        self.sample_sum = self.price_history.iter().map(|(_, p)| p).sum();
 
         match self.sample_sum.checked_div(self.sample_count) {
             Some(twap) => self.twap = twap,
