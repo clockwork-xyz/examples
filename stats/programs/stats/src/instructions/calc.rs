@@ -71,10 +71,15 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<()> {
                 )?;
             }
 
+            msg!("     price feed: {}", stat.price_feed);
+            msg!("      authority: {}", stat.authority);
             msg!("      TWA Price: {}", stat.twap);
-            msg!("lookback window: {} seconds", stat.lookback_window);
+            msg!(" lookback window: {} seconds", stat.lookback_window);
+            msg!("    sample rate: {}", stat.sample_rate);
             msg!("   sample count: {}", stat.sample_count);
             msg!("     sample sum: {}", stat.sample_sum);
+            msg!("        stat ID: {}", stat.id);
+
         }
         Err(_) => {}
     }
