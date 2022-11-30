@@ -2,6 +2,7 @@ use {
     crate::{error::ErrorCode, state::*},
     anchor_lang::prelude::*,
     anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer},
+    clockwork_sdk::thread_program::{self, accounts::Thread, ThreadProgram},
 };
 
 #[derive(Accounts)]
@@ -19,6 +20,9 @@ pub struct Subscribe<'info> {
         associated_token::authority = payer
     )]
     pub subscriber_token_account: Account<'info, TokenAccount>,
+
+    #[account(mut, address = Subscription::pda(subscription.owner.key(),subscription.subscription_id.clone()).0)]
+    pub subscription: Account<'info, Subscription>,
     #[account(
         mut,
         token::mint = mint,
@@ -26,12 +30,15 @@ pub struct Subscribe<'info> {
         address = Subscription::bank_pda(subscription.key(),subscription.owner.key()).0
     )]
     pub subscription_bank: Account<'info, TokenAccount>,
+    #[account(address = Thread::pubkey(subscription.key(),subscription.subscription_id.to_string()))]
+    pub subscription_thread: Box<Account<'info, Thread>>,
+
     #[account(address=subscription.mint)]
     pub mint: Account<'info, Mint>,
 
-    #[account(mut, address = Subscription::pda(subscription.owner.key(),subscription.subscription_id.clone()).0)]
-    pub subscription: Account<'info, Subscription>,
     pub token_program: Program<'info, Token>,
+    #[account(address = thread_program::ID)]
+    pub thread_program: Program<'info, ThreadProgram>,
 }
 
 impl<'info> Subscribe<'_> {
@@ -43,6 +50,8 @@ impl<'info> Subscribe<'_> {
             subscriber_token_account,
             token_program,
             subscription_bank,
+            thread_program,
+            subscription_thread,
             ..
         } = self;
 
@@ -63,6 +72,20 @@ impl<'info> Subscribe<'_> {
             ),
             subscription.recurrent_amount,
         )?;
+
+        clockwork_sdk::thread_program::cpi::thread_resume(CpiContext::new_with_signer(
+            thread_program.to_account_info(),
+            clockwork_sdk::thread_program::cpi::accounts::ThreadResume {
+                authority: subscription.to_account_info(),
+                thread: subscription_thread.to_account_info(),
+            },
+            &[&[
+                SEED_SUBSCRIPTION,
+                subscription.owner.as_ref(),
+                &subscription.subscription_id.to_be_bytes(),
+                &[subscription.bump],
+            ]],
+        ))?;
 
         subscriber.is_active = true;
         subscriber.is_subscribed = true;

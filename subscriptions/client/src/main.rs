@@ -42,7 +42,7 @@ fn main() -> ClientResult<()> {
         "create_subscription" => {
             let mut rng = rand::thread_rng();
             let subscription_id = rng.gen::<u64>();
-            let schedule = "0 * * ? * *".to_string();
+            let schedule = "* * * * * * *".to_string();
             let is_active = true;
 
             let (subscription, subscription_bump) = subscriptions_program::state::Subscription::pda(
@@ -93,6 +93,7 @@ fn main() -> ClientResult<()> {
                 subscriber_token_account.unwrap(),
                 subscription_bank.unwrap(),
                 mint.unwrap(),
+                subscription_thread.unwrap(),
             )?;
         }
         "unsubscribe" => {

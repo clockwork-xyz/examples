@@ -59,7 +59,7 @@ impl<'info> CreateSubscriber<'_> {
             ..
         } = self;
 
-        subscriber.new(payer.key(), subscription.key(), false, false)?;
+        subscriber.new(payer.key(), subscription.key(), false, true)?;
 
         let disburse_payment_ix = Instruction {
             program_id: crate::ID,
@@ -102,12 +102,25 @@ impl<'info> CreateSubscriber<'_> {
             ),
             subscription.subscription_id.to_string(),
             disburse_payment_ix.into(),
-            Trigger::Account {
-                address: subscriber.key(),
-                offset: 0,
-                size: 8,
+            Trigger::Cron {
+                schedule: subscription.schedule.clone(),
+                skippable: false,
             },
         )?;
+
+        clockwork_sdk::thread_program::cpi::thread_pause(CpiContext::new_with_signer(
+            thread_program.to_account_info(),
+            clockwork_sdk::thread_program::cpi::accounts::ThreadPause {
+                authority: subscription.to_account_info(),
+                thread: subscription_thread.to_account_info(),
+            },
+            &[&[
+                SEED_SUBSCRIPTION,
+                subscription.owner.as_ref(),
+                &subscription.subscription_id.to_be_bytes(),
+                &[subscription.bump],
+            ]],
+        ))?;
 
         Ok(())
     }

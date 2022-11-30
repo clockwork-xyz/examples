@@ -66,7 +66,7 @@ impl<'info> CreateSubscription<'_> {
             mint,
             recurrent_amount,
             schedule,
-            is_active,
+            true,
             subscription_id,
             bump,
         )?;
