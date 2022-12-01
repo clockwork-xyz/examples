@@ -35,6 +35,13 @@ pub struct CreateSubscriber<'info> {
     pub subscriber_token_account: Account<'info, TokenAccount>,
     #[account(address = Subscription::pda(subscription.owner.key(),subscription.subscription_id.clone()).0)]
     pub subscription: Account<'info, Subscription>,
+    #[account(
+        mut,
+        token::mint = mint,
+        token::authority = subscription,
+        address = Subscription::bank_pda(subscription.key(),subscription.owner.key()).0
+    )]
+    pub subscription_bank: Account<'info, TokenAccount>,
     #[account(address = Thread::pubkey(subscription.key(),subscription.subscription_id.to_string()))]
     pub subscription_thread: SystemAccount<'info>,
     pub mint: Account<'info, Mint>,
@@ -56,6 +63,7 @@ impl<'info> CreateSubscriber<'_> {
             system_program,
             subscriber_token_account,
             token_program,
+            subscription_bank,
             ..
         } = self;
 
@@ -65,9 +73,12 @@ impl<'info> CreateSubscriber<'_> {
             program_id: crate::ID,
             accounts: vec![
                 AccountMeta::new(subscriber.key(), false),
+                AccountMeta::new(subscriber_token_account.key(), false),
                 AccountMeta::new(subscription.key(), false),
                 AccountMeta::new_readonly(subscription_thread.key(), true),
-                AccountMeta::new_readonly(thread_program::ID, false),
+                AccountMeta::new(subscription_bank.key(), false),
+                AccountMeta::new_readonly(thread_program.key(), false),
+                AccountMeta::new_readonly(token_program.key(), false),
             ],
             data: clockwork_sdk::anchor_sighash("disburse_payment").into(),
         };

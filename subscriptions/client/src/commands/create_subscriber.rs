@@ -17,6 +17,7 @@ pub fn create_subscriber(
     subscription_thread: Pubkey,
     subscriber_token_account: Pubkey,
     mint: Pubkey,
+    subscription_bank: Pubkey,
 ) -> ClientResult<()> {
     let create_subscriber_ix = Instruction {
         program_id: subscriptions_program::ID,
@@ -25,6 +26,7 @@ pub fn create_subscriber(
             AccountMeta::new(subscriber, false),
             AccountMeta::new(subscriber_token_account, false),
             AccountMeta::new_readonly(subscription, false),
+            AccountMeta::new(subscription_bank, false),
             AccountMeta::new(subscription_thread, false),
             AccountMeta::new_readonly(mint, false),
             AccountMeta::new_readonly(thread_program::ID, false),

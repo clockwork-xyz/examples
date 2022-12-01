@@ -83,6 +83,7 @@ fn main() -> ClientResult<()> {
                 subscription_thread,
                 subscriber_token_account.unwrap(),
                 mint.unwrap(),
+                subscription_bank.unwrap(),
             )?;
         }
         "subscribe" => {
