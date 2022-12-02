@@ -42,7 +42,7 @@ fn main() -> ClientResult<()> {
         "create_subscription" => {
             let mut rng = rand::thread_rng();
             let subscription_id = rng.gen::<u64>();
-            let schedule = "* * * * * * *".to_string();
+            let schedule = "*/10 * * * * * *".to_string();
             let is_active = true;
 
             let (subscription, subscription_bump) = subscriptions_program::state::Subscription::pda(
@@ -67,14 +67,12 @@ fn main() -> ClientResult<()> {
             )?;
         }
         "create_subscriber" => {
-            let subscriber = subscriptions_program::state::Subscriber::pda(
+            let (subscriber, subscriber_bump) = subscriptions_program::state::Subscriber::pda(
                 client.payer_pubkey(),
                 subscription.unwrap(),
-            )
-            .0;
+            );
 
-            let subscription_thread =
-                Thread::pubkey(subscription.unwrap(), subscription_id.unwrap().to_string());
+            let subscription_thread = Thread::pubkey(subscriber, "subscriber_thread".to_string());
 
             create_subscriber(
                 &client,
@@ -84,6 +82,7 @@ fn main() -> ClientResult<()> {
                 subscriber_token_account.unwrap(),
                 mint.unwrap(),
                 subscription_bank.unwrap(),
+                subscriber_bump,
             )?;
         }
         "subscribe" => {

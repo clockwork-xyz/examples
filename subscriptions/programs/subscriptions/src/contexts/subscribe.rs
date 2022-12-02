@@ -30,7 +30,7 @@ pub struct Subscribe<'info> {
         address = Subscription::bank_pda(subscription.key(),subscription.owner.key()).0
     )]
     pub subscription_bank: Account<'info, TokenAccount>,
-    #[account(address = Thread::pubkey(subscription.key(),subscription.subscription_id.to_string()))]
+    #[account(address = Thread::pubkey(subscriber.key(),"subscriber_thread".to_string()))]
     pub subscription_thread: Box<Account<'info, Thread>>,
 
     #[account(address=subscription.mint)]
@@ -76,19 +76,19 @@ impl<'info> Subscribe<'_> {
         clockwork_sdk::thread_program::cpi::thread_resume(CpiContext::new_with_signer(
             thread_program.to_account_info(),
             clockwork_sdk::thread_program::cpi::accounts::ThreadResume {
-                authority: subscription.to_account_info(),
+                authority: subscriber.to_account_info(),
                 thread: subscription_thread.to_account_info(),
             },
             &[&[
-                SEED_SUBSCRIPTION,
-                subscription.owner.as_ref(),
-                &subscription.subscription_id.to_be_bytes(),
-                &[subscription.bump],
+                SEED_SUBSCRIBER,
+                payer.key().as_ref(),
+                subscription.key().as_ref(),
+                &[subscriber.bump],
             ]],
         ))?;
 
         subscriber.is_active = true;
-        subscriber.is_subscribed = true;
+        subscriber.last_subscribe_timestamp = Clock::get().unwrap().unix_timestamp;
         Ok(())
     }
 }

@@ -42,7 +42,7 @@ pub struct CreateSubscriber<'info> {
         address = Subscription::bank_pda(subscription.key(),subscription.owner.key()).0
     )]
     pub subscription_bank: Account<'info, TokenAccount>,
-    #[account(address = Thread::pubkey(subscription.key(),subscription.subscription_id.to_string()))]
+    #[account(address = Thread::pubkey(subscriber.key(),"subscriber_thread".to_string()))]
     pub subscription_thread: SystemAccount<'info>,
     pub mint: Account<'info, Mint>,
 
@@ -53,7 +53,7 @@ pub struct CreateSubscriber<'info> {
 }
 
 impl<'info> CreateSubscriber<'_> {
-    pub fn process(&mut self) -> Result<()> {
+    pub fn process(&mut self, subscriber_bump: u8) -> Result<()> {
         let Self {
             payer,
             subscriber,
@@ -67,7 +67,7 @@ impl<'info> CreateSubscriber<'_> {
             ..
         } = self;
 
-        subscriber.new(payer.key(), subscription.key(), false, true)?;
+        subscriber.new(payer.key(), subscription.key(), false, -1, subscriber_bump)?;
 
         let disburse_payment_ix = Instruction {
             program_id: crate::ID,
@@ -88,7 +88,7 @@ impl<'info> CreateSubscriber<'_> {
                 token_program.to_account_info(),
                 Approve {
                     authority: payer.to_account_info(),
-                    delegate: subscription.to_account_info(),
+                    delegate: subscriber.to_account_info(),
                     to: subscriber_token_account.to_account_info(),
                 },
             ),
@@ -99,19 +99,19 @@ impl<'info> CreateSubscriber<'_> {
             CpiContext::new_with_signer(
                 thread_program.to_account_info(),
                 clockwork_sdk::thread_program::cpi::accounts::ThreadCreate {
-                    authority: subscription.to_account_info(),
+                    authority: subscriber.to_account_info(),
                     payer: payer.to_account_info(),
                     system_program: system_program.to_account_info(),
                     thread: subscription_thread.to_account_info(),
                 },
                 &[&[
-                    SEED_SUBSCRIPTION,
-                    subscription.owner.as_ref(),
-                    &subscription.subscription_id.to_be_bytes(),
-                    &[subscription.bump],
+                    SEED_SUBSCRIBER,
+                    payer.key().as_ref(),
+                    subscription.key().as_ref(),
+                    &[subscriber_bump],
                 ]],
             ),
-            subscription.subscription_id.to_string(),
+            "subscriber_thread".to_string(),
             disburse_payment_ix.into(),
             Trigger::Cron {
                 schedule: subscription.schedule.clone(),
@@ -122,14 +122,14 @@ impl<'info> CreateSubscriber<'_> {
         clockwork_sdk::thread_program::cpi::thread_pause(CpiContext::new_with_signer(
             thread_program.to_account_info(),
             clockwork_sdk::thread_program::cpi::accounts::ThreadPause {
-                authority: subscription.to_account_info(),
+                authority: subscriber.to_account_info(),
                 thread: subscription_thread.to_account_info(),
             },
             &[&[
-                SEED_SUBSCRIPTION,
-                subscription.owner.as_ref(),
-                &subscription.subscription_id.to_be_bytes(),
-                &[subscription.bump],
+                SEED_SUBSCRIBER,
+                payer.key().as_ref(),
+                subscription.key().as_ref(),
+                &[subscriber_bump],
             ]],
         ))?;
 

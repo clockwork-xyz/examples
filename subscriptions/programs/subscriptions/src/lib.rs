@@ -36,8 +36,11 @@ pub mod subscriptions_program {
     /*
      * create subscriber
      */
-    pub fn create_subscriber<'info>(ctx: Context<CreateSubscriber>) -> Result<()> {
-        ctx.accounts.process()
+    pub fn create_subscriber<'info>(
+        ctx: Context<CreateSubscriber>,
+        subscriber_bump: u8,
+    ) -> Result<()> {
+        ctx.accounts.process(subscriber_bump)
     }
 
     /*

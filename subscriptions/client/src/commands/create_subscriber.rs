@@ -18,6 +18,7 @@ pub fn create_subscriber(
     subscriber_token_account: Pubkey,
     mint: Pubkey,
     subscription_bank: Pubkey,
+    subscriber_bump: u8,
 ) -> ClientResult<()> {
     let create_subscriber_ix = Instruction {
         program_id: subscriptions_program::ID,
@@ -33,7 +34,7 @@ pub fn create_subscriber(
             AccountMeta::new_readonly(system_program::ID, false),
             AccountMeta::new_readonly(token::ID, false),
         ],
-        data: subscriptions_program::instruction::CreateSubscriber {}.data(),
+        data: subscriptions_program::instruction::CreateSubscriber { subscriber_bump }.data(),
     };
 
     send_and_confirm_tx(

@@ -30,8 +30,8 @@ pub struct DisbursePayment<'info> {
     #[account(
         signer,
         address = subscription_thread.pubkey(),
-        constraint = subscription_thread.authority.eq(&subscription.owner),
-        constraint = subscription_thread.id.eq("subscription"),
+        constraint = subscription_thread.authority.eq(&subscriber.key()),
+        constraint = subscription_thread.id.eq("subscriber_thread"),
     )]
     pub subscription_thread: Box<Account<'info, Thread>>,
     #[account(
@@ -61,7 +61,6 @@ impl<'info> DisbursePayment<'_> {
         } = self;
 
         if !subscriber.is_active || !subscription.is_active {
-            subscriber.is_subscribed = false;
             clockwork_sdk::thread_program::cpi::thread_stop(CpiContext::new_with_signer(
                 thread_program.to_account_info(),
                 clockwork_sdk::thread_program::cpi::accounts::ThreadStop {
@@ -69,10 +68,10 @@ impl<'info> DisbursePayment<'_> {
                     thread: subscription_thread.to_account_info(),
                 },
                 &[&[
-                    SEED_SUBSCRIPTION,
-                    subscription.owner.as_ref(),
-                    &subscription.subscription_id.to_be_bytes(),
-                    &[subscription.bump],
+                    SEED_SUBSCRIBER,
+                    subscriber.owner.as_ref(),
+                    subscription.key().as_ref(),
+                    &[subscriber.bump],
                 ]],
             ))?;
         } else {
@@ -81,43 +80,46 @@ impl<'info> DisbursePayment<'_> {
                 .checked_sub(subscription.recurrent_amount);
             match amount_left {
                 Some(_) => {
-                    subscriber.is_subscribed = true;
+                    subscriber.is_active = true;
+                    subscriber.last_subscribe_timestamp = Clock::get().unwrap().unix_timestamp;
                     token::transfer(
                         CpiContext::new_with_signer(
                             token_program.to_account_info(),
                             Transfer {
-                                authority: subscription.to_account_info(),
+                                authority: subscriber.to_account_info(),
                                 from: subscriber_token_account.to_account_info(),
                                 to: subscription_bank.to_account_info(),
                             },
                             &[&[
-                                SEED_SUBSCRIPTION,
-                                subscription.owner.as_ref(),
-                                &subscription.subscription_id.to_be_bytes(),
-                                &[subscription.bump],
+                                SEED_SUBSCRIBER,
+                                subscriber.owner.as_ref(),
+                                subscription.key().as_ref(),
+                                &[subscriber.bump],
                             ]],
                         ),
                         subscription.recurrent_amount,
                     )?;
                 }
                 None => {
-                    subscriber.is_subscribed = false;
+                    subscriber.is_active = false;
                     clockwork_sdk::thread_program::cpi::thread_stop(CpiContext::new_with_signer(
                         thread_program.to_account_info(),
                         clockwork_sdk::thread_program::cpi::accounts::ThreadStop {
-                            authority: subscription.to_account_info(),
+                            authority: subscriber.to_account_info(),
                             thread: subscription_thread.to_account_info(),
                         },
                         &[&[
-                            SEED_SUBSCRIPTION,
-                            subscription.owner.as_ref(),
-                            &subscription.subscription_id.to_be_bytes(),
-                            &[subscription.bump],
+                            SEED_SUBSCRIBER,
+                            subscriber.owner.as_ref(),
+                            subscription.key().as_ref(),
+                            &[subscriber.bump],
                         ]],
                     ))?;
                 }
             }
         }
+
+        msg!("{:?}", subscriber.last_subscribe_timestamp);
 
         Ok(ExecResponse::default())
     }

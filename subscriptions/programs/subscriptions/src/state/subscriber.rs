@@ -14,8 +14,9 @@ pub const SEED_SUBSCRIBER: &[u8] = b"subscriber";
 pub struct Subscriber {
     pub owner: Pubkey,
     pub subscription: Pubkey,
-    pub is_subscribed: bool,
     pub is_active: bool,
+    pub last_subscribe_timestamp: i64,
+    pub bump: u8,
 }
 
 impl Subscriber {
@@ -39,8 +40,9 @@ pub trait SubscriberAccount {
         &mut self,
         owner: Pubkey,
         subscription: Pubkey,
-        is_subscribed: bool,
         is_active: bool,
+        last_subscribe_timestamp: i64,
+        bump: u8,
     ) -> Result<()>;
 }
 
@@ -49,13 +51,15 @@ impl SubscriberAccount for Account<'_, Subscriber> {
         &mut self,
         owner: Pubkey,
         subscription: Pubkey,
-        is_subscribed: bool,
         is_active: bool,
+        last_subscribe_timestamp: i64,
+        bump: u8,
     ) -> Result<()> {
         self.owner = owner;
         self.subscription = subscription;
-        self.is_subscribed = is_subscribed;
         self.is_active = is_active;
+        self.last_subscribe_timestamp = last_subscribe_timestamp;
+        self.bump = bump;
         Ok(())
     }
 }
