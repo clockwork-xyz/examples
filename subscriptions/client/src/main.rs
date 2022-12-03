@@ -99,10 +99,24 @@ fn main() -> ClientResult<()> {
         "unsubscribe" => {
             unsubscribe(&client, subscriber.unwrap(), subscription.unwrap())?;
         }
+        "deactivate_subscription" => {
+            deactivate_subscription(&client, subscription.unwrap(), mint.unwrap())?;
+        }
+        "withdraw" => {
+            withdraw(
+                &client,
+                subscriber_token_account.unwrap(),
+                subscription_bank.unwrap(),
+                subscription.unwrap(),
+                mint.unwrap(),
+            )?;
+        }
         _ => {
             println!("Available Commands");
             println!("cargo run -- --command create_mint");
             println!("cargo run -- --command create_subscription --recurrent_amount <amount>");
+            println!("cargo run -- --command deactivate_subscription");
+            println!("cargo run -- --command withdraw");
             println!("cargo run -- --command create_subscriber");
             println!("cargo run -- --command subscribe");
             println!("cargo run -- --command unsubscribe");

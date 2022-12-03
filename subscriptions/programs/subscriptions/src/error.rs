@@ -6,4 +6,6 @@ pub enum ErrorCode {
     InsuffiscientAmount,
     #[msg("Subscription is inactive")]
     SubscriptionInactive,
+    #[msg("payer is not the owner of the subscription")]
+    NotOwner,
 }
