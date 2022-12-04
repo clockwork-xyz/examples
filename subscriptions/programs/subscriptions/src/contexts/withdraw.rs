@@ -1,5 +1,5 @@
 use {
-    crate::{error::ErrorCode, state::*},
+    crate::state::*,
     anchor_lang::prelude::*,
     anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer},
 };
@@ -7,15 +7,15 @@ use {
 #[derive(Accounts)]
 pub struct Withdraw<'info> {
     #[account(mut)]
-    pub payer: Signer<'info>,
+    pub owner: Signer<'info>,
     #[account(
         mut,
         token::mint = mint,
-        token::authority = payer,
+        token::authority = owner,
     )]
     pub payer_token_account: Account<'info, TokenAccount>,
 
-    #[account(mut, address = Subscription::pda(subscription.owner.key(),subscription.subscription_id.clone()).0)]
+    #[account(mut, address = Subscription::pda(subscription.owner.key(),subscription.subscription_id.clone()).0, has_one=owner)]
     pub subscription: Account<'info, Subscription>,
     #[account(
         mut,
@@ -33,15 +33,13 @@ pub struct Withdraw<'info> {
 impl<'info> Withdraw<'_> {
     pub fn process(&mut self) -> Result<()> {
         let Self {
-            payer,
+            owner,
             subscription,
             token_program,
             payer_token_account,
             subscription_bank,
             ..
         } = self;
-
-        require!(subscription.owner == payer.key(), ErrorCode::NotOwner);
 
         token::transfer(
             CpiContext::new_with_signer(
@@ -53,7 +51,7 @@ impl<'info> Withdraw<'_> {
                 },
                 &[&[
                     SEED_SUBSCRIPTION,
-                    payer.key().as_ref(),
+                    owner.key().as_ref(),
                     &subscription.subscription_id.to_be_bytes(),
                     &[subscription.bump],
                 ]],

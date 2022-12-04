@@ -3,8 +3,8 @@ use {crate::state::*, anchor_lang::prelude::*, anchor_spl::token::Mint};
 #[derive(Accounts)]
 pub struct DeactivateSubscription<'info> {
     #[account(mut, address=subscription.owner)]
-    pub payer: Signer<'info>,
-    #[account(mut, address = Subscription::pda(subscription.owner.key(),subscription.subscription_id.clone()).0)]
+    pub owner: Signer<'info>,
+    #[account(mut, address = Subscription::pda(subscription.owner.key(),subscription.subscription_id.clone()).0, has_one=owner)]
     pub subscription: Account<'info, Subscription>,
     #[account(address=subscription.mint)]
     pub mint: Account<'info, Mint>,
