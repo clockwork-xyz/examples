@@ -1,12 +1,8 @@
-use {
-    crate::{error::ErrorCode, state::*},
-    anchor_lang::prelude::*,
-    anchor_spl::token::Mint,
-};
+use {crate::state::*, anchor_lang::prelude::*, anchor_spl::token::Mint};
 
 #[derive(Accounts)]
 pub struct DeactivateSubscription<'info> {
-    #[account(mut)]
+    #[account(mut, address=subscription.owner)]
     pub payer: Signer<'info>,
     #[account(mut, address = Subscription::pda(subscription.owner.key(),subscription.subscription_id.clone()).0)]
     pub subscription: Account<'info, Subscription>,
@@ -16,13 +12,8 @@ pub struct DeactivateSubscription<'info> {
 
 impl<'info> DeactivateSubscription<'_> {
     pub fn process(&mut self) -> Result<()> {
-        let Self {
-            payer,
-            subscription,
-            ..
-        } = self;
+        let Self { subscription, .. } = self;
 
-        require!(subscription.owner == payer.key(), ErrorCode::NotOwner);
         subscription.is_active = false;
         Ok(())
     }
