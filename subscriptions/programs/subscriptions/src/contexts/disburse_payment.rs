@@ -81,7 +81,7 @@ impl<'info> DisbursePayment<'_> {
             match amount_left {
                 Some(_) => {
                     subscriber.is_active = true;
-                    subscriber.last_subscribe_timestamp = Clock::get().unwrap().unix_timestamp;
+                    subscriber.last_transfer_at = Some(Clock::get().unwrap().unix_timestamp);
                     token::transfer(
                         CpiContext::new_with_signer(
                             token_program.to_account_info(),
@@ -118,7 +118,6 @@ impl<'info> DisbursePayment<'_> {
                 }
             }
         }
-
         msg!("{:?}", subscriber.last_subscribe_timestamp);
 
         Ok(ThreadResponse::default())

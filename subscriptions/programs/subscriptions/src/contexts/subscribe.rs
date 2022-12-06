@@ -57,7 +57,7 @@ impl<'info> Subscribe<'_> {
 
         require!(
             subscriber_token_account.amount >= subscription.recurrent_amount,
-            ErrorCode::InsuffiscientAmountLocked
+            ErrorCode::InsuffiscientAmount
         );
         require!(subscription.is_active, ErrorCode::SubscriptionInactive);
 
@@ -88,7 +88,7 @@ impl<'info> Subscribe<'_> {
         ))?;
 
         subscriber.is_active = true;
-        subscriber.last_subscribe_timestamp = Clock::get().unwrap().unix_timestamp;
+        subscriber.last_transfer_at = Some(Clock::get().unwrap().unix_timestamp);
         Ok(())
     }
 }

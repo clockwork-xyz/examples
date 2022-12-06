@@ -67,7 +67,7 @@ impl<'info> CreateSubscriber<'_> {
             ..
         } = self;
 
-        subscriber.new(payer.key(), subscription.key(), false, -1, subscriber_bump)?;
+        subscriber.new(payer.key(), subscription.key(), false, subscriber_bump)?;
 
         let disburse_payment_ix = Instruction {
             program_id: crate::ID,
