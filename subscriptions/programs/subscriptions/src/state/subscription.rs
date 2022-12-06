@@ -72,7 +72,7 @@ impl SubscriptionAccount for Account<'_, Subscription> {
         mint: Pubkey,
         recurrent_amount: u64,
         schedule: String,
-        is_acitve: bool,
+        is_active: bool,
         subscription_id: u64,
         bump: u8,
     ) -> Result<()> {
@@ -80,7 +80,7 @@ impl SubscriptionAccount for Account<'_, Subscription> {
         self.mint = mint;
         self.recurrent_amount = recurrent_amount;
         self.schedule = schedule;
-        self.is_active = is_acitve;
+        self.is_active = is_active;
         self.subscription_id = subscription_id;
         self.bump = bump;
         Ok(())

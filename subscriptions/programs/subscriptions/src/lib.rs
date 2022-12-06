@@ -34,6 +34,20 @@ pub mod subscriptions_program {
     }
 
     /*
+     * Deactivate subscription
+     */
+    pub fn deactivate_subscription<'info>(ctx: Context<DeactivateSubscription>) -> Result<()> {
+        ctx.accounts.process()
+    }
+
+    /*
+     * Withdraw from subscription bank
+     */
+    pub fn withdraw<'info>(ctx: Context<Withdraw>) -> Result<()> {
+        ctx.accounts.process()
+    }
+
+    /*
      * create subscriber
      */
     pub fn create_subscriber<'info>(

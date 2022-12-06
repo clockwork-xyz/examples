@@ -15,7 +15,7 @@ pub struct Subscriber {
     pub owner: Pubkey,
     pub subscription: Pubkey,
     pub is_active: bool,
-    pub last_subscribe_timestamp: i64,
+    pub last_transfer_at: Option<i64>,
     pub bump: u8,
 }
 
@@ -36,14 +36,8 @@ impl TryFrom<Vec<u8>> for Subscriber {
 }
 
 pub trait SubscriberAccount {
-    fn new(
-        &mut self,
-        owner: Pubkey,
-        subscription: Pubkey,
-        is_active: bool,
-        last_subscribe_timestamp: i64,
-        bump: u8,
-    ) -> Result<()>;
+    fn new(&mut self, owner: Pubkey, subscription: Pubkey, is_active: bool, bump: u8)
+        -> Result<()>;
 }
 
 impl SubscriberAccount for Account<'_, Subscriber> {
@@ -52,13 +46,12 @@ impl SubscriberAccount for Account<'_, Subscriber> {
         owner: Pubkey,
         subscription: Pubkey,
         is_active: bool,
-        last_subscribe_timestamp: i64,
         bump: u8,
     ) -> Result<()> {
         self.owner = owner;
         self.subscription = subscription;
         self.is_active = is_active;
-        self.last_subscribe_timestamp = last_subscribe_timestamp;
+        self.last_transfer_at = None;
         self.bump = bump;
         Ok(())
     }
