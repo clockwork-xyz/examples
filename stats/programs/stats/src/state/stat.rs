@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 
 pub const SEED_STAT: &[u8] = b"stat";
 
-pub const PRICE_ARRAY_SIZE: usize = 300;
+pub const PRICE_ARRAY_SIZE: usize = 5;
 
 /**
  * Stat
@@ -59,13 +59,18 @@ impl Stat {
 
     fn push(&mut self, price: Price) -> Result<()> {
         // if array is full pop element to avoid overflow
-        if Stat::index_of(self.head) == Stat::index_of(self.tail) {
+        if Stat::index_of(self.head + 1) == Stat::index_of(self.tail) {
             self.pop()?;
+        }
+
+        if Stat::index_of(self.head + 1) == 0 {
+            self.head = 0;
+        } else if self.sample_count > 0 {
+            self.head = self.head.checked_add(1).unwrap();
         }
 
         self.price_history[Stat::index_of(self.head)] = price;
 
-        self.head = self.head.checked_add(1).unwrap();
         self.sample_count = self.sample_count.checked_add(1).unwrap();
         self.sample_sum = self.sample_sum.checked_add(price.price).unwrap();
 
@@ -78,7 +83,12 @@ impl Stat {
 
             self.price_history[Stat::index_of(self.tail)] = Price::default();
 
-            self.tail = self.tail.checked_add(1).unwrap();
+            if Stat::index_of(self.tail + 1) == 0 {
+                self.tail = 0;
+            } else {
+                self.tail = self.tail.checked_add(1).unwrap();
+            }
+
             self.sample_count = self.sample_count.checked_sub(1).unwrap();
             self.sample_sum = self.sample_sum.checked_sub(popped_element.price).unwrap();
 
@@ -97,7 +107,7 @@ impl Stat {
         if self.sample_count == 0 {
             self.push(price)?;
         } else {
-            let newest_price = self.price_history[Stat::index_of(self.head - 1 as u64)];
+            let newest_price = self.price_history[Stat::index_of(self.head as u64)];
             let oldest_price = self.price_history[Stat::index_of(self.tail as u64)];
 
             // if the latest price is after sample rate threshhold then insert new pricing data
@@ -111,17 +121,6 @@ impl Stat {
             {
                 let _popped_element = self.pop()?;
             }
-
-            msg!(
-                "     oldest - ts: {}, price: {}",
-                oldest_price.timestamp,
-                oldest_price.price
-            );
-            msg!(
-                "     newest - ts: {}, price: {}",
-                newest_price.timestamp,
-                newest_price.price
-            );
         }
 
         match self.sample_sum.checked_div(self.sample_count) {
