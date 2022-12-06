@@ -35,15 +35,19 @@ pub struct Calc<'info> {
 
 pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<()> {
     let price_feed = &ctx.accounts.price_feed;
-    let stat = &mut ctx.accounts.stat.load_mut().unwrap();
+    let mut stat = ctx.accounts.stat.load_mut()?;
 
     match load_price_feed_from_account_info(&price_feed.to_account_info()) {
         Ok(price_feed) => { 
-            // get price unchecked
-            let price = price_feed.get_price_unchecked();
-            // calculate time weighted average
-            stat.twap(price.publish_time, price.price)?;
 
+            let price = price_feed.get_price_unchecked();
+
+            stat.twap(Price { price: price.price, timestamp: price.publish_time })?;
+
+            msg!("------------LIVE DATA------------");
+            msg!("     live price: {}", price.price);
+            msg!("      live time: {}", price.publish_time);
+            msg!("--------STATS ACCOUNT DATA-------");
             msg!("     price feed: {}", stat.price_feed);
             msg!("      authority: {}", stat.authority);
             msg!("      TWA Price: {}", stat.twap);
@@ -51,6 +55,9 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<()> {
             msg!("    sample rate: {}", stat.sample_rate);
             msg!("   sample count: {}", stat.sample_count);
             msg!("     sample sum: {}", stat.sample_sum);
+            msg!("           tail: {}", stat.tail);
+            msg!("           head: {}", stat.head);
+            msg!("---------------------------------");
         },
         Err(_) => {},
     }

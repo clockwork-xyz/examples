@@ -2,23 +2,25 @@ use anchor_lang::prelude::*;
 
 pub const SEED_STAT: &[u8] = b"stat";
 
+pub const PRICE_ARRAY_SIZE: usize = 300;
+
 /**
  * Stat
  */
 
 #[account(zero_copy)]
-#[derive(Debug)]
 pub struct Stat {
-    pub price_feed: Pubkey,
-    pub authority: Pubkey,
-    pub price_history: [Price; 30000],
-    pub lookback_window: i64,
-    pub sample_count: i64,
-    pub sample_sum: i64,
-    pub sample_rate: i64,
-    pub twap: i64,
-    head: u64,
-    tail: u64,
+    pub price_feed: Pubkey,                       // 32
+    pub authority: Pubkey,                        // 32
+    pub price_history: [Price; PRICE_ARRAY_SIZE], // 16 * 655_347
+    pub lookback_window: i64,                     // 8
+    pub sample_count: i64,                        // 8
+    pub sample_sum: i64,                          // 8
+    pub sample_rate: i64,                         // 8
+    pub twap: i64,                                // 8
+    pub head: u64,                                // 8
+    pub tail: u64,                                // 8
+                                                  // = 32 + 32 + (16 * 655,347) + 8 + 8 + 8 + 8 + 8 + 8 + 8   = ~10,485,680 bytes
 }
 
 impl Stat {
@@ -44,7 +46,7 @@ impl Stat {
     ) -> Result<()> {
         self.price_feed = price_feed;
         self.authority = authority;
-        self.price_history = [Price::default(); 30000];
+        self.price_history = [Price::default(); PRICE_ARRAY_SIZE];
         self.lookback_window = lookback_window;
         self.sample_count = 0;
         self.sample_sum = 0;
@@ -55,68 +57,59 @@ impl Stat {
         Ok(())
     }
 
-    fn push(&mut self, price: Price) {
-        self.price_history[Stat::index_of(self.head)] = price;
-
-        if Stat::index_of(self.head + 1) == Stat::index_of(self.tail) {
-            self.tail.checked_add(1).unwrap();
+    fn push(&mut self, price: Price) -> Result<()> {
+        // if array is full pop element to avoid overflow
+        if Stat::index_of(self.head) == Stat::index_of(self.tail) {
+            self.pop()?;
         }
 
-        self.head.checked_add(1).unwrap();
-        self.sample_count.checked_add(1).unwrap();
-        self.sample_sum.checked_add(price.price).unwrap();
+        self.price_history[Stat::index_of(self.head)] = price;
+
+        self.head = self.head.checked_add(1).unwrap();
+        self.sample_count = self.sample_count.checked_add(1).unwrap();
+        self.sample_sum = self.sample_sum.checked_add(price.price).unwrap();
+
+        Ok(())
     }
 
-    fn pop(&mut self) -> Option<Price> {
+    fn pop(&mut self) -> Result<Option<Price>> {
         if self.sample_count > 0 {
             let popped_element = self.price_history[Stat::index_of(self.tail)];
 
             self.price_history[Stat::index_of(self.tail)] = Price::default();
 
-            if Stat::index_of(self.tail) == Stat::index_of(self.head) {
-                self.head.checked_add(1).unwrap();
-            }
+            self.tail = self.tail.checked_add(1).unwrap();
+            self.sample_count = self.sample_count.checked_sub(1).unwrap();
+            self.sample_sum = self.sample_sum.checked_sub(popped_element.price).unwrap();
 
-            self.tail.checked_add(1).unwrap();
-            self.sample_count.checked_sub(1).unwrap();
-            self.sample_sum.checked_sub(popped_element.price).unwrap();
-
-            return Some(popped_element);
+            return Ok(Some(popped_element));
         }
 
-        None
+        Ok(None)
     }
 
-    fn index_of(counter: u64) -> usize {
-        std::convert::TryInto::try_into(counter % 30000).unwrap()
+    pub fn index_of(counter: u64) -> usize {
+        std::convert::TryInto::try_into(counter % PRICE_ARRAY_SIZE as u64).unwrap()
     }
 
-    fn get(&mut self, index: usize) -> Option<Price> {
-        if index < self.sample_count as usize {
-            None
-        } else {
-            Some(self.price_history[Stat::index_of(index as u64)])
-        }
-    }
-
-    pub fn twap(&mut self, timestamp: i64, price: i64) -> Result<()> {
+    pub fn twap(&mut self, price: Price) -> Result<()> {
         // always insert first encountered pricing data
         if self.sample_count == 0 {
-            self.push(Price { price, timestamp });
+            self.push(price)?;
         } else {
-            let newest_price = self.get(self.head as usize).unwrap();
-            let oldest_price = self.get(self.tail as usize).unwrap();
+            let newest_price = self.price_history[Stat::index_of(self.head - 1 as u64)];
+            let oldest_price = self.price_history[Stat::index_of(self.tail as u64)];
 
             // if the latest price is after sample rate threshhold then insert new pricing data
-            if timestamp >= newest_price.timestamp + self.sample_rate {
-                self.push(Price { price, timestamp });
+            if price.timestamp >= newest_price.timestamp + self.sample_rate {
+                self.push(price)?;
             }
 
             // while oldest pricing data is less lookback window then pop that element
             while oldest_price.timestamp
                 < Clock::get().unwrap().unix_timestamp - self.lookback_window.clone()
             {
-                self.pop();
+                let _popped_element = self.pop()?;
             }
 
             msg!(
@@ -150,6 +143,6 @@ impl TryFrom<Vec<u8>> for Stat {
 #[zero_copy]
 #[derive(Default, Debug)]
 pub struct Price {
-    pub price: i64,
-    pub timestamp: i64,
+    pub price: i64,     // 8
+    pub timestamp: i64, // 8
 }

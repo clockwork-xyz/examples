@@ -51,8 +51,10 @@ fn main() -> ClientResult<()> {
         &client,
         sol_usd_pubkey,
         Cluster::Mainnet,
-        "sol_usd_stat_test_5".into(),
+        "sol_usd_stat".into(),
     )?;
+
+    // delete_stat_account(client)?;
 
     Ok(())
 }
@@ -61,13 +63,14 @@ fn create_feed(
     client: &Client,
     price_feed_pubkey: Pubkey,
     cluster: Cluster,
-    stat_id: &str,
+    thread_id: &str,
 ) -> ClientResult<()> {
+    let lookback_window: i64 = 80000;
     let stat_pubkey =
-        stats::state::Stat::pubkey(price_feed_pubkey, client.payer_pubkey(), stat_id.into());
+        stats::state::Stat::pubkey(price_feed_pubkey, client.payer_pubkey(), lookback_window);
     let stat_thread_pubkey = clockwork_sdk::thread_program::accounts::Thread::pubkey(
         client.payer_pubkey(),
-        stat_id.into(),
+        thread_id.into(),
     );
 
     print_explorer_link(stat_pubkey, "stat account".into(), cluster)?;
@@ -89,24 +92,20 @@ fn create_feed(
             AccountMeta::new_readonly(system_program::ID, false),
         ],
         data: stats::instruction::Initialize {
-            // 24 hours in seconds
-            lookback_window: 86400,
+            lookback_window,
             sample_rate: 10,
-            id: stat_id.into(),
         }
         .data(),
     };
 
     let create_thread_ix = thread_create(
         client.payer_pubkey(),
-        stat_id.into(),
+        thread_id.into(),
         Instruction {
             program_id: stats::ID,
             accounts: vec![
                 AccountMeta::new(stat_pubkey, false),
-                AccountMeta::new(clockwork_sdk::PAYER_PUBKEY, true),
                 AccountMeta::new_readonly(price_feed_pubkey, false),
-                AccountMeta::new_readonly(system_program::ID, false),
                 AccountMeta::new(stat_thread_pubkey, true),
             ],
             data: stats::instruction::Calc {}.data(),
@@ -127,6 +126,32 @@ fn create_feed(
         None,
         "init stat account and stat thread".into(),
         cluster,
+    )?;
+
+    Ok(())
+}
+
+pub fn delete_stat_account(client: Client) -> ClientResult<()> {
+    let sol_usd_pubkey = Pubkey::from_str("H6ARHf6YXhGYeQfUzQNGk6rDNnLBQKrenN712K4AQJEG").unwrap();
+    let lookback_window: i64 = 86400; // 24 HOURS
+    let stat_pubkey =
+        stats::state::Stat::pubkey(sol_usd_pubkey, client.payer_pubkey(), lookback_window);
+
+    let delete_ix = Instruction {
+        program_id: stats::ID,
+        accounts: vec![
+            AccountMeta::new(client.payer_pubkey(), true),
+            AccountMeta::new(stat_pubkey, false),
+        ],
+        data: stats::instruction::Delete {}.data(),
+    };
+
+    sign_send_and_confirm_tx(
+        &client,
+        [delete_ix].to_vec(),
+        None,
+        "delete stat account".into(),
+        Cluster::Mainnet,
     )?;
 
     Ok(())
