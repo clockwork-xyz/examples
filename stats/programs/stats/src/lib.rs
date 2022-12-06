@@ -22,7 +22,4 @@ pub mod stats {
     pub fn calc(ctx: Context<Calc>) -> Result<()> {
         calc::handler(ctx)
     }
-    pub fn delete(ctx: Context<Delete>) -> Result<()> {
-        delete::handler(ctx)
-    }
 }
