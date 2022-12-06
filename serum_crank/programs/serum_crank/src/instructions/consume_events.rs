@@ -6,7 +6,7 @@ use {
     },
     anchor_lang::solana_program::program::invoke_signed,
     anchor_spl::{token::TokenAccount, dex::serum_dex},
-    clockwork_sdk::{PAYER_PUBKEY, InstructionData, thread_program::accounts::{Thread, ThreadAccount}, ExecResponse},
+    clockwork_sdk::{PAYER_PUBKEY, InstructionData, thread_program::accounts::{Thread, ThreadAccount}, ThreadResponse},
 };
 
 #[derive(Accounts)]
@@ -49,7 +49,7 @@ pub struct ConsumeEvents<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, ConsumeEvents<'info>>) -> Result<ExecResponse> {
+pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, ConsumeEvents<'info>>) -> Result<ThreadResponse> {
     // Get accounts
     let crank = &ctx.accounts.crank;
     let crank_thread = &ctx.accounts.crank_thread;
@@ -115,14 +115,14 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, ConsumeEvents<'info>>) -> 
         invoke_signed(&consume_events_ix, &cpi_account_infos,&[&[SEED_CRANK, crank.market.as_ref(), &[bump]]])?;
 
         // read events again bc there might be more open orders
-        return Ok(ExecResponse {
+        return Ok(ThreadResponse {
             kickoff_instruction: None,
             next_instruction: read_events_ix
         });
     }
 
     // end execution context because there are no more events to consume
-    Ok(ExecResponse {
+    Ok(ThreadResponse {
         kickoff_instruction: read_events_ix,
         next_instruction: None,
     })

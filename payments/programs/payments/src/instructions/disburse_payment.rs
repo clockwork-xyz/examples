@@ -5,7 +5,7 @@ use {
         associated_token::AssociatedToken,
         token::{self, Mint, TokenAccount, Transfer}
     },
-    clockwork_sdk::{thread_program::accounts::{Thread, ThreadAccount}, ExecResponse},
+    clockwork_sdk::{thread_program::accounts::{Thread, ThreadAccount}, ThreadResponse},
 };
 
 #[derive(Accounts)]
@@ -74,7 +74,7 @@ pub struct DisbursePayment<'info> {
     pub token_program: Program<'info, anchor_spl::token::Token>,
 }
 
-pub fn handler(ctx: Context<DisbursePayment>) -> Result<ExecResponse> {
+pub fn handler(ctx: Context<DisbursePayment>) -> Result<ThreadResponse> {
     // Get accounts.
     let authority_token_account = &mut ctx.accounts.authority_token_account;
     let payment = &mut ctx.accounts.payment;
@@ -101,5 +101,5 @@ pub fn handler(ctx: Context<DisbursePayment>) -> Result<ExecResponse> {
         payment.amount,
     )?;
 
-    Ok(ExecResponse::default())
+    Ok(ThreadResponse::default())
 }
