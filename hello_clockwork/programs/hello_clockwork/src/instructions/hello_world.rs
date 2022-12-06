@@ -2,7 +2,7 @@ use {
     anchor_lang::prelude::*,
     clockwork_sdk::{
         thread_program::accounts::{Thread, ThreadAccount},
-        ExecResponse,
+        ThreadResponse,
     },
 };
 #[derive(Accounts)]
@@ -12,14 +12,14 @@ pub struct HelloWorld<'info> {
     pub hello_thread: Account<'info, Thread>,
 }
 
-pub fn handler(_ctx: Context<HelloWorld>, name: String) -> Result<ExecResponse> {
+pub fn handler(_ctx: Context<HelloWorld>, name: String) -> Result<ThreadResponse> {
     msg!(
         "Hello {}! The current time is: {}",
         name,
         Clock::get().unwrap().unix_timestamp
     );
 
-    Ok(ExecResponse {
+    Ok(ThreadResponse {
         next_instruction: None,
         kickoff_instruction: None,
     })

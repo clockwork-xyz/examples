@@ -8,7 +8,7 @@ use {
             accounts::{Thread, ThreadAccount},
             ThreadProgram,
         },
-        ExecResponse,
+        ThreadResponse,
     },
 };
 
@@ -48,7 +48,7 @@ pub struct DisbursePayment<'info> {
 }
 
 impl<'info> DisbursePayment<'_> {
-    pub fn process(&mut self) -> Result<ExecResponse> {
+    pub fn process(&mut self) -> Result<ThreadResponse> {
         let Self {
             subscriber,
             subscription,
@@ -118,6 +118,8 @@ impl<'info> DisbursePayment<'_> {
                 }
             }
         }
-        Ok(ExecResponse::default())
+        msg!("{:?}", subscriber.last_subscribe_timestamp);
+
+        Ok(ThreadResponse::default())
     }
 }

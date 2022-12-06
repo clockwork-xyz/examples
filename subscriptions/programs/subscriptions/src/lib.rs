@@ -76,7 +76,7 @@ pub mod subscriptions_program {
      */
     pub fn disburse_payment<'info>(
         ctx: Context<DisbursePayment>,
-    ) -> Result<clockwork_sdk::ExecResponse> {
+    ) -> Result<clockwork_sdk::ThreadResponse> {
         ctx.accounts.process()
     }
 }

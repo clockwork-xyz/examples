@@ -6,7 +6,7 @@ use {
         solana_program::{system_program,instruction::Instruction},
     },
     anchor_spl::{dex::serum_dex::state::{strip_header, EventQueueHeader, Event, Queue as SerumDexQueue}, token::TokenAccount},
-    clockwork_sdk::{thread_program::accounts::{Thread}, ExecResponse}
+    clockwork_sdk::{thread_program::accounts::{Thread}, ThreadResponse}
 };
 
 #[derive(Accounts)]
@@ -49,7 +49,7 @@ pub struct ReadEvents<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, ReadEvents<'info>>) -> Result<ExecResponse> {
+pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, ReadEvents<'info>>) -> Result<ThreadResponse> {
     // Get accounts
     let crank = &mut ctx.accounts.crank;
     let crank_thread = &mut ctx.accounts.crank_thread;
@@ -110,7 +110,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, ReadEvents<'info>>) -> Res
     }  
     
     // return consume events ix
-    Ok(ExecResponse { 
+    Ok(ThreadResponse { 
         kickoff_instruction: None,
         next_instruction: Some(
             Instruction {
