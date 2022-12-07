@@ -44,8 +44,7 @@ Let's see how we can observe our newly created Thread:
 ```bash
 thread_create tx: ✅ https://explorer.solana.com/tx/...
 ```
-- Additionally, the client will also print an url to inspect the Thread with the [Clockwork Explorer](https://explorer.
-  clockwork.xyz/)
+- Additionally, the client will also print an url to inspect the Thread with the [Clockwork Explorer](https://explorer.clockwork.xyz/)
 ```bash
 https://explorer.clockwork.xyz/address/...
 ```
