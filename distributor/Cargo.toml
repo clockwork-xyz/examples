@@ -7,4 +7,4 @@ members = [
 [patch.crates-io]
 anchor-lang = { git = "https://github.com/clockwork-xyz/anchor", branch = "0.25.0-solana.1.13.4" }
 anchor-spl = { git = "https://github.com/clockwork-xyz/anchor", branch = "0.25.0-solana.1.13.4" }
-clockwork-sdk = { git = "https://github.com/clockwork-xyz/clockwork", tag = "v1.3.8" }
+clockwork-sdk = { git = "https://github.com/clockwork-xyz/clockwork", tag = "v1.3.9" }
