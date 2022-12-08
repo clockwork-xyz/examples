@@ -9,6 +9,7 @@ pub use id::ID;
 
 #[program]
 pub mod subscriptions_program {
+
     use super::*;
 
     /*
@@ -45,6 +46,16 @@ pub mod subscriptions_program {
      */
     pub fn withdraw<'info>(ctx: Context<Withdraw>) -> Result<()> {
         ctx.accounts.process()
+    }
+
+    /*
+     * Update Authority
+     */
+    pub fn update_authority<'info>(
+        ctx: Context<UpdateAuthority>,
+        new_authority: Pubkey,
+    ) -> Result<()> {
+        ctx.accounts.process(new_authority)
     }
 
     /*

@@ -1,4 +1,5 @@
 use {
+    anchor_lang::prelude::Pubkey,
     clap::Parser,
     clockwork_sdk::client::{thread_program::objects::Thread, ClientResult, SplToken},
     dotenv::dotenv,
@@ -101,6 +102,10 @@ fn main() -> ClientResult<()> {
         }
         "deactivate_subscription" => {
             deactivate_subscription(&client, subscription.unwrap(), mint.unwrap())?;
+        }
+        "update_authority" => {
+            let new_authority = Pubkey::new_unique();
+            update_auhority(&client, subscription.unwrap(), new_authority)?;
         }
         "withdraw" => {
             withdraw(
