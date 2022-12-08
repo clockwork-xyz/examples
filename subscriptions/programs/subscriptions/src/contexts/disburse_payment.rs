@@ -118,7 +118,6 @@ impl<'info> DisbursePayment<'_> {
                 }
             }
         }
-        msg!("{:?}", subscriber.last_subscribe_timestamp);
 
         Ok(ThreadResponse::default())
     }
