@@ -20,7 +20,6 @@ pub struct Initialize<'info> {
         bump,
         payer = signer,
         space = 8 + size_of::<Stat>(),
-
     )]
     pub stat: AccountLoader<'info, Stat>,
 

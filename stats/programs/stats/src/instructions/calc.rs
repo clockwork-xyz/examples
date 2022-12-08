@@ -36,23 +36,18 @@ pub struct Calc<'info> {
 pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<()> {
     let price_feed = &ctx.accounts.price_feed;
     let mut stat = ctx.accounts.stat.load_mut()?;
+    let stat_data = ctx.accounts.stat.as_ref().try_borrow_mut_data()?;
+    let mut price_history = load_entries_mut::<Stat, Price>(stat_data).unwrap();
 
     match load_price_feed_from_account_info(&price_feed.to_account_info()) {
         Ok(price_feed) => { 
 
             let price = price_feed.get_price_unchecked();
 
-            stat.twap(Price { price: price.price, timestamp: price.publish_time })?;
+            stat.twap(Price { price: price.price, timestamp: price.publish_time }, &mut price_history)?;
 
-            msg!("stats account array size - N = 5");
-            msg!("ts: {}, price: {}", stat.price_history[0].timestamp, stat.price_history[0].price);
-            msg!("ts: {}, price: {}", stat.price_history[1].timestamp, stat.price_history[1].price);
-            msg!("ts: {}, price: {}", stat.price_history[2].timestamp, stat.price_history[2].price);
-            msg!("ts: {}, price: {}", stat.price_history[3].timestamp, stat.price_history[3].price);
-            msg!("ts: {}, price: {}", stat.price_history[4].timestamp, stat.price_history[4].price);
-
-            let oldest_price = stat.price_history[Stat::index_of(stat.tail as u64)];
-            let newest_price = stat.price_history[Stat::index_of(stat.head as u64)];
+            let oldest_price = price_history[Stat::index_of(stat.tail as u64)];
+            let newest_price = price_history[Stat::index_of(stat.head as u64)];
 
             msg!("------------LIVE DATA------------");
             msg!("     live price: {}", price.price);
