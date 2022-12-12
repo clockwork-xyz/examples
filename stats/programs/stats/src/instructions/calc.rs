@@ -1,3 +1,5 @@
+use std::{collections::VecDeque, cell::{RefMut, RefCell}};
+
 use {
     crate::state::*,
     anchor_lang::prelude::*,
@@ -37,17 +39,24 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<()> {
     let price_feed = &ctx.accounts.price_feed;
     let mut stat = ctx.accounts.stat.load_mut()?;
     let stat_data = ctx.accounts.stat.as_ref().try_borrow_mut_data()?;
-    let mut price_history = load_entries_mut::<Stat, Price>(stat_data).unwrap();
+    
+    let mut price_queue: VecDeque<Price> = VecDeque::new();
+    let price_queue_rc = RefCell::new(&mut price_queue);
+    let refmut_pq: RefMut<&mut VecDeque<Price>> = price_queue_rc.borrow_mut();
+
+    let mut price_history = load_entries_mut::<Stat, Price>(stat_data, refmut_pq).unwrap();
 
     match load_price_feed_from_account_info(&price_feed.to_account_info()) {
         Ok(price_feed) => { 
 
             let price = price_feed.get_price_unchecked();
 
-            stat.twap(Price { price: price.price, timestamp: price.publish_time }, &mut price_history)?;
+            // stat.twap(Price { price: price.price, timestamp: price.publish_time }, refmut_pq)?;
 
-            let oldest_price = price_history[Stat::index_of(stat.tail as u64)];
-            let newest_price = price_history[Stat::index_of(stat.head as u64)];
+            let newest_price = price_history.get(0).unwrap();
+            let oldest_price = price_history
+                .get((stat.sample_count - 1).try_into().unwrap())
+                .unwrap();
 
             msg!("------------LIVE DATA------------");
             msg!("     live price: {}", price.price);

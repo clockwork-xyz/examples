@@ -1,3 +1,4 @@
+#![feature(toowned_clone_into)]
 pub mod id;
 pub mod state;
 
