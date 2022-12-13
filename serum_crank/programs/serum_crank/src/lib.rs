@@ -24,7 +24,7 @@ pub mod serum_crank {
      */
     pub fn read_events<'info>(
         ctx: Context<'_, '_, '_, 'info, ReadEvents<'info>>,
-    ) -> Result<clockwork_sdk::ExecResponse> {
+    ) -> Result<clockwork_sdk::ThreadResponse> {
         read_events::handler(ctx)
     }
 
@@ -33,7 +33,7 @@ pub mod serum_crank {
      */
     pub fn consume_events<'info>(
         ctx: Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,
-    ) -> Result<clockwork_sdk::ExecResponse> {
+    ) -> Result<clockwork_sdk::ThreadResponse> {
         consume_events::handler(ctx)
     }
 }

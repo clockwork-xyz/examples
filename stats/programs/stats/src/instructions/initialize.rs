@@ -3,6 +3,9 @@ use {
     anchor_lang::{prelude::*, solana_program::system_program},
     std::mem::size_of,
 };
+
+static INITIAL_BUFFER_LIMIT: usize = 5;
+
 #[derive(Accounts)]
 #[instruction(lookback_window: i64, sample_rate: i64)]
 pub struct Initialize<'info> {
@@ -19,7 +22,7 @@ pub struct Initialize<'info> {
         ],
         bump,
         payer = signer,
-        space = 8 + size_of::<Stat>(),
+        space = 8 + size_of::<Stat>() + (INITIAL_BUFFER_LIMIT * size_of::<crate::PriceData>()),
     )]
     pub stat: AccountLoader<'info, Stat>,
 
@@ -35,7 +38,7 @@ pub fn handler<'info>(ctx: Context<Initialize<'info>>, lookback_window: i64, sam
     let signer = &ctx.accounts.signer;
     let stat = &mut ctx.accounts.stat.load_init()?;
 
-    stat.new(price_feed.key(), signer.key(), lookback_window, sample_rate)?;
-
+    stat.new(price_feed.key(), signer.key(), lookback_window, sample_rate, INITIAL_BUFFER_LIMIT)?;
+    
     Ok(())
 }

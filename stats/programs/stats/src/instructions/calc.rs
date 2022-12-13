@@ -1,9 +1,10 @@
 use {
     crate::state::*,
-    anchor_lang::prelude::*,
+    anchor_lang::{prelude::*, Discriminator, solana_program::system_program},
+    bytemuck::{Pod, Zeroable},
     clockwork_sdk::thread_program::accounts::{Thread, ThreadAccount},
     pyth_sdk_solana::load_price_feed_from_account_info,
-    std::{collections::VecDeque, cell::{RefMut, RefCell}},
+    std::cell::{Ref, RefMut}
 };
 
 #[derive(Accounts)]
@@ -19,6 +20,9 @@ pub struct Calc<'info> {
         bump
     )]
     pub stat: AccountLoader<'info, Stat>,
+
+    #[account(mut)]
+    pub payer: Signer<'info>,
 
     /// CHECK: this account is manually being checked against the stat account's price_feed field
     #[account(
@@ -37,45 +41,96 @@ pub struct Calc<'info> {
 pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<()> {
     let price_feed = &ctx.accounts.price_feed;
     let mut stat = ctx.accounts.stat.load_mut()?;
-    let stat_data = ctx.accounts.stat.as_ref().try_borrow_mut_data()?;
-    
-    let mut price_queue: VecDeque<Price> = VecDeque::new();
-    let price_queue_rc = RefCell::new(&mut price_queue);
-    let refmut_pq: RefMut<&mut VecDeque<Price>> = price_queue_rc.borrow_mut();
-
-    load_entries_mut::<Stat, Price>(stat_data, refmut_pq)?;
+    let mut data_points = load_entries_mut::<Stat, PriceData>(ctx.accounts.stat.as_ref().try_borrow_mut_data()?).unwrap();
 
     match load_price_feed_from_account_info(&price_feed.to_account_info()) {
         Ok(price_feed) => { 
-
+            // Load Pyth price fee. 
             let price = price_feed.get_price_unchecked();
 
-            stat.twap(Price { price: price.price, timestamp: price.publish_time }, &mut price_queue)?;
+            // Starting at the tail, nullify data points older than the lookback window.
+            let mut tail = (stat.head + stat.sample_count - 1) % stat.buffer_limit;
+            let mut oldest_data_point = data_points.get(tail);
+            while oldest_data_point.is_some() && oldest_data_point.unwrap().ts < price.publish_time - stat.lookback_window {
+                stat.sample_sum -= oldest_data_point.unwrap().price;
+                stat.sample_count -= 1;
+                tail = (tail - 1) % stat.buffer_limit;
+                oldest_data_point = data_points.get(tail);
 
-            let newest_price = price_queue.get((stat.sample_count - 1).try_into().unwrap()).unwrap();
-            let oldest_price = price_queue
-                .get(0)
-                .unwrap();
+                // TODO This is a worst-case linear operation over a large dataset. 
+                //      Watch out for exceeding compute unit limits. Since this is a threaded instruction,
+                //      we can run it as an infinite loop until we've cleared out all the old data.
+            }
 
+            // Insert data point into ring buffer.
+            stat.head = stat.head + 1 % stat.buffer_limit;
+            if stat.head == tail {
+                stat.sample_sum -= data_points.get(tail).unwrap().price;
+            } else {
+                stat.sample_count += 1;
+            }
+            data_points[stat.head] = PriceData { price: price.price, ts: price.publish_time };
+            stat.sample_sum += price.price;
+
+            // Compute new average.
+            stat.sample_avg = stat.sample_sum.checked_div(stat.sample_count as i64).unwrap();
+
+            // Price the latest stats.
+            let tail = (stat.head + stat.sample_count - 1) % stat.buffer_limit;
+            let newest_price = data_points.get(stat.head).unwrap();
+            let oldest_price = data_points.get(tail).unwrap();
+            
             msg!("------------LIVE DATA------------");
             msg!("     live price: {}", price.price);
             msg!("      live time: {}", price.publish_time);
             msg!("--------STATS ACCOUNT DATA-------");
             msg!("     price feed: {}", stat.price_feed);
             msg!("      authority: {}", stat.authority);
-            // msg!("     oldest - ts: {}, price: {}", oldest_price.timestamp, oldest_price.price);
-            // msg!("     newest - ts: {}, price: {}", newest_price.timestamp, newest_price.price);
+            msg!("    oldest - ts: {}, price: {}", oldest_price.ts, oldest_price.price);
+            msg!("    newest - ts: {}, price: {}", newest_price.ts, newest_price.price);
             msg!("      authority: {}", stat.authority);
-            msg!("      TWA Price: {}", stat.twap);
-            msg!(" lookback window: {} seconds", stat.lookback_window);
+            msg!("      avg price: {}", stat.sample_avg);
+            msg!("lookback window: {} seconds", stat.lookback_window);
             msg!("    sample rate: {}", stat.sample_rate);
             msg!("   sample count: {}", stat.sample_count);
             msg!("     sample sum: {}", stat.sample_sum);
-            msg!("           tail: {}", stat.tail);
             msg!("           head: {}", stat.head);
+            msg!("           tail: {}", tail);
             msg!("---------------------------------");
         },
         Err(_) => {},
     }
     Ok(())
+}
+
+#[derive(Copy, Clone, Zeroable, Pod)]
+#[repr(C)]
+pub struct PriceData {
+    pub price: i64,
+    pub ts: i64,
+}
+
+#[inline(always)]
+pub fn _load_entries<'a, THeader, TEntries>(data: Ref<'a, &mut [u8]>) -> Result<Ref<'a, [TEntries]>>
+where
+    THeader: Discriminator,
+    TEntries: bytemuck::Pod,
+{
+    Ok(Ref::map(data, |data| {
+        bytemuck::cast_slice(&data[8 + std::mem::size_of::<THeader>()..data.len()])
+    }))
+}
+
+#[inline(always)]
+pub fn load_entries_mut<'a, THeader, TEntries>(
+    data: RefMut<'a, &mut [u8]>,
+) -> Result<RefMut<'a, [TEntries]>>
+where
+    THeader: Discriminator,
+    TEntries: bytemuck::Pod,
+{
+    Ok(RefMut::map(data, |data| {
+        let len = data.len();
+        bytemuck::cast_slice_mut::<u8, TEntries>(&mut data[8 + std::mem::size_of::<THeader>()..len])
+    }))
 }

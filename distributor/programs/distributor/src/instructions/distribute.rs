@@ -10,7 +10,7 @@ use {
     },
     clockwork_sdk::{
         thread_program::accounts::{Thread, ThreadAccount},
-        ExecResponse,
+        ThreadResponse,
     },
 };
 
@@ -61,7 +61,7 @@ pub struct Distribute<'info> {
     pub token_program: Program<'info, anchor_spl::token::Token>,
 }
 
-pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Distribute<'info>>) -> Result<ExecResponse> {
+pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Distribute<'info>>) -> Result<ThreadResponse> {
     // get accounts
     let distributor = &ctx.accounts.distributor;
     let mint = &ctx.accounts.mint;
@@ -90,7 +90,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Distribute<'info>>) -> Res
         distributor.mint_amount,
     )?;
 
-    Ok(ExecResponse {
+    Ok(ThreadResponse {
         next_instruction: None,
         kickoff_instruction: None,
     })

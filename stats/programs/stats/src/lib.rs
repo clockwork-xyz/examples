@@ -22,4 +22,8 @@ pub mod stats {
     pub fn calc(ctx: Context<Calc>) -> Result<()> {
         calc::handler(ctx)
     }
+
+    pub fn realloc_buffer(ctx: Context<ReallocBuffer>, buffer_limit: usize) -> Result<()> {
+        realloc_buffer::handler(ctx, buffer_limit)
+    }
 }

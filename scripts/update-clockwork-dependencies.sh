@@ -25,7 +25,7 @@ new_anchor_version="${new_anchor_version:-$current_anchor_version}"
 echo "Updating patched versions"
 # ROOT_TOMLS=$(find . -maxdepth 2 -type f -iname "Cargo.toml")
 declare ROOT_TOMLS=()
-while IFS='' read -r line; do ROOT_TOMLS+=("$line"); done < <(find . -maxdepth 2 -type f -iname "Cargo.toml"  -not -path './pyth_feed/*)
+while IFS='' read -r line; do ROOT_TOMLS+=("$line"); done < <(find . -maxdepth 2 -type f -iname "Cargo.toml"  -not -path './pyth_feed/*')
 for toml in "${ROOT_TOMLS[@]}"; do
   sed -i '' -e 's/^anchor-lang =.*/anchor-lang = { git = "https:\/\/github.com\/clockwork-xyz\/anchor", branch = "'${new_anchor_version}'" }/g' "$toml"
   sed -i '' -e 's/^anchor-spl =.*/anchor-spl = { git = "https:\/\/github.com\/clockwork-xyz\/anchor", branch = "'${new_anchor_version}'" }/g' "$toml"
@@ -36,7 +36,7 @@ done
 # Update Clients and Programs Cargo.tomls
 echo "Updating clockwork-sdk" 
 declare TOMLS=()
-while IFS='' read -r line; do TOMLS+=("$line"); done < <(find . -mindepth 3 -type f -iname "Cargo.toml" -not -path './pyth_feed/*)
+while IFS='' read -r line; do TOMLS+=("$line"); done < <(find . -mindepth 3 -type f -iname "Cargo.toml" -not -path './pyth_feed/*')
 for toml in "${TOMLS[@]}"; do
   sed -E -i '' -e "s:(clockwork-sdk = \")(=?)([0-9]+\.[0-9]+)\".*:\1\2${new_version}\":" "$toml"
   sed -E -i '' -e "s:(clockwork-sdk = \{ version = \")(=?)[0-9]+\.[0-9]+\.[0-9]+(\".*):\1\2${new_version}\3:" "$toml"

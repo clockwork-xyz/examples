@@ -15,7 +15,7 @@ use {
         },
         token::{Token, TokenAccount},
     },
-    clockwork_sdk::{thread_program::accounts::{Thread, ThreadAccount}, ExecResponse},
+    clockwork_sdk::{thread_program::accounts::{Thread, ThreadAccount}, ThreadResponse},
     std::num::NonZeroU64,
 };
 
@@ -64,7 +64,7 @@ pub struct Swap<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<ExecResponse> {
+pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<ThreadResponse> {
     // get accounts
     let dex_program = &ctx.accounts.dex_program;
     let investment = &ctx.accounts.investment;
@@ -122,7 +122,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<Ex
     )?;
 
     // return None
-    Ok(ExecResponse { 
+    Ok(ThreadResponse { 
         kickoff_instruction: None,
         next_instruction: None
     }) 

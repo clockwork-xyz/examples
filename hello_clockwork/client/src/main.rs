@@ -6,28 +6,31 @@ use {
         },
         InstructionData,
     },
-    clockwork_sdk::client::{
-        thread_program::{
-            instruction::thread_create,
-            objects::{Thread, Trigger},
+    clockwork_sdk::{
+        client::{
+            thread_program::{
+                instruction::thread_create,
+                objects::{Thread, Trigger},
+            },
+            Client, ClientResult,
         },
-        Client, ClientResult,
+        utils::explorer::Explorer,
     },
-    solana_sdk::{signature::Keypair, transaction::Transaction},
+    solana_sdk::{signature::read_keypair_file, transaction::Transaction},
 };
 
 fn main() -> ClientResult<()> {
-    // Create Client
-    let payer = Keypair::new();
-    #[cfg(feature = "devnet")]
-    let client = Client::new(payer, "https://api.devnet.solana.com".into());
-    #[cfg(not(feature = "devnet"))]
-    let client = Client::new(payer, "http://localhost:8899".into());
-
+    // Creating a Client with your default paper keypair as payer
+    let client = default_client();
     client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
 
-    // Derive PDAs
-    let hello_thread = Thread::pubkey(client.payer_pubkey(), "hello".into());
+    // Security:
+    // Note that we are using your default Solana paper keypair as the thread authority.
+    // Feel free to use whichever authority is appropriate for your use case.
+    let thread_authority = client.payer_pubkey();
+
+    // Derive PDAs:
+    let hello_thread = Thread::pubkey(thread_authority, "hello".into());
 
     // airdrop to hello thread
     client.airdrop(&hello_thread, LAMPORTS_PER_SOL)?;
@@ -52,10 +55,9 @@ fn main() -> ClientResult<()> {
     );
 
     send_and_confirm_tx(&client, thread_create, "thread_create".into())?;
-
     println!(
-        "thread: https://explorer.solana.com/address/{}?cluster=custom",
-        hello_thread
+        "thread: 🔗 {}",
+        explorer().thread_url(hello_thread, clockwork_sdk::thread_program::ID)
     );
 
     Ok(())
@@ -69,11 +71,32 @@ fn send_and_confirm_tx(client: &Client, ix: Instruction, label: String) -> Clien
     // Send and confirm tx
     match client.send_and_confirm_transaction(&tx) {
         Ok(sig) => println!(
-            "{} tx: ✅ https://explorer.solana.com/tx/{}?cluster=custom",
-            label, sig
+            // Eventually also use EXPLORER.clockwork instead of EXPLORER.solana, so ppl don't have to use two explorers
+            "{} tx: ✅ {}",
+            label,
+            explorer().tx_url(sig)
         ),
         Err(err) => println!("{} tx: ❌ {:#?}", label, err),
     }
 
     Ok(())
+}
+
+fn explorer() -> Explorer {
+    #[cfg(feature = "localnet")]
+    return Explorer::custom("http://localhost:8899".to_string());
+    #[cfg(not(feature = "localnet"))]
+    Explorer::devnet()
+}
+
+fn default_client() -> Client {
+    #[cfg(not(feature = "localnet"))]
+    let host = "https://api.devnet.solana.com";
+    #[cfg(feature = "localnet")]
+    let host = "http://localhost:8899";
+
+    let config_file = solana_cli_config::CONFIG_FILE.as_ref().unwrap().as_str();
+    let config = solana_cli_config::Config::load(config_file).unwrap();
+    let payer = read_keypair_file(&config.keypair_path).unwrap();
+    Client::new(payer, host.into())
 }
