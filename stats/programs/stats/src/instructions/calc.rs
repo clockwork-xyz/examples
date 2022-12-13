@@ -115,8 +115,6 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<()> {
     Ok(())
 }
 
-#[account(zero_copy)]
-pub struct Dataset {}
 
 #[derive(Copy, Clone, Zeroable, Pod)]
 #[repr(C)]
