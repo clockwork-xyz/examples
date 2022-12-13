@@ -138,11 +138,11 @@ pub fn load_entries_mut<'a, THeader, TEntries>(
     data: RefMut<'a, &mut [u8]>,
 ) -> Result<RefMut<'a, [TEntries]>>
 where
-    THeader: bytemuck::Pod + Discriminator,
+    THeader: Discriminator,
     TEntries: bytemuck::Pod,
 {
     Ok(RefMut::map(data, |data| {
-        let len = data.len(); 
-        bytemuck::cast_slice_mut::<u8, TEntries>(&mut data[8 + 8 + std::mem::size_of::<THeader>()..len])
+        let len = data.len();
+        bytemuck::cast_slice_mut::<u8, TEntries>(&mut data[8 + std::mem::size_of::<THeader>()..len])
     }))
 }
