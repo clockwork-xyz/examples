@@ -141,7 +141,7 @@ where
 
     let temp_q = VecDeque::from_iter(entries.iter().map(|te| *te));
 
-    temp_q.clone_into(&mut queue);
+    queue.clone_from(&temp_q);
 
     Ok(())
 }
