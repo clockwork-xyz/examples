@@ -1,3 +1,5 @@
+use solana_sdk::{program::invoke, system_instruction};
+
 use {
     anchor_lang::{prelude::*, solana_program::system_program, InstructionData},
     clockwork_sdk::{
@@ -54,8 +56,6 @@ fn main() -> ClientResult<()> {
         "sol_usd_stat".into(),
     )?;
 
-    // delete_stat_account(client)?;
-
     Ok(())
 }
 
@@ -65,7 +65,7 @@ fn create_feed(
     cluster: Cluster,
     thread_id: &str,
 ) -> ClientResult<()> {
-    let lookback_window: i64 = 80000;
+    let lookback_window: i64 = 60 * 60 * 6; // 4 hours
     let stat_pubkey =
         stats::state::Stat::pubkey(price_feed_pubkey, client.payer_pubkey(), lookback_window);
     let stat_thread_pubkey = clockwork_sdk::thread_program::accounts::Thread::pubkey(
@@ -93,7 +93,7 @@ fn create_feed(
         ],
         data: stats::instruction::Initialize {
             lookback_window,
-            sample_rate: 10,
+            sample_rate: 15,
         }
         .data(),
     };
@@ -126,32 +126,6 @@ fn create_feed(
         None,
         "init stat account and stat thread".into(),
         cluster,
-    )?;
-
-    Ok(())
-}
-
-pub fn delete_stat_account(client: Client) -> ClientResult<()> {
-    let sol_usd_pubkey = Pubkey::from_str("H6ARHf6YXhGYeQfUzQNGk6rDNnLBQKrenN712K4AQJEG").unwrap();
-    let lookback_window: i64 = 86400; // 24 HOURS
-    let stat_pubkey =
-        stats::state::Stat::pubkey(sol_usd_pubkey, client.payer_pubkey(), lookback_window);
-
-    let delete_ix = Instruction {
-        program_id: stats::ID,
-        accounts: vec![
-            AccountMeta::new(client.payer_pubkey(), true),
-            AccountMeta::new(stat_pubkey, false),
-        ],
-        data: stats::instruction::Delete {}.data(),
-    };
-
-    sign_send_and_confirm_tx(
-        &client,
-        [delete_ix].to_vec(),
-        None,
-        "delete stat account".into(),
-        Cluster::Mainnet,
     )?;
 
     Ok(())
