@@ -6,7 +6,7 @@ pub const SEED_STAT: &[u8] = b"stat";
  * Stat
  */
 
-#[account(zero_copy)]
+#[account()]
 pub struct Stat {
     pub price_feed: Pubkey,
     pub authority: Pubkey,
