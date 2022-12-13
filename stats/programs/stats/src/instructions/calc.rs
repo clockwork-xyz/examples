@@ -35,9 +35,7 @@ pub struct Calc<'info> {
     pub payer: Signer<'info>,
 
     /// CHECK: this account is manually being checked against the stat account's price_feed field
-    #[account(
-        constraint = price_feed.key() == stat.price_feed
-    )]
+    #[account(address = stat.price_feed)]
     pub price_feed: AccountInfo<'info>,
 
     #[account(address = system_program::ID)]
