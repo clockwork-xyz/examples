@@ -63,46 +63,42 @@ impl Stat {
         Ok(())
     }
 
-    // pub fn twap<'a>(
-    //     &mut self,
-    //     price: Price,
-    //     mut price_history: RefMut<'a, &mut VecDeque<Price>>,
-    // ) -> Result<()> {
-    //     // always insert first encountered pricing data
-    //     if self.sample_count == 0 {
-    //         price_history.push_back(price);
-    //         self.sample_count = self.sample_count.checked_add(1).unwrap();
-    //         self.sample_sum = self.sample_sum.checked_add(price.price).unwrap();
-    //     } else {
-    //         let newest_price = price_history.get(0).unwrap();
-    //         let oldest_price = price_history
-    //             .get((self.sample_count - 1).try_into().unwrap())
-    //             .unwrap();
+    pub fn twap<'a>(&mut self, price: Price, price_history: &mut VecDeque<Price>) -> Result<()> {
+        // always insert first encountered pricing data
+        if self.sample_count == 0 {
+            price_history.push_back(price);
+            self.sample_count = self.sample_count.checked_add(1).unwrap();
+            self.sample_sum = self.sample_sum.checked_add(price.price).unwrap();
+        } else {
+            let newest_price = *price_history
+                .get((self.sample_count - 1).try_into().unwrap())
+                .unwrap();
+            let oldest_price = *price_history.get(0).unwrap();
 
-    //         // if the latest price is after sample rate threshhold then insert new pricing data
-    //         if price.timestamp >= newest_price.timestamp + self.sample_rate {
-    //             price_history.push_back(price);
-    //             self.sample_count = self.sample_count.checked_add(1).unwrap();
-    //             self.sample_sum = self.sample_sum.checked_add(price.price).unwrap();
-    //         }
+            // if the latest price is after sample rate threshhold then insert new pricing data
+            if price.timestamp >= newest_price.timestamp + self.sample_rate {
+                price_history.push_back(price);
+                self.sample_count = self.sample_count.checked_add(1).unwrap();
+                self.sample_sum = self.sample_sum.checked_add(price.price).unwrap();
+            }
 
-    //         // while oldest pricing data is less lookback window then pop that element
-    //         while oldest_price.timestamp
-    //             < Clock::get().unwrap().unix_timestamp - self.lookback_window.clone()
-    //         {
-    //             let popped_element = price_history.pop_front().unwrap();
-    //             self.sample_count = self.sample_count.checked_sub(1).unwrap();
-    //             self.sample_sum = self.sample_sum.checked_sub(popped_element.price).unwrap();
-    //         }
-    //     }
+            // while oldest pricing data is less lookback window then pop that element
+            while oldest_price.timestamp
+                < Clock::get().unwrap().unix_timestamp - self.lookback_window.clone()
+            {
+                let popped_element = price_history.pop_front().unwrap();
+                self.sample_count = self.sample_count.checked_sub(1).unwrap();
+                self.sample_sum = self.sample_sum.checked_sub(popped_element.price).unwrap();
+            }
 
-    //     match self.sample_sum.checked_div(self.sample_count) {
-    //         Some(twap) => self.twap = twap,
-    //         None => {}
-    //     }
+            match self.sample_sum.checked_div(self.sample_count) {
+                Some(twap) => self.twap = twap,
+                None => {}
+            }
+        }
 
-    //     Ok(())
-    // }
+        Ok(())
+    }
 }
 
 impl TryFrom<Vec<u8>> for Stat {
@@ -123,7 +119,7 @@ pub struct Price {
 pub fn load_entries_mut<'a, THeader, TEntries>(
     data: RefMut<'a, &mut [u8]>,
     mut queue: RefMut<'a, &mut VecDeque<TEntries>>,
-) -> Result<RefMut<'a, VecDeque<TEntries>>>
+) -> Result<()>
 where
     THeader: Discriminator,
     TEntries: bytemuck::Pod + Copy,
@@ -147,7 +143,7 @@ where
 
     temp_q.clone_into(&mut queue);
 
-    Ok(RefMut::map(queue, |queue| *queue))
+    Ok(())
 }
 
 // #[inline(always)]

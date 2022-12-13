@@ -1,10 +1,9 @@
-use std::{collections::VecDeque, cell::{RefMut, RefCell}};
-
 use {
     crate::state::*,
     anchor_lang::prelude::*,
     clockwork_sdk::thread_program::accounts::{Thread, ThreadAccount},
     pyth_sdk_solana::load_price_feed_from_account_info,
+    std::{collections::VecDeque, cell::{RefMut, RefCell}},
 };
 
 #[derive(Accounts)]
@@ -44,18 +43,18 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<()> {
     let price_queue_rc = RefCell::new(&mut price_queue);
     let refmut_pq: RefMut<&mut VecDeque<Price>> = price_queue_rc.borrow_mut();
 
-    let mut price_history = load_entries_mut::<Stat, Price>(stat_data, refmut_pq).unwrap();
+    load_entries_mut::<Stat, Price>(stat_data, refmut_pq)?;
 
     match load_price_feed_from_account_info(&price_feed.to_account_info()) {
         Ok(price_feed) => { 
 
             let price = price_feed.get_price_unchecked();
 
-            // stat.twap(Price { price: price.price, timestamp: price.publish_time }, refmut_pq)?;
+            stat.twap(Price { price: price.price, timestamp: price.publish_time }, &mut price_queue)?;
 
-            let newest_price = price_history.get(0).unwrap();
-            let oldest_price = price_history
-                .get((stat.sample_count - 1).try_into().unwrap())
+            let newest_price = price_queue.get((stat.sample_count - 1).try_into().unwrap()).unwrap();
+            let oldest_price = price_queue
+                .get(0)
                 .unwrap();
 
             msg!("------------LIVE DATA------------");
@@ -64,8 +63,8 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<()> {
             msg!("--------STATS ACCOUNT DATA-------");
             msg!("     price feed: {}", stat.price_feed);
             msg!("      authority: {}", stat.authority);
-            msg!("     oldest - ts: {}, price: {}", oldest_price.timestamp, oldest_price.price);
-            msg!("     newest - ts: {}, price: {}", newest_price.timestamp, newest_price.price);
+            // msg!("     oldest - ts: {}, price: {}", oldest_price.timestamp, oldest_price.price);
+            // msg!("     newest - ts: {}, price: {}", newest_price.timestamp, newest_price.price);
             msg!("      authority: {}", stat.authority);
             msg!("      TWA Price: {}", stat.twap);
             msg!(" lookback window: {} seconds", stat.lookback_window);
