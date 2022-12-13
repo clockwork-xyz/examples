@@ -44,29 +44,36 @@ pub struct Calc<'info> {
 pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<()> {
     let price_feed = &ctx.accounts.price_feed;
     let mut stat = ctx.accounts.stat.load_mut()?;
-    let stat_data = ctx.accounts.stat.as_ref().try_borrow_mut_data()?;
-    
-    let mut data_points = load_entries_mut::<Stat, PriceData>(stat_data).unwrap();
-
+    let mut data_points = load_entries_mut::<Stat, PriceData>(ctx.accounts.stat.as_ref().try_borrow_mut_data()?).unwrap();
 
     match load_price_feed_from_account_info(&price_feed.to_account_info()) {
         Ok(price_feed) => { 
             // Load Pyth price fee. 
             let price = price_feed.get_price_unchecked();
 
+            // Starting at the tail, nullify data points older than the lookback window.
+            let mut tail = (stat.head + stat.sample_count - 1) % stat.buffer_limit;
+            let mut oldest_data_point = data_points.get(tail);
+            while oldest_data_point.is_some() && oldest_data_point.unwrap().ts < price.publish_time - stat.lookback_window {
+                stat.sample_sum -= oldest_data_point.unwrap().price;
+                stat.sample_count -= 1;
+                tail = (tail - 1) % stat.buffer_limit;
+                oldest_data_point = data_points.get(tail);
+
+                // TODO This is a worst-case linear operation over a large dataset. 
+                //      Watch out for exceeding compute unit limits. Since this is a threaded instruction,
+                //      we can run it as an infinite loop until we've cleared out all the old data.
+            }
+
             // Insert data point into ring buffer.
             stat.head = stat.head + 1 % stat.buffer_limit;
-            match data_points.get(stat.head) {
-                None => {
-                    stat.sample_count += 1;
-                }
-                Some(price_data) => {
-                    stat.sample_sum -= price_data.price;
-                }
+            if stat.head == tail {
+                stat.sample_sum -= data_points.get(tail).unwrap().price;
+            } else {
+                stat.sample_count += 1;
             }
-            let data_point = PriceData { price: price.price, ts: price.publish_time };
-            data_points[stat.head] = data_point;
-            stat.sample_sum += data_point.price;
+            data_points[stat.head] = PriceData { price: price.price, ts: price.publish_time };
+            stat.sample_sum += price.price;
 
             // Compute new average.
             stat.sample_avg = stat.sample_sum.checked_div(stat.sample_count as i64).unwrap();
