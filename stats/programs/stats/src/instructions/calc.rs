@@ -115,7 +115,6 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<()> {
     Ok(())
 }
 
-
 #[derive(Copy, Clone, Zeroable, Pod)]
 #[repr(C)]
 pub struct PriceData {
