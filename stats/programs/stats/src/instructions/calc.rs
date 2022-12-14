@@ -12,26 +12,34 @@ pub struct Calc<'info> {
     #[account(
         mut,
         seeds = [
-            SEED_STAT, 
-            stat.load()?.price_feed.as_ref(), 
-            stat.load()?.authority.as_ref(),
-            &stat.load()?.lookback_window.to_le_bytes(),
+            SEED_DATASET,
+            stat.key().as_ref(),
         ],
         bump
     )]
-    pub stat: AccountLoader<'info, Stat>,
+    pub dataset: AccountLoader<'info, Dataset>,
+    
+    #[account(
+        mut,
+        seeds = [
+            SEED_STAT, 
+            stat.price_feed.as_ref(), 
+            stat.authority.as_ref(),
+            &stat.lookback_window.to_le_bytes(),
+        ],
+        bump
+    )]
+    pub stat: Account<'info, Stat>,
 
     #[account(mut)]
     pub payer: Signer<'info>,
 
     /// CHECK: this account is manually being checked against the stat account's price_feed field
-    #[account(
-        constraint = price_feed.key() == stat.load()?.price_feed
-    )]
+    #[account(address = stat.price_feed)]
     pub price_feed: AccountInfo<'info>,
 
     #[account(
-        constraint = thread.authority == stat.load()?.authority,
+        constraint = thread.authority == stat.authority,
         address = thread.pubkey(),
         signer
     )]
@@ -40,8 +48,8 @@ pub struct Calc<'info> {
 
 pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<()> {
     let price_feed = &ctx.accounts.price_feed;
-    let mut stat = ctx.accounts.stat.load_mut()?;
-    let mut data_points = load_entries_mut::<Stat, PriceData>(ctx.accounts.stat.as_ref().try_borrow_mut_data()?).unwrap();
+    let stat = &mut ctx.accounts.stat;
+    let mut data_points = load_entries_mut::<Dataset, PriceData>(ctx.accounts.dataset.as_ref().try_borrow_mut_data()?).unwrap();
 
     match load_price_feed_from_account_info(&price_feed.to_account_info()) {
         Ok(price_feed) => { 

@@ -10,13 +10,23 @@ pub struct ReallocBuffer<'info> {
         mut,
         seeds = [
             SEED_STAT, 
-            stat.load()?.price_feed.as_ref(), 
-            stat.load()?.authority.as_ref(),
-            &stat.load()?.lookback_window.to_le_bytes(),
+            stat.key().as_ref(), 
         ],
         bump
     )]
-    pub stat: AccountLoader<'info, Stat>,
+    pub dataset: AccountLoader<'info, Dataset>,
+
+    #[account(
+        mut,
+        seeds = [
+            SEED_STAT, 
+            stat.price_feed.as_ref(), 
+            stat.authority.as_ref(),
+            &stat.lookback_window.to_le_bytes(),
+        ],
+        bump
+    )]
+    pub stat: Account<'info, Stat>,
 
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -27,30 +37,30 @@ pub struct ReallocBuffer<'info> {
 
 pub fn handler<'info>(ctx: Context<ReallocBuffer<'info>>, buffer_limit: usize) -> Result<()> {
     let payer = &ctx.accounts.payer;
-    let stat = &ctx.accounts.stat;
+    let dataset = &ctx.accounts.dataset;
+    let stat = &mut ctx.accounts.stat;
     let system_program = &ctx.accounts.system_program;
 
     // Allocate more memory to stat account.
-    let new_account_size = 8 + std::mem::size_of::<Stat>() + (buffer_limit * std::mem::size_of::<crate::PriceData>());
-    stat.to_account_info().realloc(new_account_size, false)?;
+    let new_account_size = 8 + std::mem::size_of::<Dataset>() + (buffer_limit * std::mem::size_of::<crate::PriceData>());
+    dataset.to_account_info().realloc(new_account_size, false)?;
 
     // Update the buffer limit.
-    let stat_mut = &mut stat.load_init()?;
-    stat_mut.buffer_limit = buffer_limit;
+    stat.buffer_limit = buffer_limit;
 
     // Transfer lamports to cover minimum rent requirements.
     let minimum_rent = Rent::get().unwrap().minimum_balance(new_account_size);
-    if minimum_rent > stat.to_account_info().lamports() {
+    if minimum_rent > dataset.to_account_info().lamports() {
         transfer(
             CpiContext::new(
                 system_program.to_account_info(),
                 Transfer {
                     from: payer.to_account_info(),
-                    to: stat.to_account_info(),
+                    to: dataset.to_account_info(),
                 },
             ),
             minimum_rent
-                .checked_sub(stat.to_account_info().lamports())
+                .checked_sub(dataset.to_account_info().lamports())
                 .unwrap(),
         )?;
     }

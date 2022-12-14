@@ -8,7 +8,7 @@ pub const PRICE_ARRAY_SIZE: usize = 5;
  * Stat
  */
 
-#[account(zero_copy)]
+#[account()]
 pub struct Stat {
     pub price_feed: Pubkey,
     pub authority: Pubkey,
