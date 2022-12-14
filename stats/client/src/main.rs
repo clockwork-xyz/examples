@@ -65,7 +65,7 @@ fn create_feed(
     cluster: Cluster,
     thread_id: &str,
 ) -> ClientResult<()> {
-    let lookback_window: i64 = 60 * 60 * 6; // 4 hours
+    let lookback_window: i64 = 60 * 57 * 7; // 4 hours
     let stat_pubkey =
         stats::state::Stat::pubkey(price_feed_pubkey, client.payer_pubkey(), lookback_window);
     let stat_thread_pubkey = clockwork_sdk::thread_program::accounts::Thread::pubkey(
@@ -105,6 +105,7 @@ fn create_feed(
             program_id: stats::ID,
             accounts: vec![
                 AccountMeta::new(stat_pubkey, false),
+                AccountMeta::new(clockwork_sdk::PAYER_PUBKEY, true),
                 AccountMeta::new_readonly(price_feed_pubkey, false),
                 AccountMeta::new(stat_thread_pubkey, true),
             ],
