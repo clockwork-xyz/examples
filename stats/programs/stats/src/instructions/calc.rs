@@ -86,7 +86,7 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<()> {
             // Compute new average.
             stat.sample_avg = stat.sample_sum.checked_div(stat.sample_count as i64).unwrap();
 
-            // Price the latest stats.
+            // Print the latest stats.
             let tail = (stat.head + stat.sample_count - 1) % stat.buffer_limit;
             let newest_price = data_points.get(stat.head).unwrap();
             let oldest_price = data_points.get(tail).unwrap();
