@@ -1,3 +1,5 @@
+use pyth_sdk_solana::Price;
+
 use {
     crate::state::*,
     anchor_lang::{prelude::*, Discriminator, solana_program::system_program},
@@ -55,89 +57,92 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<ThreadResponse> {
 
     match load_price_feed_from_account_info(&price_feed.to_account_info()) {
         Ok(price_feed) => { 
-               // Load Pyth price fee. 
+            // Load Pyth price fee. 
             let price = price_feed.get_price_unchecked();
+            let price_data = PriceData::from(price);
 
-            let mut tail: i64 = 0;
-
-            if stat.head.is_some() {                
-                // increment head for next insertion if sample rate threshold has been met
-                if price.publish_time >= stat.sample_rate + data_points.get(stat.head.unwrap() as usize).unwrap().ts {
-                    stat.head = Some((stat.head.unwrap() + 1) % stat.buffer_limit as i64); // (4 + 1) % 5 = 0 
-                    
-                    // if buffer has begun rotating
-                    if data_points.get(stat.head.unwrap() as usize).unwrap().ts > 0 {
-                        // reset index for it to be the next insertion
-                        stat.sample_sum -= data_points.get(stat.head.unwrap() as usize).unwrap().price;
-                        data_points[stat.head.unwrap() as usize] = PriceData::default();
+            // Starting at the tail, start nullifying data points older than the lookback window.
+            // TODO This is a worst-case linear operation over a large dataset. 
+            //      Watch out for exceeding compute unit limits. Since this is a threaded instruction,
+            //      we can run it as an infinite loop until we've cleared out all the old data.
+            match stat.head {
+                None => {}, // Noop
+                Some(head) => {
+                    let mut tail = (head - stat.sample_count + 1) % stat.buffer_size;
+                    while data_points[tail].ts < price.publish_time - stat.lookback_window {
+                        stat.sample_sum = stat.sample_sum - data_points[tail].price;
+                        stat.sample_count = stat.sample_count - 1;
+                        data_points[tail] = PriceData::default();
+                        tail = (tail + 1) % stat.buffer_size;
+                        if tail > head {
+                            stat.head = None;
+                            break;
+                        }
                     }
-                    
                 }
-                // calculate tail
-                tail = (stat.head.unwrap() - stat.sample_count as i64 + 1).rem_euclid(stat.buffer_limit as i64); // (0 - 5 + 1) % 5 = 1 
-                // at this point the head and tail have been calculated and if the buffer
-                // has begun rotating we've taken the steps necc. to get ready
-                // for the next insertion.
-            } else {
-                stat.head = Some(0);
             }
             
-            let mut oldest_data = data_points.get(tail as usize).unwrap();
-            // Starting at the tail, nullify data points older than the lookback window.
-            while oldest_data.price > 0 && oldest_data.ts < price.publish_time - stat.lookback_window {
-                // subtract form sample sum
-                stat.sample_sum -= oldest_data.price;
-                // nullify index
-                data_points[tail as usize] = PriceData::default();
-                // decrement sample count
-                stat.sample_count -= 1;
-                // recalculate tail
-                tail = (stat.head.unwrap() - stat.sample_count as i64 + 1).rem_euclid(stat.buffer_limit as i64);
-                // get next oldest data
-                oldest_data = data_points.get(tail as usize).unwrap();
-              
-                // TODO: This is a worst-case linear operation over a large dataset. 
-                //      Watch out for exceeding compute unit limits. Since this is a threaded instruction,
-                //      we can run it as an infinite loop until we've cleared out all the old data.
-            }
+            // Insert the new data point, and update head. 
+            match stat.head {
+                None => {
+                    stat.head = Some(0);
+                    data_points[0] = price_data;
+                },
+                Some(head) => {
+                    // Exit early if this price is too early for the sampling rate.
+                    if price.publish_time < data_points[head].ts + stat.sample_rate {
+                        return Ok(ThreadResponse::default())
+                    }
+                    stat.head = Some((head + 1) % stat.buffer_size);
 
-            // if new data ts is after sample rate threashold or there are 0 elements
-            if price.publish_time >= stat.sample_rate + data_points.get(stat.head.unwrap() as usize).unwrap().ts || stat.sample_count == 0 {
-                stat.sample_count += 1;
-                // insert new data into buffer
-                data_points[stat.head.unwrap() as usize] = PriceData { price: price.price, ts: price.publish_time };
-                // increase sample sum
-                stat.sample_sum += price.price;
-                // Compute new average.
-                stat.sample_avg = stat.sample_sum.checked_div(stat.sample_count as i64).unwrap();
-            }
+                    // If the buffer is not yet full, increment the sample count. 
+                    // Otherwise, subtract the data value that's about to be overwritten from the sum.  
+                    if stat.sample_count < stat.buffer_size {
+                        stat.sample_count += 1
+                    } else {
+                        stat.sample_sum -= stat.sample_sum - data_points[stat.head.unwrap()].price;
+                    }
 
-            let new_realloc_size: usize = 8 + std::mem::size_of::<Dataset>() + ((stat.buffer_limit + 640) * std::mem::size_of::<crate::PriceData>());
-            if stat.sample_count == stat.buffer_limit && new_realloc_size < 10_000_000 {
-                next_instruction = 
-                    Some(InstructionData { 
-                            program_id: crate::ID, 
-                            accounts: vec![
-                                AccountMetaData::new(dataset.key(), false),
-                                AccountMetaData::new(stat.key(), false),
-                                AccountMetaData::new(clockwork_sdk::PAYER_PUBKEY, true),
-                                AccountMetaData::new_readonly(system_program::ID, false),
-                                AccountMetaData::new(thread.key(), true),
-                            ], 
-                            data: clockwork_sdk::anchor_sighash("realloc_buffer").to_vec() 
-                        });
-            } else {
-                kickoff_instruction = Some(InstructionData {
-                    program_id: crate::ID,
-                    accounts: vec![
-                        AccountMetaData::new(dataset.key(), false),
-                        AccountMetaData::new(stat.key(), false),
-                        AccountMetaData::new_readonly(stat.price_feed, false),
-                        AccountMetaData::new(thread.key(), true),
-                    ],
-                    data: clockwork_sdk::anchor_sighash("calc").to_vec()
-                }) 
-            }
+                    // Insert the new data point.
+                    data_points[stat.head.unwrap()] = price_data;
+                }
+            };
+
+            // Update the sum and average
+            stat.sample_sum += price_data.price;
+            stat.sample_avg  = stat.sample_sum / stat.sample_count as i64;
+            
+
+            // TODO Only after the ring buffer logic is confirmed to be stable, then automatically resize the buffer. 
+            // 
+            // let new_realloc_size: usize = 8 + std::mem::size_of::<Dataset>() + ((stat.buffer_size + 640) * std::mem::size_of::<crate::PriceData>());
+            // if stat.sample_count == stat.buffer_size && new_realloc_size < 10_000_000 {
+            //     next_instruction = 
+            //         Some(InstructionData { 
+            //                 program_id: crate::ID, 
+            //                 accounts: vec![
+            //                     AccountMetaData::new(dataset.key(), false),
+            //                     AccountMetaData::new(stat.key(), false),
+            //                     AccountMetaData::new(clockwork_sdk::PAYER_PUBKEY, true),
+            //                     AccountMetaData::new_readonly(system_program::ID, false),
+            //                     AccountMetaData::new(thread.key(), true),
+            //                 ], 
+            //                 data: clockwork_sdk::anchor_sighash("realloc_buffer").to_vec() 
+            //             });
+            // } else {
+            //     kickoff_instruction = Some(InstructionData {
+            //         program_id: crate::ID,
+            //         accounts: vec![
+            //             AccountMetaData::new(dataset.key(), false),
+            //             AccountMetaData::new(stat.key(), false),
+            //             AccountMetaData::new_readonly(stat.price_feed, false),
+            //             AccountMetaData::new(thread.key(), true),
+            //         ],
+            //         data: clockwork_sdk::anchor_sighash("calc").to_vec()
+            //     }) 
+            // }
+
+            let tail = (stat.head.unwrap() - stat.sample_count + 1) % stat.buffer_size;
             
             msg!("------------LIVE DATA------------");
             msg!("     live price: {}", price.price);
@@ -152,15 +157,15 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<ThreadResponse> {
             msg!("    sample rate: {}", stat.sample_rate);
             msg!("   sample count: {}", stat.sample_count);
             msg!("     sample sum: {}", stat.sample_sum);
-            msg!("   buffer_limit: {}", stat.buffer_limit);
+            msg!("   buffer_size: {}", stat.buffer_size);
             msg!("           head: {}", stat.head.unwrap());
             msg!("           tail: {}", tail);
             msg!("---------------------------------");
         },
         Err(_) => {},
     }
-    
-    Ok(ThreadResponse { kickoff_instruction , next_instruction })
+
+    Ok(ThreadResponse::default())
 }
 
 #[derive(Copy, Clone, Zeroable, Pod, Default)]
@@ -169,6 +174,14 @@ pub struct PriceData {
     pub price: i64,
     pub ts: i64,
 }
+
+impl From<Price> for PriceData {
+    fn from(price: Price) -> Self {
+        PriceData { price: price.price, ts: price.publish_time }
+    }
+}
+
+
 
 #[inline(always)]
 pub fn _load_entries<'a, THeader, TEntries>(data: Ref<'a, &mut [u8]>) -> Result<Ref<'a, [TEntries]>>

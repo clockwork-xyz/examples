@@ -53,14 +53,14 @@ pub fn handler<'info>(ctx: Context<ReallocBuffer<'info>>) -> Result<ThreadRespon
     let thread = &ctx.accounts.thread;
 
     // (1024 * 10) / 16 bytes = 640
-    let new_buffer_limit: usize = stat.buffer_limit + 640;
+    let new_buffer_size: usize = stat.buffer_size + 640;
 
     // Allocate more memory to stat account.
-    let new_account_size = 8 + std::mem::size_of::<Dataset>() + (new_buffer_limit * std::mem::size_of::<PriceData>());
+    let new_account_size = 8 + std::mem::size_of::<Dataset>() + (new_buffer_size * std::mem::size_of::<PriceData>());
     dataset.realloc(new_account_size, false)?;
 
-    // Update the buffer limit.
-    stat.buffer_limit = new_buffer_limit;
+    // Update the buffer size.
+    stat.buffer_size = new_buffer_size;
 
     // Transfer lamports to cover minimum rent requirements.
     let minimum_rent = Rent::get().unwrap().minimum_balance(new_account_size);
