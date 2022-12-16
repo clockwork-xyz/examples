@@ -46,7 +46,7 @@ pub struct Calc<'info> {
 pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<ThreadResponse> {
     let price_feed = &ctx.accounts.price_feed;
     let stat = &mut ctx.accounts.stat;
-    // let thread = &ctx.accounts.thread;
+    let thread = &ctx.accounts.thread;
     let dataset = ctx.accounts.dataset.as_ref();
     let mut data_points = load_entries_mut::<Dataset, PriceData>(dataset.try_borrow_mut_data()?).unwrap();
 
@@ -75,7 +75,6 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<ThreadResponse> {
                 }
                 // calculate tail
                 tail = (stat.head.unwrap() - stat.sample_count as i64 + 1).rem_euclid(stat.buffer_limit as i64); // (0 - 5 + 1) % 5 = 1 
-                msg!("tail calc: ({} - {} + 1) % {} = {}",stat.head.unwrap(), stat.sample_count as i64, stat.buffer_limit as i64, tail);
                 // at this point the head and tail have been calculated and if the buffer
                 // has begun rotating we've taken the steps necc. to get ready
                 // for the next insertion.
@@ -83,26 +82,29 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<ThreadResponse> {
                 stat.head = Some(0);
             }
             
-            // let lookback_window_threshold: bool = data_points.get(tail).unwrap().ts < price.publish_time - stat.lookback_window;
-            // Starting at the tail, nullify data points older than the lookback window.
+            // let mut oldest_data = data_points.get(tail as usize).unwrap();
+            // let lookback_window_threshold: bool = oldest_data.ts < price.publish_time - stat.lookback_window;
+            // // Starting at the tail, nullify data points older than the lookback window.
             // while stat.sample_count > 0 && lookback_window_threshold {
-            //     stat.sample_sum -= oldest_price.unwrap().price;
+            //     // subtract form sample sum
+            //     stat.sample_sum -= oldest_data.price;
+            //     // nullify index
+            //     data_points[tail as usize] = PriceData::default();
+            //     // decrement sample count
             //     stat.sample_count -= 1;
-            //     data_points[tail] = PriceData::default();
-            //     tail = (tail + 1) % stat.buffer_limit;
-            //     oldest_price = data_points.get(tail);
-                // TODO This is a worst-case linear operation over a large dataset. 
-                //      Watch out for exceeding compute unit limits. Since this is a threaded instruction,
-                //      we can run it as an infinite loop until we've cleared out all the old data.
+            //     // recalculate tail
+            //     tail = (stat.head.unwrap() - stat.sample_count as i64 + 1).rem_euclid(stat.buffer_limit as i64);
+            //     // get next oldest data
+            //     oldest_data = data_points.get(tail as usize).unwrap();
+                                
+            //     // TODO: This is a worst-case linear operation over a large dataset. 
+            //     //      Watch out for exceeding compute unit limits. Since this is a threaded instruction,
+            //     //      we can run it as an infinite loop until we've cleared out all the old data.
             // }
 
             // if new data ts is after sample rate threashold or there are 0 elements
             if price.publish_time >= stat.sample_rate + data_points.get(stat.head.unwrap() as usize).unwrap().ts || stat.sample_count == 0 {
-                // make sure sample count doesn't exceed buffer limit
-                // TODO: REMOVE THIS CONDITION WHEN REINTRODUCING REALLOCATION OF DATASET ACCOUNT SIZE
-                if stat.sample_count < stat.buffer_limit {
-                    stat.sample_count += 1;
-                }
+                stat.sample_count += 1;
                 // insert new data into buffer
                 data_points[stat.head.unwrap() as usize] = PriceData { price: price.price, ts: price.publish_time };
                 // increase sample sum
@@ -111,38 +113,32 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<ThreadResponse> {
                 stat.sample_avg = stat.sample_sum.checked_div(stat.sample_count as i64).unwrap();
             }
 
-            msg!("[0]: {}", data_points.get(0).unwrap().ts);
-            msg!("[1]: {}", data_points.get(1).unwrap().ts);
-            msg!("[2]: {}", data_points.get(2).unwrap().ts);
-            msg!("[3]: {}", data_points.get(3).unwrap().ts);
-            msg!("[4]: {}", data_points.get(4).unwrap().ts);
-
-            // let new_realloc_size: usize = 8 + std::mem::size_of::<Dataset>() + ((stat.buffer_limit + 640) * std::mem::size_of::<crate::PriceData>());
-            // if stat.sample_count == stat.buffer_limit && new_realloc_size < 10_000_000 {
-            //     next_instruction = 
-            //         Some(InstructionData { 
-            //                 program_id: crate::ID, 
-            //                 accounts: vec![
-            //                     AccountMetaData::new(dataset.key(), false),
-            //                     AccountMetaData::new(stat.key(), false),
-            //                     AccountMetaData::new(clockwork_sdk::PAYER_PUBKEY, true),
-            //                     AccountMetaData::new_readonly(system_program::ID, false),
-            //                     AccountMetaData::new(thread.key(), true),
-            //                 ], 
-            //                 data: clockwork_sdk::anchor_sighash("realloc_buffer").to_vec() 
-            //             });
-            // } else {
-            //     kickoff_instruction = Some(InstructionData {
-            //         program_id: crate::ID,
-            //         accounts: vec![
-            //             AccountMetaData::new(dataset.key(), false),
-            //             AccountMetaData::new(stat.key(), false),
-            //             AccountMetaData::new_readonly(stat.price_feed, false),
-            //             AccountMetaData::new(thread.key(), true),
-            //         ],
-            //         data: clockwork_sdk::anchor_sighash("calc").to_vec()
-            //     }) 
-            // }
+            let new_realloc_size: usize = 8 + std::mem::size_of::<Dataset>() + ((stat.buffer_limit + 640) * std::mem::size_of::<crate::PriceData>());
+            if stat.sample_count == stat.buffer_limit && new_realloc_size < 10_000_000 {
+                next_instruction = 
+                    Some(InstructionData { 
+                            program_id: crate::ID, 
+                            accounts: vec![
+                                AccountMetaData::new(dataset.key(), false),
+                                AccountMetaData::new(stat.key(), false),
+                                AccountMetaData::new(clockwork_sdk::PAYER_PUBKEY, true),
+                                AccountMetaData::new_readonly(system_program::ID, false),
+                                AccountMetaData::new(thread.key(), true),
+                            ], 
+                            data: clockwork_sdk::anchor_sighash("realloc_buffer").to_vec() 
+                        });
+            } else {
+                kickoff_instruction = Some(InstructionData {
+                    program_id: crate::ID,
+                    accounts: vec![
+                        AccountMetaData::new(dataset.key(), false),
+                        AccountMetaData::new(stat.key(), false),
+                        AccountMetaData::new_readonly(stat.price_feed, false),
+                        AccountMetaData::new(thread.key(), true),
+                    ],
+                    data: clockwork_sdk::anchor_sighash("calc").to_vec()
+                }) 
+            }
             
             msg!("------------LIVE DATA------------");
             msg!("     live price: {}", price.price);
@@ -150,15 +146,15 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<ThreadResponse> {
             msg!("--------STATS ACCOUNT DATA-------");
             msg!("     price feed: {}", stat.price_feed);
             msg!("      authority: {}", stat.authority);
-            // msg!("    oldest - ts: {}", data_points.get(tail as usize).unwrap().ts); // TODO: ERROR HERE??
-            // msg!("    newest - ts: {}", data_points.get(stat.head.unwrap() as usize).unwrap().ts);
+            msg!("    oldest - ts: {}", data_points.get(tail as usize).unwrap().ts);
+            msg!("    newest - ts: {}", data_points.get(stat.head.unwrap() as usize).unwrap().ts);
             msg!("      avg price: {}", stat.sample_avg);
             msg!("lookback window: {} seconds", stat.lookback_window);
             msg!("    sample rate: {}", stat.sample_rate);
             msg!("   sample count: {}", stat.sample_count);
             msg!("     sample sum: {}", stat.sample_sum);
             msg!("   buffer_limit: {}", stat.buffer_limit);
-            msg!("           head: {:?}", stat.head);
+            msg!("           head: {}", stat.head.unwrap());
             msg!("           tail: {}", tail);
             msg!("---------------------------------");
         },
