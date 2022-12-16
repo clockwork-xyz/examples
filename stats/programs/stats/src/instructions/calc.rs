@@ -82,25 +82,24 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<ThreadResponse> {
                 stat.head = Some(0);
             }
             
-            // let mut oldest_data = data_points.get(tail as usize).unwrap();
-            // let lookback_window_threshold: bool = oldest_data.ts < price.publish_time - stat.lookback_window;
-            // // Starting at the tail, nullify data points older than the lookback window.
-            // while stat.sample_count > 0 && lookback_window_threshold {
-            //     // subtract form sample sum
-            //     stat.sample_sum -= oldest_data.price;
-            //     // nullify index
-            //     data_points[tail as usize] = PriceData::default();
-            //     // decrement sample count
-            //     stat.sample_count -= 1;
-            //     // recalculate tail
-            //     tail = (stat.head.unwrap() - stat.sample_count as i64 + 1).rem_euclid(stat.buffer_limit as i64);
-            //     // get next oldest data
-            //     oldest_data = data_points.get(tail as usize).unwrap();
-                                
-            //     // TODO: This is a worst-case linear operation over a large dataset. 
-            //     //      Watch out for exceeding compute unit limits. Since this is a threaded instruction,
-            //     //      we can run it as an infinite loop until we've cleared out all the old data.
-            // }
+            let mut oldest_data = data_points.get(tail as usize).unwrap();
+            // Starting at the tail, nullify data points older than the lookback window.
+            while oldest_data.price > 0 && oldest_data.ts < price.publish_time - stat.lookback_window {
+                // subtract form sample sum
+                stat.sample_sum -= oldest_data.price;
+                // nullify index
+                data_points[tail as usize] = PriceData::default();
+                // decrement sample count
+                stat.sample_count -= 1;
+                // recalculate tail
+                tail = (stat.head.unwrap() - stat.sample_count as i64 + 1).rem_euclid(stat.buffer_limit as i64);
+                // get next oldest data
+                oldest_data = data_points.get(tail as usize).unwrap();
+              
+                // TODO: This is a worst-case linear operation over a large dataset. 
+                //      Watch out for exceeding compute unit limits. Since this is a threaded instruction,
+                //      we can run it as an infinite loop until we've cleared out all the old data.
+            }
 
             // if new data ts is after sample rate threashold or there are 0 elements
             if price.publish_time >= stat.sample_rate + data_points.get(stat.head.unwrap() as usize).unwrap().ts || stat.sample_count == 0 {
