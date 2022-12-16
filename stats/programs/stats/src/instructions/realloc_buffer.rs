@@ -1,15 +1,18 @@
 use {
-    crate::state::*,
-    anchor_lang::{prelude::*,  solana_program::system_program, system_program::{Transfer, transfer}},
+    crate::{state::*, PriceData},
+    anchor_lang::{prelude::*, solana_program::system_program, system_program::{Transfer, transfer}},
+    clockwork_sdk::{
+        ThreadResponse, InstructionData, AccountMetaData, 
+        thread_program::accounts::{Thread, ThreadAccount}
+    }
 };
 
 #[derive(Accounts)]
-#[instruction(buffer_size: usize)]
 pub struct ReallocBuffer<'info> {
     #[account(
         mut,
         seeds = [
-            SEED_STAT, 
+            SEED_DATASET, 
             stat.key().as_ref(), 
         ],
         bump
@@ -33,20 +36,31 @@ pub struct ReallocBuffer<'info> {
 
     #[account(address = system_program::ID)]
     pub system_program: Program<'info, System>,
+
+    #[account(
+        constraint = thread.authority == stat.authority,
+        address = thread.pubkey(),
+        signer
+    )]
+    pub thread: Account<'info, Thread>,
 }
 
-pub fn handler<'info>(ctx: Context<ReallocBuffer<'info>>, buffer_limit: usize) -> Result<()> {
+pub fn handler<'info>(ctx: Context<ReallocBuffer<'info>>) -> Result<ThreadResponse> {
     let payer = &ctx.accounts.payer;
-    let dataset = &ctx.accounts.dataset;
+    let dataset = ctx.accounts.dataset.as_ref();
     let stat = &mut ctx.accounts.stat;
     let system_program = &ctx.accounts.system_program;
+    let thread = &ctx.accounts.thread;
+
+    // (1024 * 10) / 16 bytes = 640
+    let new_buffer_limit: usize = stat.buffer_limit + 640;
 
     // Allocate more memory to stat account.
-    let new_account_size = 8 + std::mem::size_of::<Dataset>() + (buffer_limit * std::mem::size_of::<crate::PriceData>());
-    dataset.to_account_info().realloc(new_account_size, false)?;
+    let new_account_size = 8 + std::mem::size_of::<Dataset>() + (new_buffer_limit * std::mem::size_of::<PriceData>());
+    dataset.realloc(new_account_size, false)?;
 
     // Update the buffer limit.
-    stat.buffer_limit = buffer_limit;
+    stat.buffer_limit = new_buffer_limit;
 
     // Transfer lamports to cover minimum rent requirements.
     let minimum_rent = Rent::get().unwrap().minimum_balance(new_account_size);
@@ -64,6 +78,19 @@ pub fn handler<'info>(ctx: Context<ReallocBuffer<'info>>, buffer_limit: usize) -
                 .unwrap(),
         )?;
     }
-    Ok(())
+
+    Ok(ThreadResponse { 
+        kickoff_instruction: None, 
+        next_instruction: Some(InstructionData {
+            program_id: crate::ID,
+            accounts: vec![
+                AccountMetaData::new(dataset.key(), false),
+                AccountMetaData::new(stat.key(), false),
+                AccountMetaData::new_readonly(stat.price_feed, false),
+                AccountMetaData::new(thread.key(), true),
+            ],
+            data: clockwork_sdk::anchor_sighash("calc").to_vec()
+        }) 
+    })
 }
 

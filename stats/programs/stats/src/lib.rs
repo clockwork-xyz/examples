@@ -6,6 +6,7 @@ mod instructions;
 pub use id::ID;
 
 use anchor_lang::prelude::*;
+use clockwork_sdk::*;
 use instructions::*;
 
 #[program]
@@ -19,11 +20,11 @@ pub mod stats {
     ) -> Result<()> {
         initialize::handler(ctx, lookback_window, sample_rate)
     }
-    pub fn calc(ctx: Context<Calc>) -> Result<()> {
+    pub fn calc(ctx: Context<Calc>) -> Result<ThreadResponse> {
         calc::handler(ctx)
     }
 
-    pub fn realloc_buffer(ctx: Context<ReallocBuffer>, buffer_limit: usize) -> Result<()> {
-        realloc_buffer::handler(ctx, buffer_limit)
+    pub fn realloc_buffer(ctx: Context<ReallocBuffer>) -> Result<ThreadResponse> {
+        realloc_buffer::handler(ctx)
     }
 }
