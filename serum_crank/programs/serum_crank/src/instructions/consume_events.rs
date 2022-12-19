@@ -6,7 +6,8 @@ use {
     },
     anchor_lang::solana_program::program::invoke_signed,
     anchor_spl::{token::TokenAccount, dex::serum_dex},
-    clockwork_sdk::{PAYER_PUBKEY, InstructionData, thread_program::accounts::{Thread, ThreadAccount}, ThreadResponse},
+    clockwork_sdk::{utils::PAYER_PUBKEY, state::{InstructionData, Thread, ThreadAccount,
+                                                           ThreadResponse}},
 };
 
 #[derive(Accounts)]
@@ -28,8 +29,8 @@ pub struct ConsumeEvents<'info> {
     )]
     pub crank_thread: Box<Account<'info, Thread>>,
 
-    #[account(address = anchor_spl::dex::ID)]
-    pub dex_program: Program<'info, anchor_spl::dex::Dex>,
+    /// CHECK: whatev
+    pub dex_program: AccountInfo<'info>,
 
     /// CHECK: this account is validated against the crank account
     #[account(mut)]
@@ -78,7 +79,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, ConsumeEvents<'info>>) -> 
                     AccountMeta::new(PAYER_PUBKEY, true),
                     AccountMeta::new_readonly(system_program::ID, false),
                 ],
-                data: clockwork_sdk::anchor_sighash("read_events").into(),
+                data: clockwork_sdk::utils::anchor_sighash("read_events").into(),
             }
                 .into()
         );

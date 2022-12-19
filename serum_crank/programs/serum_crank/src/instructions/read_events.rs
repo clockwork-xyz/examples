@@ -116,7 +116,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, ReadEvents<'info>>) -> Res
             Instruction {
                 program_id: crate::ID,
                 accounts: next_ix_accounts,
-                data: clockwork_sdk::anchor_sighash("consume_events").into(),
+                data: clockwork_sdk::utils::anchor_sighash("consume_events").into(),
             }
             .into()
         ),
