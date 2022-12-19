@@ -29,8 +29,10 @@ pub struct ConsumeEvents<'info> {
     )]
     pub crank_thread: Box<Account<'info, Thread>>,
 
-    /// CHECK: whatev
-    pub dex_program: AccountInfo<'info>,
+    #[account(address = anchor_spl::dex::ID)]
+    pub dex_program: Program<'info, anchor_spl::dex::Dex>,
+    // /// CHECK: whatev
+    // pub dex_program: AccountInfo<'info>,
 
     /// CHECK: this account is validated against the crank account
     #[account(mut)]

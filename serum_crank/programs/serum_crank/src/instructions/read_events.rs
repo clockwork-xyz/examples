@@ -6,7 +6,7 @@ use {
         solana_program::{system_program,instruction::Instruction},
     },
     anchor_spl::{dex::serum_dex::state::{strip_header, EventQueueHeader, Event, Queue as SerumDexQueue}, token::TokenAccount},
-    clockwork_sdk::{thread_program::accounts::{Thread}, ThreadResponse}
+    clockwork_sdk::{state::{Thread, ThreadResponse}},
 };
 
 #[derive(Accounts)]
@@ -29,6 +29,8 @@ pub struct ReadEvents<'info> {
     )]
     pub crank_thread: Box<Account<'info, Thread>>,
 
+    // /// CHECK: whatev
+    // pub dex_program: AccountInfo<'info>,
     #[account(address = anchor_spl::dex::ID)]
     pub dex_program: Program<'info, anchor_spl::dex::Dex>,
 

@@ -19,6 +19,8 @@ pub struct Initialize<'info> {
     )]
     pub crank: Account<'info, Crank>,
 
+    // /// CHECK: whatev
+    // pub dex_program: AccountInfo<'info>,
     #[account(address = anchor_spl::dex::ID)]
     pub dex_program: Program<'info, anchor_spl::dex::Dex>,
 
