@@ -15,7 +15,7 @@ pub struct Stat {
     pub sample_rate: i64,
     pub sample_avg: i64,
     pub buffer_size: usize,
-    pub head: Option<usize>,
+    pub head: Option<i64>,
 }
 
 impl Stat {

@@ -1,11 +1,9 @@
-use pyth_sdk_solana::Price;
-
 use {
     crate::state::*,
     anchor_lang::{prelude::*, Discriminator, solana_program::system_program},
     bytemuck::{Pod, Zeroable},
     clockwork_sdk::{thread_program::accounts::{Thread, ThreadAccount}, ThreadResponse, InstructionData, AccountMetaData},
-    pyth_sdk_solana::load_price_feed_from_account_info,
+    pyth_sdk_solana::{load_price_feed_from_account_info, Price},
     std::cell::{Ref, RefMut}
 };
 
@@ -48,12 +46,12 @@ pub struct Calc<'info> {
 pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<ThreadResponse> {
     let price_feed = &ctx.accounts.price_feed;
     let stat = &mut ctx.accounts.stat;
-    let thread = &ctx.accounts.thread;
+    // let thread = &ctx.accounts.thread;
     let dataset = ctx.accounts.dataset.as_ref();
     let mut data_points = load_entries_mut::<Dataset, PriceData>(dataset.try_borrow_mut_data()?).unwrap();
 
-    let mut kickoff_instruction: Option<InstructionData> = None;
-    let mut next_instruction: Option<InstructionData> = None;
+    // let mut kickoff_instruction: Option<InstructionData> = None;
+    // let mut next_instruction: Option<InstructionData> = None;
 
     match load_price_feed_from_account_info(&price_feed.to_account_info()) {
         Ok(price_feed) => { 
@@ -68,12 +66,13 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<ThreadResponse> {
             match stat.head {
                 None => {}, // Noop
                 Some(head) => {
-                    let mut tail = (head - stat.sample_count + 1) % stat.buffer_size;
-                    while data_points[tail].ts < price.publish_time - stat.lookback_window {
-                        stat.sample_sum = stat.sample_sum - data_points[tail].price;
-                        stat.sample_count = stat.sample_count - 1;
-                        data_points[tail] = PriceData::default();
-                        tail = (tail + 1) % stat.buffer_size;
+                    let mut tail = (head - stat.sample_count as i64 + 1).rem_euclid(stat.buffer_size as i64);
+                    while data_points[tail as usize].ts < price.publish_time - stat.lookback_window {
+                        stat.sample_sum -= data_points[tail as usize].price;
+                        stat.sample_count -= 1;
+                        data_points[tail as usize] = PriceData::default();
+                        tail = (tail + 1).rem_euclid(stat.buffer_size as i64);
+                        // TODO: ?? let mut tail = (head - stat.sample_count as i64 + 1).rem_euclid(stat.buffer_size as i64);
                         if tail > head {
                             stat.head = None;
                             break;
@@ -84,34 +83,44 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<ThreadResponse> {
             
             // Insert the new data point, and update head. 
             match stat.head {
+                // no data present
                 None => {
                     stat.head = Some(0);
                     data_points[0] = price_data;
+                    stat.sample_count += 1;
                 },
+                // data present,
                 Some(head) => {
                     // Exit early if this price is too early for the sampling rate.
-                    if price.publish_time < data_points[head].ts + stat.sample_rate {
+                    if price.publish_time < data_points[head as usize].ts + stat.sample_rate {
                         return Ok(ThreadResponse::default())
                     }
-                    stat.head = Some((head + 1) % stat.buffer_size);
+
+                    // update head idx for next insertion
+                    stat.head = Some((head + 1).rem_euclid(stat.buffer_size as i64));
 
                     // If the buffer is not yet full, increment the sample count. 
                     // Otherwise, subtract the data value that's about to be overwritten from the sum.  
                     if stat.sample_count < stat.buffer_size {
                         stat.sample_count += 1
                     } else {
-                        stat.sample_sum -= stat.sample_sum - data_points[stat.head.unwrap()].price;
+                        stat.sample_sum -= data_points[stat.head.unwrap() as usize].price;
                     }
 
                     // Insert the new data point.
-                    data_points[stat.head.unwrap()] = price_data;
+                    data_points[stat.head.unwrap() as usize] = price_data;
                 }
             };
 
             // Update the sum and average
             stat.sample_sum += price_data.price;
-            stat.sample_avg  = stat.sample_sum / stat.sample_count as i64;
-            
+            stat.sample_avg  = stat.sample_sum.checked_div(stat.sample_count as i64).unwrap();
+
+            msg!("[0] - {}", data_points.get(0).unwrap().ts);
+            msg!("[1] - {}", data_points.get(1).unwrap().ts);
+            msg!("[2] - {}", data_points.get(2).unwrap().ts);
+            msg!("[3] - {}", data_points.get(3).unwrap().ts);
+            msg!("[4] - {}", data_points.get(4).unwrap().ts);
 
             // TODO Only after the ring buffer logic is confirmed to be stable, then automatically resize the buffer. 
             // 
@@ -142,11 +151,11 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<ThreadResponse> {
             //     }) 
             // }
 
-            let tail = (stat.head.unwrap() - stat.sample_count + 1) % stat.buffer_size;
+            let tail = (stat.head.unwrap() - stat.sample_count as i64 + 1).rem_euclid(stat.buffer_size as i64);
             
             msg!("------------LIVE DATA------------");
-            msg!("     live price: {}", price.price);
-            msg!("      live time: {}", price.publish_time);
+            msg!("     live price: {}", price_data.price);
+            msg!("      live time: {}", price_data.ts);
             msg!("--------STATS ACCOUNT DATA-------");
             msg!("     price feed: {}", stat.price_feed);
             msg!("      authority: {}", stat.authority);
@@ -157,7 +166,7 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<ThreadResponse> {
             msg!("    sample rate: {}", stat.sample_rate);
             msg!("   sample count: {}", stat.sample_count);
             msg!("     sample sum: {}", stat.sample_sum);
-            msg!("   buffer_size: {}", stat.buffer_size);
+            msg!("    buffer_size: {}", stat.buffer_size);
             msg!("           head: {}", stat.head.unwrap());
             msg!("           tail: {}", tail);
             msg!("---------------------------------");
@@ -180,8 +189,6 @@ impl From<Price> for PriceData {
         PriceData { price: price.price, ts: price.publish_time }
     }
 }
-
-
 
 #[inline(always)]
 pub fn _load_entries<'a, THeader, TEntries>(data: Ref<'a, &mut [u8]>) -> Result<Ref<'a, [TEntries]>>
