@@ -14,8 +14,8 @@ pub struct Stat {
     pub sample_sum: i64,
     pub sample_rate: i64,
     pub sample_avg: i64,
-    pub buffer_limit: usize,
-    pub head: Option<i64>,
+    pub buffer_size: usize,
+    pub head: Option<usize>,
 }
 
 impl Stat {
@@ -51,7 +51,7 @@ impl Stat {
         authority: Pubkey,
         lookback_window: i64,
         sample_rate: i64,
-        buffer_limit: usize,
+        buffer_size: usize,
     ) -> Result<()> {
         self.price_feed = price_feed;
         self.authority = authority;
@@ -60,7 +60,7 @@ impl Stat {
         self.sample_sum = 0;
         self.sample_rate = sample_rate;
         self.sample_avg = 0;
-        self.buffer_limit = buffer_limit;
+        self.buffer_size = buffer_size;
         self.head = None;
         Ok(())
     }
