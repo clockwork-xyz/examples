@@ -65,13 +65,14 @@ fn create_feed(
     cluster: Cluster,
     thread_id: &str,
 ) -> ClientResult<()> {
-    let lookback_window: i64 = 60 * 57 * 7; // 4 hours
+    let lookback_window: i64 = 152; // seconds
     let stat_pubkey =
         stats::state::Stat::pubkey(price_feed_pubkey, client.payer_pubkey(), lookback_window);
     let stat_thread_pubkey = clockwork_sdk::thread_program::accounts::Thread::pubkey(
         client.payer_pubkey(),
         thread_id.into(),
     );
+    let dataset_pubkey = stats::state::Dataset::pubkey(stat_pubkey);
 
     print_explorer_link(stat_pubkey, "stat account".into(), cluster)?;
     print_explorer_link(stat_thread_pubkey, "stat_thread".into(), cluster)?;
@@ -86,6 +87,7 @@ fn create_feed(
     let initialize_ix = Instruction {
         program_id: stats::ID,
         accounts: vec![
+            AccountMeta::new(dataset_pubkey, false),
             AccountMeta::new_readonly(price_feed_pubkey, false),
             AccountMeta::new(stat_pubkey, false),
             AccountMeta::new(client.payer_pubkey(), true),
@@ -93,7 +95,7 @@ fn create_feed(
         ],
         data: stats::instruction::Initialize {
             lookback_window,
-            sample_rate: 15,
+            sample_rate: 5,
         }
         .data(),
     };
@@ -104,8 +106,8 @@ fn create_feed(
         Instruction {
             program_id: stats::ID,
             accounts: vec![
+                AccountMeta::new(dataset_pubkey, false),
                 AccountMeta::new(stat_pubkey, false),
-                AccountMeta::new(clockwork_sdk::PAYER_PUBKEY, true),
                 AccountMeta::new_readonly(price_feed_pubkey, false),
                 AccountMeta::new(stat_thread_pubkey, true),
             ],
