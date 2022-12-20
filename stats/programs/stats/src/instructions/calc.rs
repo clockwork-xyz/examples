@@ -67,7 +67,7 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<ThreadResponse> {
                 None => {}, // Noop
                 Some(head) => {
                     let mut tail = (head - stat.sample_count as i64 + 1).rem_euclid(stat.buffer_size as i64);
-                    while data_points[tail as usize].ts < price.publish_time - stat.lookback_window {
+                    while stat.sample_count > 0 && data_points[tail as usize].ts < price.publish_time - stat.lookback_window {
                         stat.sample_sum -= data_points[tail as usize].price;
                         stat.sample_count -= 1;
                         data_points[tail as usize] = PriceData::default();
