@@ -2841,6 +2841,7 @@ dependencies = [
  "clockwork-client",
  "clockwork-sdk",
  "serum-crank",
+ "solana-cli-config",
  "solana-client",
  "solana-sdk",
 ]
