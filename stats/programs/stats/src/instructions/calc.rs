@@ -72,11 +72,6 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<ThreadResponse> {
                         stat.sample_count -= 1;
                         data_points[tail as usize] = PriceData::default();
                         tail = (tail + 1).rem_euclid(stat.buffer_size as i64);
-                        // TODO: ?? let mut tail = (head - stat.sample_count as i64 + 1).rem_euclid(stat.buffer_size as i64);
-                        if tail > head {
-                            stat.head = None;
-                            break;
-                        }
                     }
                 }
             }
@@ -116,11 +111,11 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<ThreadResponse> {
             stat.sample_sum += price_data.price;
             stat.sample_avg  = stat.sample_sum.checked_div(stat.sample_count as i64).unwrap();
 
-            msg!("[0] - {}", data_points.get(0).unwrap().ts);
-            msg!("[1] - {}", data_points.get(1).unwrap().ts);
-            msg!("[2] - {}", data_points.get(2).unwrap().ts);
-            msg!("[3] - {}", data_points.get(3).unwrap().ts);
-            msg!("[4] - {}", data_points.get(4).unwrap().ts);
+            // msg!("[0] - {}", data_points.get(0).unwrap().ts);
+            // msg!("[1] - {}", data_points.get(1).unwrap().ts);
+            // msg!("[2] - {}", data_points.get(2).unwrap().ts);
+            // msg!("[3] - {}", data_points.get(3).unwrap().ts);
+            // msg!("[4] - {}", data_points.get(4).unwrap().ts);
 
             // TODO Only after the ring buffer logic is confirmed to be stable, then automatically resize the buffer. 
             // 
