@@ -50,7 +50,6 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<ThreadResponse> {
     let dataset = ctx.accounts.dataset.as_ref();
     let mut data_points = load_entries_mut::<Dataset, PriceData>(dataset.try_borrow_mut_data()?).unwrap();
 
-    let mut kickoff_instruction: Option<InstructionData> = None;
     let mut next_instruction: Option<InstructionData> = None;
 
     match load_price_feed_from_account_info(&price_feed.to_account_info()) {
@@ -86,11 +85,6 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<ThreadResponse> {
                 },
                 // data present
                 Some(head) => {
-                    // Exit early if this price is too early for the sampling rate.
-                    if price.publish_time < data_points[head as usize].ts + stat.sample_rate {
-                        return Ok(ThreadResponse::default())
-                    }
-
                     // update head idx for next insertion
                     stat.head = Some((head + 1).rem_euclid(stat.buffer_size as i64));
 
@@ -125,17 +119,6 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<ThreadResponse> {
                             ], 
                             data: clockwork_sdk::utils::anchor_sighash("realloc_buffer").to_vec() 
                         });
-            } else {
-                kickoff_instruction = Some(InstructionData {
-                    program_id: crate::ID,
-                    accounts: vec![
-                        AccountMetaData::new(dataset.key(), false),
-                        AccountMetaData::new(stat.key(), false),
-                        AccountMetaData::new_readonly(stat.price_feed, false),
-                        AccountMetaData::new(thread.key(), true),
-                    ],
-                    data: clockwork_sdk::utils::anchor_sighash("calc").to_vec()
-                }) 
             }
 
             let tail = (stat.head.unwrap() - stat.sample_count as i64 + 1).rem_euclid(stat.buffer_size as i64);
@@ -150,7 +133,7 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<ThreadResponse> {
             msg!("    newest - ts: {}", data_points.get(stat.head.unwrap() as usize).unwrap().ts);
             msg!("      avg price: {}", stat.sample_avg);
             msg!("lookback window: {} seconds", stat.lookback_window);
-            msg!("    sample rate: {}", stat.sample_rate);
+            msg!("    sample rate: {:?}", thread.trigger);
             msg!("   sample count: {}", stat.sample_count);
             msg!("     sample sum: {}", stat.sample_sum);
             msg!("    buffer_size: {}", stat.buffer_size);
@@ -161,7 +144,7 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<ThreadResponse> {
         Err(_) => {},
     }
 
-    Ok(ThreadResponse { kickoff_instruction, next_instruction })
+    Ok(ThreadResponse { next_instruction, ..ThreadResponse::default() })
 }
 
 #[derive(Copy, Clone, Zeroable, Pod, Default)]

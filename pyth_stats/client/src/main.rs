@@ -63,7 +63,7 @@ fn create_feed(
     cluster: Cluster,
     thread_id: &str,
 ) -> ClientResult<()> {
-    let lookback_window: i64 = 7201; // 7200 seconds
+    let lookback_window: i64 = 7202; // 7200 seconds
     let stat_pubkey =
         pyth_stats::state::Stat::pubkey(price_feed_pubkey, client.payer_pubkey(), lookback_window);
     let stat_thread_pubkey =
@@ -89,11 +89,7 @@ fn create_feed(
             AccountMeta::new(client.payer_pubkey(), true),
             AccountMeta::new_readonly(system_program::ID, false),
         ],
-        data: pyth_stats::instruction::Initialize {
-            lookback_window,
-            sample_rate: 0,
-        }
-        .data(),
+        data: pyth_stats::instruction::Initialize { lookback_window }.data(),
     };
 
     let create_thread_ix = thread_create(

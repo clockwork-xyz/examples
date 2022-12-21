@@ -13,12 +13,8 @@ use instructions::*;
 pub mod stats {
     use super::*;
 
-    pub fn initialize(
-        ctx: Context<Initialize>,
-        lookback_window: i64,
-        sample_rate: i64,
-    ) -> Result<()> {
-        initialize::handler(ctx, lookback_window, sample_rate)
+    pub fn initialize(ctx: Context<Initialize>, lookback_window: i64) -> Result<()> {
+        initialize::handler(ctx, lookback_window)
     }
     pub fn calc(ctx: Context<Calc>) -> Result<ThreadResponse> {
         calc::handler(ctx)

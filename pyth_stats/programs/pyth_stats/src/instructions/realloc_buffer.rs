@@ -77,7 +77,6 @@ pub fn handler<'info>(ctx: Context<ReallocBuffer<'info>>) -> Result<ThreadRespon
     }
 
     Ok(ThreadResponse { 
-        kickoff_instruction: None, 
         next_instruction: Some(InstructionData {
             program_id: crate::ID,
             accounts: vec![
@@ -87,7 +86,8 @@ pub fn handler<'info>(ctx: Context<ReallocBuffer<'info>>) -> Result<ThreadRespon
                 AccountMetaData::new(thread.key(), true),
             ],
             data: clockwork_sdk::utils::anchor_sighash("calc").to_vec()
-        }) 
+        }),
+        ..ThreadResponse::default() 
     })
 }
 
