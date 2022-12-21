@@ -46,12 +46,12 @@ pub struct Calc<'info> {
 pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<ThreadResponse> {
     let price_feed = &ctx.accounts.price_feed;
     let stat = &mut ctx.accounts.stat;
-    // let thread = &ctx.accounts.thread;
+    let thread = &ctx.accounts.thread;
     let dataset = ctx.accounts.dataset.as_ref();
     let mut data_points = load_entries_mut::<Dataset, PriceData>(dataset.try_borrow_mut_data()?).unwrap();
 
-    // let mut kickoff_instruction: Option<InstructionData> = None;
-    // let mut next_instruction: Option<InstructionData> = None;
+    let mut kickoff_instruction: Option<InstructionData> = None;
+    let mut next_instruction: Option<InstructionData> = None;
 
     match load_price_feed_from_account_info(&price_feed.to_account_info()) {
         Ok(price_feed) => { 
@@ -84,7 +84,7 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<ThreadResponse> {
                     data_points[0] = price_data;
                     stat.sample_count += 1;
                 },
-                // data present,
+                // data present
                 Some(head) => {
                     // Exit early if this price is too early for the sampling rate.
                     if price.publish_time < data_points[head as usize].ts + stat.sample_rate {
@@ -111,40 +111,32 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<ThreadResponse> {
             stat.sample_sum += price_data.price;
             stat.sample_avg  = stat.sample_sum.checked_div(stat.sample_count as i64).unwrap();
 
-            // msg!("[0] - {}", data_points.get(0).unwrap().ts);
-            // msg!("[1] - {}", data_points.get(1).unwrap().ts);
-            // msg!("[2] - {}", data_points.get(2).unwrap().ts);
-            // msg!("[3] - {}", data_points.get(3).unwrap().ts);
-            // msg!("[4] - {}", data_points.get(4).unwrap().ts);
-
-            // TODO Only after the ring buffer logic is confirmed to be stable, then automatically resize the buffer. 
-            // 
-            // let new_realloc_size: usize = 8 + std::mem::size_of::<Dataset>() + ((stat.buffer_size + 640) * std::mem::size_of::<crate::PriceData>());
-            // if stat.sample_count == stat.buffer_size && new_realloc_size < 10_000_000 {
-            //     next_instruction = 
-            //         Some(InstructionData { 
-            //                 program_id: crate::ID, 
-            //                 accounts: vec![
-            //                     AccountMetaData::new(dataset.key(), false),
-            //                     AccountMetaData::new(stat.key(), false),
-            //                     AccountMetaData::new(clockwork_sdk::PAYER_PUBKEY, true),
-            //                     AccountMetaData::new_readonly(system_program::ID, false),
-            //                     AccountMetaData::new(thread.key(), true),
-            //                 ], 
-            //                 data: clockwork_sdk::anchor_sighash("realloc_buffer").to_vec() 
-            //             });
-            // } else {
-            //     kickoff_instruction = Some(InstructionData {
-            //         program_id: crate::ID,
-            //         accounts: vec![
-            //             AccountMetaData::new(dataset.key(), false),
-            //             AccountMetaData::new(stat.key(), false),
-            //             AccountMetaData::new_readonly(stat.price_feed, false),
-            //             AccountMetaData::new(thread.key(), true),
-            //         ],
-            //         data: clockwork_sdk::anchor_sighash("calc").to_vec()
-            //     }) 
-            // }
+            let new_realloc_size: usize = 8 + std::mem::size_of::<Dataset>() + ((stat.buffer_size + 640) * std::mem::size_of::<crate::PriceData>());
+            if stat.sample_count == stat.buffer_size && stat.head.unwrap() == (stat.buffer_size - 1) as i64 && new_realloc_size < 10_000_000 {
+                next_instruction = 
+                    Some(InstructionData { 
+                            program_id: crate::ID, 
+                            accounts: vec![
+                                AccountMetaData::new(dataset.key(), false),
+                                AccountMetaData::new(stat.key(), false),
+                                AccountMetaData::new(clockwork_sdk::PAYER_PUBKEY, true),
+                                AccountMetaData::new_readonly(system_program::ID, false),
+                                AccountMetaData::new(thread.key(), true),
+                            ], 
+                            data: clockwork_sdk::anchor_sighash("realloc_buffer").to_vec() 
+                        });
+            } else {
+                kickoff_instruction = Some(InstructionData {
+                    program_id: crate::ID,
+                    accounts: vec![
+                        AccountMetaData::new(dataset.key(), false),
+                        AccountMetaData::new(stat.key(), false),
+                        AccountMetaData::new_readonly(stat.price_feed, false),
+                        AccountMetaData::new(thread.key(), true),
+                    ],
+                    data: clockwork_sdk::anchor_sighash("calc").to_vec()
+                }) 
+            }
 
             let tail = (stat.head.unwrap() - stat.sample_count as i64 + 1).rem_euclid(stat.buffer_size as i64);
             
@@ -169,7 +161,7 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<ThreadResponse> {
         Err(_) => {},
     }
 
-    Ok(ThreadResponse::default())
+    Ok(ThreadResponse { kickoff_instruction, next_instruction })
 }
 
 #[derive(Copy, Clone, Zeroable, Pod, Default)]
