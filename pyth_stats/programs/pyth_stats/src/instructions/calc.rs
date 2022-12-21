@@ -2,7 +2,7 @@ use {
     crate::state::*,
     anchor_lang::{prelude::*, Discriminator, solana_program::system_program},
     bytemuck::{Pod, Zeroable},
-    clockwork_sdk::{thread_program::accounts::{Thread, ThreadAccount}, ThreadResponse, InstructionData, AccountMetaData},
+    clockwork_sdk::state::{Thread, ThreadAccount, ThreadResponse, InstructionData, AccountMetaData},
     pyth_sdk_solana::{load_price_feed_from_account_info, Price},
     std::cell::{Ref, RefMut}
 };
@@ -119,11 +119,11 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<ThreadResponse> {
                             accounts: vec![
                                 AccountMetaData::new(dataset.key(), false),
                                 AccountMetaData::new(stat.key(), false),
-                                AccountMetaData::new(clockwork_sdk::PAYER_PUBKEY, true),
+                                AccountMetaData::new(clockwork_sdk::utils::PAYER_PUBKEY, true),
                                 AccountMetaData::new_readonly(system_program::ID, false),
                                 AccountMetaData::new(thread.key(), true),
                             ], 
-                            data: clockwork_sdk::anchor_sighash("realloc_buffer").to_vec() 
+                            data: clockwork_sdk::utils::anchor_sighash("realloc_buffer").to_vec() 
                         });
             } else {
                 kickoff_instruction = Some(InstructionData {
@@ -134,7 +134,7 @@ pub fn handler<'info>(ctx: Context<Calc<'info>>) -> Result<ThreadResponse> {
                         AccountMetaData::new_readonly(stat.price_feed, false),
                         AccountMetaData::new(thread.key(), true),
                     ],
-                    data: clockwork_sdk::anchor_sighash("calc").to_vec()
+                    data: clockwork_sdk::utils::anchor_sighash("calc").to_vec()
                 }) 
             }
 

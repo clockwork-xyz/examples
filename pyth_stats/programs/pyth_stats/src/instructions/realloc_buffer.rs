@@ -1,10 +1,7 @@
 use {
     crate::{state::*, PriceData},
     anchor_lang::{prelude::*, solana_program::system_program, system_program::{Transfer, transfer}},
-    clockwork_sdk::{
-        ThreadResponse, InstructionData, AccountMetaData, 
-        thread_program::accounts::{Thread, ThreadAccount}
-    }
+    clockwork_sdk::state::{ ThreadResponse, InstructionData, AccountMetaData, Thread, ThreadAccount },
 };
 
 #[derive(Accounts)]
@@ -89,7 +86,7 @@ pub fn handler<'info>(ctx: Context<ReallocBuffer<'info>>) -> Result<ThreadRespon
                 AccountMetaData::new_readonly(stat.price_feed, false),
                 AccountMetaData::new(thread.key(), true),
             ],
-            data: clockwork_sdk::anchor_sighash("calc").to_vec()
+            data: clockwork_sdk::utils::anchor_sighash("calc").to_vec()
         }) 
     })
 }

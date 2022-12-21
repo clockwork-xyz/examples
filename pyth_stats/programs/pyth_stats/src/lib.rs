@@ -6,7 +6,7 @@ mod instructions;
 pub use id::ID;
 
 use anchor_lang::prelude::*;
-use clockwork_sdk::*;
+use clockwork_sdk::state::*;
 use instructions::*;
 
 #[program]
