@@ -1,8 +1,8 @@
 use {
     anchor_lang::{prelude::*, solana_program::system_program, InstructionData},
-    clockwork_sdk::{
-        client::{thread_program::instruction::thread_create, Client, ClientResult},
-        thread_program::accounts::Trigger,
+    clockwork_client::{
+        thread::{instruction::thread_create, state::Trigger},
+        Client, ClientResult,
     },
     solana_sdk::{instruction::Instruction, signature::Keypair, transaction::Transaction},
     std::str::FromStr,
@@ -51,7 +51,7 @@ fn main() -> ClientResult<()> {
         &client,
         sol_usd_pubkey,
         Cluster::Mainnet,
-        "sol_usd_stat_test_5".into(),
+        "sol_usd_stat_cron".into(),
     )?;
 
     Ok(())
@@ -61,14 +61,14 @@ fn create_feed(
     client: &Client,
     price_feed_pubkey: Pubkey,
     cluster: Cluster,
-    stat_id: &str,
+    thread_id: &str,
 ) -> ClientResult<()> {
+    let lookback_window: i64 = 7202; // 7200 seconds
     let stat_pubkey =
-        stats::state::Stat::pubkey(price_feed_pubkey, client.payer_pubkey(), stat_id.into());
-    let stat_thread_pubkey = clockwork_sdk::thread_program::accounts::Thread::pubkey(
-        client.payer_pubkey(),
-        stat_id.into(),
-    );
+        pyth_stats::state::Stat::pubkey(price_feed_pubkey, client.payer_pubkey(), lookback_window);
+    let stat_thread_pubkey =
+        clockwork_client::thread::state::Thread::pubkey(client.payer_pubkey(), thread_id.into());
+    let dataset_pubkey = pyth_stats::state::Dataset::pubkey(stat_pubkey);
 
     print_explorer_link(stat_pubkey, "stat account".into(), cluster)?;
     print_explorer_link(stat_thread_pubkey, "stat_thread".into(), cluster)?;
@@ -81,43 +81,36 @@ fn create_feed(
     )?;
 
     let initialize_ix = Instruction {
-        program_id: stats::ID,
+        program_id: pyth_stats::ID,
         accounts: vec![
+            AccountMeta::new(dataset_pubkey, false),
             AccountMeta::new_readonly(price_feed_pubkey, false),
             AccountMeta::new(stat_pubkey, false),
             AccountMeta::new(client.payer_pubkey(), true),
             AccountMeta::new_readonly(system_program::ID, false),
         ],
-        data: stats::instruction::Initialize {
-            // 24 hours in seconds
-            lookback_window: 86400,
-            sample_rate: 10,
-            id: stat_id.into(),
-        }
-        .data(),
+        data: pyth_stats::instruction::Initialize { lookback_window }.data(),
     };
 
     let create_thread_ix = thread_create(
         client.payer_pubkey(),
-        stat_id.into(),
+        thread_id.into(),
         Instruction {
-            program_id: stats::ID,
+            program_id: pyth_stats::ID,
             accounts: vec![
+                AccountMeta::new(dataset_pubkey, false),
                 AccountMeta::new(stat_pubkey, false),
-                AccountMeta::new(clockwork_sdk::PAYER_PUBKEY, true),
                 AccountMeta::new_readonly(price_feed_pubkey, false),
-                AccountMeta::new_readonly(system_program::ID, false),
                 AccountMeta::new(stat_thread_pubkey, true),
             ],
-            data: stats::instruction::Calc {}.data(),
+            data: pyth_stats::instruction::Calc {}.data(),
         }
         .into(),
         client.payer_pubkey(),
         stat_thread_pubkey,
-        Trigger::Account {
-            address: price_feed_pubkey,
-            offset: 32,
-            size: 8,
+        Trigger::Cron {
+            schedule: "*/10 * * * * *".into(),
+            skippable: true,
         },
     );
 

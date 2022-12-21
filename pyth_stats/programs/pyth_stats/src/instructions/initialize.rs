@@ -4,18 +4,15 @@ use {
     std::mem::size_of,
 };
 
-static INITIAL_BUFFER_LIMIT: usize = 5;
+static INITIAL_BUFFER_LIMIT: usize = 100;
 
 #[derive(Accounts)]
-#[instruction(lookback_window: i64, sample_rate: i64, id: String)]
+#[instruction(lookback_window: i64)]
 pub struct Initialize<'info> {
-    /// CHECK: this account should be a pyth feed account
-    pub price_feed: AccountInfo<'info>,
-
     #[account(
         init,
         seeds = [
-            SEED_STAT, 
+            SEED_DATASET, 
             stat.key().as_ref(), 
         ],
         bump,
@@ -23,7 +20,9 @@ pub struct Initialize<'info> {
         space = 8 + size_of::<Dataset>() + (INITIAL_BUFFER_LIMIT * size_of::<crate::PriceData>()),
     )]
     pub dataset: AccountLoader<'info, Dataset>,
-
+    
+    /// CHECK: this account should be a pyth feed account
+    pub price_feed: AccountInfo<'info>,
 
     #[account(
         init,
@@ -46,12 +45,13 @@ pub struct Initialize<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler<'info>(ctx: Context<Initialize<'info>>, lookback_window: i64, sample_rate: i64) -> Result<()> {
+pub fn handler<'info>(ctx: Context<Initialize<'info>>, lookback_window: i64) -> Result<()> {
     let price_feed = &ctx.accounts.price_feed;
     let signer = &ctx.accounts.signer;
     let stat = &mut ctx.accounts.stat;
+    let mut _dataset = ctx.accounts.dataset.load_init()?;
 
-    stat.new(price_feed.key(), signer.key(), lookback_window, sample_rate, INITIAL_BUFFER_LIMIT)?;
-
+    stat.new(price_feed.key(), signer.key(), lookback_window, INITIAL_BUFFER_LIMIT)?;
+    
     Ok(())
 }
