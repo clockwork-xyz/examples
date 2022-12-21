@@ -4,7 +4,7 @@ use {
     std::mem::size_of,
 };
 
-static INITIAL_BUFFER_LIMIT: usize = 5;
+static INITIAL_BUFFER_LIMIT: usize = 100;
 
 #[derive(Accounts)]
 #[instruction(lookback_window: i64, sample_rate: i64)]
