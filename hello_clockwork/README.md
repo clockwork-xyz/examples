@@ -80,5 +80,8 @@ Time to switch perspective, we need to do some work off-chain now, we will creat
 - Run `cargo run --features localnet`, this will create a __Thread__ that continuously calls your program handler, and so continously
   prints "Hello World".
 
+## Common Errors
+Please refer to the [FAQ](https://github.com/clockwork-xyz/docs/blob/main/FAQ.md#common-errors).
+
 ## Questions
 Come build with us and ask us questions [Discord](https://discord.gg/epHsTsnUre)!
