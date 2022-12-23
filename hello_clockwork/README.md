@@ -77,8 +77,11 @@ We start by defining an instruction to execute, that is the __"WHAT"__:
 Time to switch perspective, we need to do some work off-chain now, we will create a Thread, that's the __"HOW"__:
 - Navigate to the `client` directory. _We have prepared a Rust client, but you
   can very well use any Solana client you prefer (JS, Python, etc)._
-- Run `cargo run`, this will create a __Thread__ that continuously calls your program handler, and so continously
+- Run `cargo run --features localnet`, this will create a __Thread__ that continuously calls your program handler, and so continously
   prints "Hello World".
+
+## Common Errors
+Please refer to the [FAQ](https://github.com/clockwork-xyz/docs/blob/main/FAQ.md#common-errors).
 
 ## Questions
 Come build with us and ask us questions [Discord](https://discord.gg/epHsTsnUre)!
