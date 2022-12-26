@@ -1,11 +1,11 @@
 use {
-    crate::{state::*, PriceData},
+    crate::state::*,
     anchor_lang::{prelude::*, solana_program::system_program, system_program::{Transfer, transfer}},
     clockwork_sdk::state::{ ThreadResponse, InstructionData, AccountMetaData, Thread, ThreadAccount },
 };
 
 #[derive(Accounts)]
-pub struct ReallocBuffer<'info> {
+pub struct ReallocBuffers<'info> {
     #[account(
         mut,
         seeds = [
@@ -15,6 +15,16 @@ pub struct ReallocBuffer<'info> {
         bump
     )]
     pub dataset: AccountLoader<'info, Dataset>,
+
+    #[account(
+        mut,
+        seeds = [
+            SEED_HISTORICAL_AVGS,
+            stat.key().as_ref(),
+        ],
+        bump
+    )]
+    pub historical_avgs: AccountLoader<'info, HistoricalAvgs>,
 
     #[account(
         mut,
@@ -42,9 +52,10 @@ pub struct ReallocBuffer<'info> {
     pub thread: Account<'info, Thread>,
 }
 
-pub fn handler<'info>(ctx: Context<ReallocBuffer<'info>>) -> Result<ThreadResponse> {
+pub fn handler<'info>(ctx: Context<ReallocBuffers<'info>>) -> Result<ThreadResponse> {
     let payer = &ctx.accounts.payer;
     let dataset = ctx.accounts.dataset.as_ref();
+    let historical_avgs = ctx.accounts.historical_avgs.as_ref();
     let stat = &mut ctx.accounts.stat;
     let system_program = &ctx.accounts.system_program;
     let thread = &ctx.accounts.thread;
@@ -52,16 +63,21 @@ pub fn handler<'info>(ctx: Context<ReallocBuffer<'info>>) -> Result<ThreadRespon
     // (1024 * 10) / 16 bytes = 640
     let new_buffer_size: usize = stat.buffer_size + 640;
 
-    // Allocate more memory to stat account.
-    let new_account_size = 8 + std::mem::size_of::<Dataset>() + (new_buffer_size * std::mem::size_of::<PriceData>());
-    dataset.realloc(new_account_size, false)?;
+    // Allocate more memory to account(s).
+    let dataset_new_account_size = 8 + std::mem::size_of::<Dataset>() + (new_buffer_size * std::mem::size_of::<PriceData>());
+    let historical_avgs_new_account_size = 8 + std::mem::size_of::<HistoricalAvgs>() + (new_buffer_size * std::mem::size_of::<i64>());
+
+    dataset.realloc(dataset_new_account_size, false)?;
+    historical_avgs.realloc(historical_avgs_new_account_size, false)?;
 
     // Update the buffer size.
     stat.buffer_size = new_buffer_size;
 
     // Transfer lamports to cover minimum rent requirements.
-    let minimum_rent = Rent::get().unwrap().minimum_balance(new_account_size);
-    if minimum_rent > dataset.to_account_info().lamports() {
+    let dataset_minimum_rent = Rent::get().unwrap().minimum_balance(dataset_new_account_size);
+    let historical_avgs_minimum_rent = Rent::get().unwrap().minimum_balance(historical_avgs_new_account_size);
+
+    if dataset_minimum_rent > dataset.to_account_info().lamports() {
         transfer(
             CpiContext::new(
                 system_program.to_account_info(),
@@ -70,8 +86,23 @@ pub fn handler<'info>(ctx: Context<ReallocBuffer<'info>>) -> Result<ThreadRespon
                     to: dataset.to_account_info(),
                 },
             ),
-            minimum_rent
+            dataset_minimum_rent
                 .checked_sub(dataset.to_account_info().lamports())
+                .unwrap(),
+        )?;
+    }
+
+    if historical_avgs_minimum_rent > historical_avgs.to_account_info().lamports() {
+        transfer(
+            CpiContext::new(
+                system_program.to_account_info(),
+                Transfer {
+                    from: payer.to_account_info(),
+                    to: historical_avgs.to_account_info(),
+                },
+            ),
+            historical_avgs_minimum_rent
+                .checked_sub(historical_avgs.to_account_info().lamports())
                 .unwrap(),
         )?;
     }
@@ -81,6 +112,7 @@ pub fn handler<'info>(ctx: Context<ReallocBuffer<'info>>) -> Result<ThreadRespon
             program_id: crate::ID,
             accounts: vec![
                 AccountMetaData::new(dataset.key(), false),
+                AccountMetaData::new(historical_avgs.key(), false),
                 AccountMetaData::new(stat.key(), false),
                 AccountMetaData::new_readonly(stat.price_feed, false),
                 AccountMetaData::new(thread.key(), true),
