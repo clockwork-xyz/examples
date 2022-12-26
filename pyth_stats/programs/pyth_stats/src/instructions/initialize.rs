@@ -17,9 +17,21 @@ pub struct Initialize<'info> {
         ],
         bump,
         payer = signer,
-        space = 8 + size_of::<Dataset>() + (INITIAL_BUFFER_LIMIT * size_of::<crate::PriceData>()),
+        space = 8 + size_of::<Dataset>() + (INITIAL_BUFFER_LIMIT * size_of::<PriceData>()),
     )]
     pub dataset: AccountLoader<'info, Dataset>,
+
+    #[account(
+        init,
+        seeds = [
+            SEED_HISTORICAL_AVGS,
+            stat.key().as_ref(), 
+        ],
+        bump,
+        payer = signer,
+        space = 8 + size_of::<HistoricalAvgs>() + (INITIAL_BUFFER_LIMIT * size_of::<i64>()),
+    )]
+    pub historic_avg: AccountLoader<'info, HistoricalAvgs>,
     
     /// CHECK: this account should be a pyth feed account
     pub price_feed: AccountInfo<'info>,
@@ -50,6 +62,7 @@ pub fn handler<'info>(ctx: Context<Initialize<'info>>, lookback_window: i64) -> 
     let signer = &ctx.accounts.signer;
     let stat = &mut ctx.accounts.stat;
     let mut _dataset = ctx.accounts.dataset.load_init()?;
+    let mut _historic_avg = ctx.accounts.historic_avg.load_init()?;
 
     stat.new(price_feed.key(), signer.key(), lookback_window, INITIAL_BUFFER_LIMIT)?;
     
