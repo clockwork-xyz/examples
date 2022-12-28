@@ -51,7 +51,7 @@ fn main() -> ClientResult<()> {
         &client,
         sol_usd_pubkey,
         Cluster::Mainnet,
-        "sol_usd_stat_cron".into(),
+        "sol_usd_stat".into(),
     )?;
 
     Ok(())
@@ -63,12 +63,14 @@ fn create_feed(
     cluster: Cluster,
     thread_id: &str,
 ) -> ClientResult<()> {
-    let lookback_window: i64 = 7202; // 7200 seconds
+    let lookback_window: i64 = 7203; // seconds
     let stat_pubkey =
         pyth_stats::state::Stat::pubkey(price_feed_pubkey, client.payer_pubkey(), lookback_window);
     let stat_thread_pubkey =
         clockwork_client::thread::state::Thread::pubkey(client.payer_pubkey(), thread_id.into());
-    let dataset_pubkey = pyth_stats::state::Dataset::pubkey(stat_pubkey);
+    let avg_buffer_pubkey = pyth_stats::state::AvgBuffer::pubkey(stat_pubkey);
+    let price_buffer_pubkey = pyth_stats::state::PriceBuffer::pubkey(stat_pubkey);
+    let time_series_pubkey = pyth_stats::state::TimeSeries::pubkey(stat_pubkey);
 
     print_explorer_link(stat_pubkey, "stat account".into(), cluster)?;
     print_explorer_link(stat_thread_pubkey, "stat_thread".into(), cluster)?;
@@ -83,11 +85,13 @@ fn create_feed(
     let initialize_ix = Instruction {
         program_id: pyth_stats::ID,
         accounts: vec![
-            AccountMeta::new(dataset_pubkey, false),
+            AccountMeta::new(avg_buffer_pubkey, false),
+            AccountMeta::new(price_buffer_pubkey, false),
             AccountMeta::new_readonly(price_feed_pubkey, false),
-            AccountMeta::new(stat_pubkey, false),
             AccountMeta::new(client.payer_pubkey(), true),
+            AccountMeta::new(stat_pubkey, false),
             AccountMeta::new_readonly(system_program::ID, false),
+            AccountMeta::new(time_series_pubkey, false),
         ],
         data: pyth_stats::instruction::Initialize { lookback_window }.data(),
     };
@@ -98,10 +102,12 @@ fn create_feed(
         Instruction {
             program_id: pyth_stats::ID,
             accounts: vec![
-                AccountMeta::new(dataset_pubkey, false),
-                AccountMeta::new(stat_pubkey, false),
+                AccountMeta::new(avg_buffer_pubkey, false),
+                AccountMeta::new(price_buffer_pubkey, false),
                 AccountMeta::new_readonly(price_feed_pubkey, false),
+                AccountMeta::new(stat_pubkey, false),
                 AccountMeta::new(stat_thread_pubkey, true),
+                AccountMeta::new(time_series_pubkey, false),
             ],
             data: pyth_stats::instruction::Calc {}.data(),
         }
@@ -118,7 +124,7 @@ fn create_feed(
         &client,
         [initialize_ix, create_thread_ix].to_vec(),
         None,
-        "init stat account and stat thread".into(),
+        "initialize and create thread".into(),
         cluster,
     )?;
 
