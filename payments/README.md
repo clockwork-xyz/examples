@@ -1,31 +1,63 @@
 # **Payments Program**
 
-## Prerequisites
-- Make sure you have both the [solana cli](https://docs.solana.com/cli/install-solana-cli-tools) and [anchor cli](https://project-serum.github.io/anchor/getting-started/installation.html#build-from-source-for-other-operating-systems) installed on your computer.
-- clone the [clockwork repo](https://github.com/clockwork-xyz/clockwork/) locally to your machine 
+## Devnet
+**1. Program Side - Deploying the Handler Program**
+
+We start by defining an instruction to execute, that is the __"WHAT"__:
+- We have already prepared a handler.
+- You just have to deploy it using `./deploy.sh devnet` _(nothing fancy, the usual program ids and network switch)_.
+
+**2. Client Side - Creating a Thread**
+
+Time to switch perspective, we need to do some work off-chain now, we will create a Thread, that's the __"HOW"__:
+- Navigate to the `client` directory. _We have prepared a Rust client, but you
+  can very well use any Solana client you prefer (JS, Python, etc)._
+- Run `cargo run`.
+
+## How do I know if it works?
+Let's see how we can observe our newly created Thread:
+- The prepared client, will also print the Solana Explorer url
+```bash
+thread_create tx: ✅ https://explorer.solana.com/tx/...
+```
+- Additionally, the client will also print an url to inspect the Thread with the [Clockwork Explorer](https://explorer.clockwork.xyz/)
+```bash
+https://explorer.clockwork.xyz/address/...
+```
+- Finally, if you have the Clockwork Cli installed, you can use the `clockwork` command
+```bash
+clockwork thread get --address <your_thread_address> 
+clockwork thread get <your_thread_label>
+```
+
+---
 
 ## Localnet
-- run `anchor build` in the root directory of `payments`
-- run `solana address -k target/deploy/payments-keypair.json` to get your program's ID
-- copy that ID and replace it with the Program ID in `id.rs` and the `Anchor.toml` files
-- run `anchor build` again
-- be sure to set your solana config to devnet with `solana config set --url http://localhost:8899`
-- make sure in your `Anchor.toml` file that your cluster is set to `localnet`
-- if you have the [clockwork repo](https://github.com/clockwork-xyz/clockwork/#getting-started) and you've followed the [getting started](https://github.com/clockwork-xyz/clockwork/#getting-started) guide on how to build from source you can run the following command
-  ```bash
-  clockwork localnet --bpf-program <PATH TO THIS FILE>/clockwork-xyz/examples/payments/target/deploy/payments-keypair.json <PATH TO THIS FILE>/clockwork-xyz/examples/payments/target/deploy/payments.so
-  ```
-- In a new terminal navigate to the `client` directory
-- run `cargo run` 
 
-## Devnet
-- run `anchor build` in the root directory of `payments`
-- run `solana address -k target/deploy/payments-keypair.json` to get your program's ID
-- copy that ID and replace it with the Program ID in `id.rs` and `Anchor.toml`
-- run `anchor build` again
-- be sure to set your solana config to devnet with `solana config set --url https://api.devnet.solana.com`
-- make sure in your `Anchor.toml` file that your cluster is set to `devnet`
-- airdrop yourself a few times with `solana airdrop 2`
-- run `anchor deploy`
-- navigate to the `client` directory
-- run `cargo run --features devnet` 
+The workflow is pretty similar with __devnet__ with the exception that you are running your own validator. So you need:
+1. The `solana-test-validator` which should be installed by default with Solana.
+2. Install and run the Clockwork Engine _(geyser plugin)_ with the `solana-test-validator`.
+
+**0. Validator Setup - Run the validator with Clockwork**
+- Build and install the [Clockwork Engine](https://github.com/clockwork-xyz/clockwork#local-development)
+- Use the `clockwork localnet` to start a local validator with the Clockwork Engine.
+
+**1. Program Side - Deploying the Handler Program**
+
+We start by defining an instruction to execute, that is the __"WHAT"__:
+- We have already prepared a handler.
+- You just have to deploy it using `./deploy.sh localnet` _(nothing fancy, the usual program ids and network switch)_.
+
+**2. Client Side - Creating a Thread**
+
+Time to switch perspective, we need to do some work off-chain now, we will create a Thread, that's the __"HOW"__:
+- Navigate to the `client` directory. _We have prepared a Rust client, but you
+  can very well use any Solana client you prefer (JS, Python, etc)._
+- Run `cargo run --features localnet`, this will create a __Thread__ that continuously calls your program handler, and so continously
+  prints "Hello World".
+
+## Common Errors
+Please refer to the [FAQ](https://github.com/clockwork-xyz/docs/blob/main/FAQ.md#common-errors).
+
+## Questions
+Come build with us and ask us questions [Discord](https://discord.gg/epHsTsnUre)!
