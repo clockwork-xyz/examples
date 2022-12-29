@@ -1,13 +1,15 @@
 use {
     anchor_lang::{prelude::Pubkey, solana_program::sysvar, InstructionData},
     anchor_spl::{associated_token, token},
-    clockwork_sdk::{
-        client::{
-            thread_program::{instruction::thread_create, objects::Trigger},
-            Client, ClientResult, SplToken,
+    clockwork_client::{
+        thread::{
+            instruction::thread_create,
+            ID as thread_program_ID,
+            state::{Thread, Trigger},
         },
-        PAYER_PUBKEY,
+        Client, ClientResult, SplToken,
     },
+    clockwork_utils::{explorer::Explorer, PAYER_PUBKEY},
     payments::state::Payment,
     solana_sdk::{
         instruction::{AccountMeta, Instruction},
@@ -20,13 +22,14 @@ use {
 };
 
 fn main() -> ClientResult<()> {
-    // Create Client
-    let payer = Keypair::new();
-    #[cfg(feature = "devnet")]
-    let client = Client::new(payer, "https://api.devnet.solana.com".into());
-    #[cfg(not(feature = "devnet"))]
-    let client = Client::new(payer, "http://localhost:8899".into());
+    // Creating a Client with your default paper keypair as payer
+    let client = default_client();
     client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
+
+    // Security:
+    // Note that we are using your default Solana paper keypair as the thread authority.
+    // Feel free to use whichever authority is appropriate for your use case.
+    let thread_authority = client.payer_pubkey();
 
     // create token mint
     let mint_pubkey = client
@@ -38,7 +41,7 @@ fn main() -> ClientResult<()> {
     let recipient_pubkey = Keypair::new().pubkey();
     let payment_pubkey = Payment::pubkey(client.payer_pubkey(), mint_pubkey, recipient_pubkey);
     let thread_pubkey = clockwork_sdk::thread_program::accounts::Thread::pubkey(
-        client.payer_pubkey(),
+        thread_authority,
         "payment".into(),
     );
 
@@ -132,7 +135,7 @@ fn create_payment(
     };
 
     let thread_create = thread_create(
-        client.payer_pubkey(),
+        thread_authority,
         "payment".into(),
         distribute_payment_ix.into(),
         client.payer_pubkey(),
@@ -223,4 +226,23 @@ pub fn sign_send_and_confirm_tx(
         Err(err) => println!("{} tx: ❌ {:#?}", label, err),
     }
     Ok(())
+}
+
+fn explorer() -> Explorer {
+    #[cfg(feature = "localnet")]
+    return Explorer::custom("http://localhost:8899".to_string());
+    #[cfg(not(feature = "localnet"))]
+    Explorer::devnet()
+}
+
+fn default_client() -> Client {
+    #[cfg(not(feature = "localnet"))]
+        let host = "https://api.devnet.solana.com";
+    #[cfg(feature = "localnet")]
+        let host = "http://localhost:8899";
+
+    let config_file = solana_cli_config::CONFIG_FILE.as_ref().unwrap().as_str();
+    let config = solana_cli_config::Config::load(config_file).unwrap();
+    let payer = read_keypair_file(&config.keypair_path).unwrap();
+    Client::new(payer, host.into())
 }
