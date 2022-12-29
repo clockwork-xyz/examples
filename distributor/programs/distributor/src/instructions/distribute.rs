@@ -9,8 +9,7 @@ use {
         token::{self, Mint, MintTo, TokenAccount},
     },
     clockwork_sdk::{
-        thread_program::accounts::{Thread, ThreadAccount},
-        ThreadResponse,
+        state::{Thread, ThreadAccount, ThreadResponse},
     },
 };
 

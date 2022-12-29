@@ -1,13 +1,13 @@
 [features]
 seeds = false
 [programs.localnet]
-distributor = "BR4SK3Z9cMbhSpy3cqSMqEgrcYXvmjjVyFKvNxNWi2iw"
+distributor = "CB28Sx21uQgHupDu4GHz81MiWKofcbifyKDyrj1F48nz"
 
 [registry]
 url = "https://anchor.projectserum.com"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

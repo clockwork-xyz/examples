@@ -42,7 +42,7 @@ fn main() -> ClientResult<()> {
     };
 
     let thread_create = thread_create(
-        client.payer_pubkey(),
+        thread_authority,
         "hello".into(),
         hello_world_ix.into(),
         client.payer_pubkey(),
