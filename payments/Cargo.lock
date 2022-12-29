@@ -90,9 +90,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "alloc-traits"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6b2d54853319fd101b8dd81de382bcbf3e03410a64d8928bbee85a3e7dcde483"
+
+[[package]]
 name = "anchor-attribute-access-control"
-version = "0.25.0"
-source = "git+https://github.com/clockwork-xyz/anchor?branch=0.25.0-solana.1.13.4#27531b40333fd55c9526a8efc0d0e08cb5673522"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf7d535e1381be3de2c0716c0a1c1e32ad9df1042cddcf7bc18d743569e53319"
 dependencies = [
  "anchor-syn",
  "anyhow",
@@ -104,8 +111,9 @@ dependencies = [
 
 [[package]]
 name = "anchor-attribute-account"
-version = "0.25.0"
-source = "git+https://github.com/clockwork-xyz/anchor?branch=0.25.0-solana.1.13.4#27531b40333fd55c9526a8efc0d0e08cb5673522"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c3bcd731f21048a032be27c7791701120e44f3f6371358fc4261a7f716283d29"
 dependencies = [
  "anchor-syn",
  "anyhow",
@@ -118,8 +126,9 @@ dependencies = [
 
 [[package]]
 name = "anchor-attribute-constant"
-version = "0.25.0"
-source = "git+https://github.com/clockwork-xyz/anchor?branch=0.25.0-solana.1.13.4#27531b40333fd55c9526a8efc0d0e08cb5673522"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e1be64a48e395fe00b8217287f226078be2cf32dae42fdf8a885b997945c3d28"
 dependencies = [
  "anchor-syn",
  "proc-macro2 1.0.47",
@@ -128,8 +137,9 @@ dependencies = [
 
 [[package]]
 name = "anchor-attribute-error"
-version = "0.25.0"
-source = "git+https://github.com/clockwork-xyz/anchor?branch=0.25.0-solana.1.13.4#27531b40333fd55c9526a8efc0d0e08cb5673522"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "38ea6713d1938c0da03656ff8a693b17dc0396da66d1ba320557f07e86eca0d4"
 dependencies = [
  "anchor-syn",
  "proc-macro2 1.0.47",
@@ -139,8 +149,9 @@ dependencies = [
 
 [[package]]
 name = "anchor-attribute-event"
-version = "0.25.0"
-source = "git+https://github.com/clockwork-xyz/anchor?branch=0.25.0-solana.1.13.4#27531b40333fd55c9526a8efc0d0e08cb5673522"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d401f11efb3644285685f8339829a9786d43ed7490bb1699f33c478d04d5a582"
 dependencies = [
  "anchor-syn",
  "anyhow",
@@ -151,8 +162,9 @@ dependencies = [
 
 [[package]]
 name = "anchor-attribute-interface"
-version = "0.25.0"
-source = "git+https://github.com/clockwork-xyz/anchor?branch=0.25.0-solana.1.13.4#27531b40333fd55c9526a8efc0d0e08cb5673522"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c6700a6f5c888a9c33fe8afc0c64fd8575fa28d05446037306d0f96102ae4480"
 dependencies = [
  "anchor-syn",
  "anyhow",
@@ -164,8 +176,9 @@ dependencies = [
 
 [[package]]
 name = "anchor-attribute-program"
-version = "0.25.0"
-source = "git+https://github.com/clockwork-xyz/anchor?branch=0.25.0-solana.1.13.4#27531b40333fd55c9526a8efc0d0e08cb5673522"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6ad769993b5266714e8939e47fbdede90e5c030333c7522d99a4d4748cf26712"
 dependencies = [
  "anchor-syn",
  "anyhow",
@@ -176,8 +189,9 @@ dependencies = [
 
 [[package]]
 name = "anchor-attribute-state"
-version = "0.25.0"
-source = "git+https://github.com/clockwork-xyz/anchor?branch=0.25.0-solana.1.13.4#27531b40333fd55c9526a8efc0d0e08cb5673522"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4e677fae4a016a554acdd0e3b7f178d3acafaa7e7ffac6b8690cf4e171f1c116"
 dependencies = [
  "anchor-syn",
  "anyhow",
@@ -188,8 +202,9 @@ dependencies = [
 
 [[package]]
 name = "anchor-derive-accounts"
-version = "0.25.0"
-source = "git+https://github.com/clockwork-xyz/anchor?branch=0.25.0-solana.1.13.4#27531b40333fd55c9526a8efc0d0e08cb5673522"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "340beef6809d1c3fcc7ae219153d981e95a8a277ff31985bd7050e32645dc9a8"
 dependencies = [
  "anchor-syn",
  "anyhow",
@@ -200,8 +215,9 @@ dependencies = [
 
 [[package]]
 name = "anchor-lang"
-version = "0.25.0"
-source = "git+https://github.com/clockwork-xyz/anchor?branch=0.25.0-solana.1.13.4#27531b40333fd55c9526a8efc0d0e08cb5673522"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "662ceafe667448ee4199a4be2ee83b6bb76da28566eee5cea05f96ab38255af8"
 dependencies = [
  "anchor-attribute-access-control",
  "anchor-attribute-account",
@@ -223,10 +239,12 @@ dependencies = [
 
 [[package]]
 name = "anchor-spl"
-version = "0.25.0"
-source = "git+https://github.com/clockwork-xyz/anchor?branch=0.25.0-solana.1.13.4#27531b40333fd55c9526a8efc0d0e08cb5673522"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f32390ce8356f54c0f0245ea156f8190717e37285b8bf4f406a613dc4b954cde"
 dependencies = [
  "anchor-lang",
+ "serum_dex",
  "solana-program",
  "spl-associated-token-account",
  "spl-token",
@@ -234,8 +252,9 @@ dependencies = [
 
 [[package]]
 name = "anchor-syn"
-version = "0.25.0"
-source = "git+https://github.com/clockwork-xyz/anchor?branch=0.25.0-solana.1.13.4#27531b40333fd55c9526a8efc0d0e08cb5673522"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0418bcb5daac3b8cb1b60d8fdb1d468ca36f5509f31fb51179326fae1028fdcc"
 dependencies = [
  "anyhow",
  "bs58 0.3.1",
@@ -670,16 +689,18 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
- "clockwork-sdk",
+ "clockwork-client",
+ "clockwork-utils",
  "payments",
- "solana-client",
+ "solana-cli-config",
  "solana-sdk",
 ]
 
 [[package]]
 name = "clockwork-client"
-version = "1.3.9"
-source = "git+https://github.com/clockwork-xyz/clockwork?tag=v1.3.9#092f86072ad0fa087c990ec9f01e26a227913046"
+version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd0886ceb8d890ba77b8e69864b4bebf0857c0c0672fbe996a721c68171d05cb"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -697,8 +718,9 @@ dependencies = [
 
 [[package]]
 name = "clockwork-cron"
-version = "1.3.9"
-source = "git+https://github.com/clockwork-xyz/clockwork?tag=v1.3.9#092f86072ad0fa087c990ec9f01e26a227913046"
+version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dbc3881dddc06e5186ef288dba9dfce9e44bb00158a5629c32327b5c5fb60e95"
 dependencies = [
  "chrono",
  "nom",
@@ -707,8 +729,9 @@ dependencies = [
 
 [[package]]
 name = "clockwork-network-program"
-version = "1.3.9"
-source = "git+https://github.com/clockwork-xyz/clockwork?tag=v1.3.9#092f86072ad0fa087c990ec9f01e26a227913046"
+version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a281044d28fe35047dec60cd55cf2000307132ad54c68f6b14952c90eaa01a73"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -717,11 +740,12 @@ dependencies = [
 
 [[package]]
 name = "clockwork-sdk"
-version = "1.3.9"
-source = "git+https://github.com/clockwork-xyz/clockwork?tag=v1.3.9#092f86072ad0fa087c990ec9f01e26a227913046"
+version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5cb27a6546c10877fb0b309bb94f23fd13903d73ba793dda8b4acab4b70fc286"
 dependencies = [
+ "anchor-lang",
  "chrono",
- "clockwork-client",
  "clockwork-thread-program",
  "nom",
  "once_cell",
@@ -729,8 +753,9 @@ dependencies = [
 
 [[package]]
 name = "clockwork-thread-program"
-version = "1.3.9"
-source = "git+https://github.com/clockwork-xyz/clockwork?tag=v1.3.9#092f86072ad0fa087c990ec9f01e26a227913046"
+version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6aa4a3843764e300bd15aefb83b33fbd590de3d0a5ad0b934827833837d2e9f6"
 dependencies = [
  "anchor-lang",
  "chrono",
@@ -743,8 +768,9 @@ dependencies = [
 
 [[package]]
 name = "clockwork-utils"
-version = "1.3.9"
-source = "git+https://github.com/clockwork-xyz/clockwork?tag=v1.3.9#092f86072ad0fa087c990ec9f01e26a227913046"
+version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "80a384f1b7b90796c3a3ad3852b4eb56cc6b3f40a8b15fa4d05688e1a034d538"
 dependencies = [
  "anchor-lang",
  "base64 0.13.0",
@@ -753,8 +779,9 @@ dependencies = [
 
 [[package]]
 name = "clockwork-webhook-program"
-version = "1.3.9"
-source = "git+https://github.com/clockwork-xyz/clockwork?tag=v1.3.9#092f86072ad0fa087c990ec9f01e26a227913046"
+version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3d7b2aedeb262bb0f8a425b1b83b0079604d70773ed5242c524324b53a996fd1"
 dependencies = [
  "anchor-lang",
  "clockwork-network-program",
@@ -1196,6 +1223,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "enumflags2"
+version = "0.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "83c8d82922337cd23a15f88b70d8e4ef5f11da38dd7cdb55e84dd5de99695da0"
+dependencies = [
+ "enumflags2_derive",
+]
+
+[[package]]
+name = "enumflags2_derive"
+version = "0.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "946ee94e3dbf58fdd324f9ce245c7b238d46a66f00e86a020b71996349e46cce"
+dependencies = [
+ "proc-macro2 1.0.47",
+ "quote 1.0.21",
+ "syn 1.0.102",
+]
+
+[[package]]
 name = "env_logger"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1228,6 +1275,16 @@ name = "feature-probe"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "835a3dc7d1ec9e75e2b5fb4ba75396837112d2060b03f7d43bc1897c7f7211da"
+
+[[package]]
+name = "field-offset"
+version = "0.3.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e1c54951450cbd39f3dbcf1005ac413b49487dabf18a720ad2383eccfeffb92"
+dependencies = [
+ "memoffset",
+ "rustc_version 0.3.3",
+]
 
 [[package]]
 name = "flate2"
@@ -1660,6 +1717,15 @@ name = "ipnet"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "879d54834c8c76457ef4293a689b2a8c59b076067ad77b15efafbb05f92a592b"
+
+[[package]]
+name = "itertools"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "284f18f85651fe11e8a991b2adb42cb078325c996ed026d994719efcfca1d54b"
+dependencies = [
+ "either",
+]
 
 [[package]]
 name = "itertools"
@@ -2211,6 +2277,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "pest"
+version = "2.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0f6e86fb9e7026527a0d46bc308b841d73170ef8f443e1807f6ef88526a816d4"
+dependencies = [
+ "thiserror",
+ "ucd-trie",
+]
+
+[[package]]
 name = "pin-project-lite"
 version = "0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2620,11 +2696,20 @@ checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
 name = "rustc_version"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f0dfe2087c51c460008730de8b57e6a320782fbfb312e1f4d520e6c6fae155ee"
+dependencies = [
+ "semver 0.11.0",
+]
+
+[[package]]
+name = "rustc_version"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bfa0f585226d2e68097d4f95d113b15b83a82e819ab25717ec0590d9584ef366"
 dependencies = [
- "semver",
+ "semver 1.0.14",
 ]
 
 [[package]]
@@ -2691,6 +2776,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4501abdff3ae82a1c1b477a17252eb69cee9e66eb915c1abaa4f44d873df9f09"
 
 [[package]]
+name = "safe-transmute"
+version = "0.11.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "98a01dab6acf992653be49205bdd549f32f17cb2803e8eacf1560bf97259aae8"
+
+[[package]]
 name = "schannel"
 version = "0.1.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2747,9 +2838,27 @@ dependencies = [
 
 [[package]]
 name = "semver"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f301af10236f6df4160f7c3f04eec6dbc70ace82d23326abad5edee88801c6b6"
+dependencies = [
+ "semver-parser",
+]
+
+[[package]]
+name = "semver"
 version = "1.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e25dfac463d778e353db5be2449d1cce89bd6fd23c9f1ea21310ce6e5a1b29c4"
+
+[[package]]
+name = "semver-parser"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "00b0bef5b7f9e0df16536d3961cfb6e84331c065b4066afb39768d0e319411f7"
+dependencies = [
+ "pest",
+]
 
 [[package]]
 name = "serde"
@@ -2813,6 +2922,30 @@ dependencies = [
  "ryu",
  "serde",
  "yaml-rust",
+]
+
+[[package]]
+name = "serum_dex"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "02705854bae4622e552346c8edd43ab90c7425da35d63d2c689f39238f8d8b25"
+dependencies = [
+ "arrayref",
+ "bincode",
+ "bytemuck",
+ "byteorder",
+ "enumflags2",
+ "field-offset",
+ "itertools 0.9.0",
+ "num-traits",
+ "num_enum",
+ "safe-transmute",
+ "serde",
+ "solana-program",
+ "spl-token",
+ "static_assertions",
+ "thiserror",
+ "without-alloc",
 ]
 
 [[package]]
@@ -2999,7 +3132,7 @@ dependencies = [
  "futures-util",
  "indexmap",
  "indicatif",
- "itertools",
+ "itertools 0.10.5",
  "jsonrpc-core",
  "lazy_static",
  "log",
@@ -3011,7 +3144,7 @@ dependencies = [
  "rayon",
  "reqwest",
  "rustls",
- "semver",
+ "semver 1.0.14",
  "serde",
  "serde_derive",
  "serde_json",
@@ -3086,7 +3219,7 @@ dependencies = [
  "lazy_static",
  "log",
  "memmap2",
- "rustc_version",
+ "rustc_version 0.4.0",
  "serde",
  "serde_bytes",
  "serde_derive",
@@ -3103,7 +3236,7 @@ checksum = "1427b307e619e53e33987967112b0bc5ae2983915e00a46720b589bffe7f924b"
 dependencies = [
  "proc-macro2 1.0.47",
  "quote 1.0.21",
- "rustc_version",
+ "rustc_version 0.4.0",
  "syn 1.0.102",
 ]
 
@@ -3210,7 +3343,7 @@ dependencies = [
  "console_log",
  "curve25519-dalek",
  "getrandom 0.1.16",
- "itertools",
+ "itertools 0.10.5",
  "js-sys",
  "lazy_static",
  "libsecp256k1",
@@ -3219,7 +3352,7 @@ dependencies = [
  "num-traits",
  "parking_lot 0.12.1",
  "rand 0.7.3",
- "rustc_version",
+ "rustc_version 0.4.0",
  "rustversion",
  "serde",
  "serde_bytes",
@@ -3242,13 +3375,13 @@ dependencies = [
  "base64 0.13.0",
  "bincode",
  "enum-iterator",
- "itertools",
+ "itertools 0.10.5",
  "libc",
  "libloading",
  "log",
  "num-derive",
  "num-traits",
- "rustc_version",
+ "rustc_version 0.4.0",
  "serde",
  "solana-frozen-abi",
  "solana-frozen-abi-macro",
@@ -3280,7 +3413,7 @@ dependencies = [
  "num-traits",
  "parking_lot 0.12.1",
  "qstring",
- "semver",
+ "semver 1.0.14",
  "solana-sdk",
  "thiserror",
  "uriparse",
@@ -3307,7 +3440,7 @@ dependencies = [
  "ed25519-dalek-bip32",
  "generic-array",
  "hmac 0.12.1",
- "itertools",
+ "itertools 0.10.5",
  "js-sys",
  "lazy_static",
  "libsecp256k1",
@@ -3319,7 +3452,7 @@ dependencies = [
  "qstring",
  "rand 0.7.3",
  "rand_chacha 0.2.2",
- "rustc_version",
+ "rustc_version 0.4.0",
  "rustversion",
  "serde",
  "serde_bytes",
@@ -3360,7 +3493,7 @@ dependencies = [
  "futures-util",
  "histogram",
  "indexmap",
- "itertools",
+ "itertools 0.10.5",
  "libc",
  "log",
  "nix",
@@ -3414,8 +3547,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f05fc1cf71609526b7786b96365035141f51d4f963b9ed329368fa862a916ea"
 dependencies = [
  "log",
- "rustc_version",
- "semver",
+ "rustc_version 0.4.0",
+ "semver 1.0.14",
  "serde",
  "serde_derive",
  "solana-frozen-abi",
@@ -3433,7 +3566,7 @@ dependencies = [
  "log",
  "num-derive",
  "num-traits",
- "rustc_version",
+ "rustc_version 0.4.0",
  "serde",
  "serde_derive",
  "solana-frozen-abi",
@@ -3559,6 +3692,12 @@ dependencies = [
  "quote 1.0.21",
  "syn 1.0.102",
 ]
+
+[[package]]
+name = "static_assertions"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "strsim"
@@ -3896,6 +4035,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dcf81ac59edc17cc8697ff311e8f5ef2d99fcbd9817b34cec66f90b6c3dfd987"
 
 [[package]]
+name = "ucd-trie"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9e79c4d996edb816c91e4308506774452e55e95c3c9de07b6729e17e15a5ef81"
+
+[[package]]
 name = "unicode-bidi"
 version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3948,6 +4093,15 @@ checksum = "9f214e8f697e925001e66ec2c6e37a4ef93f0f78c2eed7814394e10c62025b05"
 dependencies = [
  "generic-array",
  "subtle",
+]
+
+[[package]]
+name = "unsize"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4fa7a7a734c1a5664a662ddcea0b6c9472a21da8888c957c7f1eaa09dba7a939"
+dependencies = [
+ "autocfg",
 ]
 
 [[package]]
@@ -4262,6 +4416,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "80d0f4e272c85def139476380b12f9ac60926689dd2e01d4923222f40580869d"
 dependencies = [
  "winapi",
+]
+
+[[package]]
+name = "without-alloc"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "375db0478b203b950ef10d1cce23cdbe5f30c2454fd9e7673ff56656df23adbb"
+dependencies = [
+ "alloc-traits",
+ "unsize",
 ]
 
 [[package]]

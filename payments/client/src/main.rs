@@ -3,8 +3,8 @@ use {
     anchor_spl::{associated_token, token},
     clockwork_client::{
         thread::{
-            instruction::thread_create,
             ID as thread_program_ID,
+            instruction::thread_create,
             state::{Thread, Trigger},
         },
         Client, ClientResult, SplToken,
@@ -15,6 +15,7 @@ use {
         instruction::{AccountMeta, Instruction},
         native_token::LAMPORTS_PER_SOL,
         signature::Keypair,
+        signature::read_keypair_file,
         signer::Signer,
         system_program,
         transaction::Transaction,
@@ -40,7 +41,7 @@ fn main() -> ClientResult<()> {
     // Derive PDAs
     let recipient_pubkey = Keypair::new().pubkey();
     let payment_pubkey = Payment::pubkey(client.payer_pubkey(), mint_pubkey, recipient_pubkey);
-    let thread_pubkey = clockwork_sdk::thread_program::accounts::Thread::pubkey(
+    let thread_pubkey = Thread::pubkey(
         thread_authority,
         "payment".into(),
     );
@@ -135,7 +136,7 @@ fn create_payment(
     };
 
     let thread_create = thread_create(
-        thread_authority,
+        client.payer_pubkey(),
         "payment".into(),
         distribute_payment_ix.into(),
         client.payer_pubkey(),
@@ -146,7 +147,10 @@ fn create_payment(
         },
     );
 
-    print_explorer_link(thread, "thread".into())?;
+    println!(
+        "thread: 🔗 {}",
+        explorer().thread_url(thread, thread_program_ID)
+    );
     print_explorer_link(authority_token_account, "authority_token_account".into())?;
     print_explorer_link(recipient_ata_pubkey, "recipient_ata_pubkey".into())?;
 
