@@ -2,7 +2,7 @@
 
 ## Prerequisites
 - Make sure you have both the [solana cli](https://docs.solana.com/cli/install-solana-cli-tools) and [anchor cli](https://project-serum.github.io/anchor/getting-started/installation.html#build-from-source-for-other-operating-systems) installed on your computer.
-- clone the [clockwork repo](https://github.com/clockwork-xyz/clockwork/) locally to your machine 
+- Clone the [clockwork repo](https://github.com/clockwork-xyz/clockwork/) locally to your machine 
 
 ## Localnet
 - run `anchor build` in the root directory of `distributor`
