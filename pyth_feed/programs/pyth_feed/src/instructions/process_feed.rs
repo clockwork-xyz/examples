@@ -1,7 +1,7 @@
 use {
     crate::state::*,
     anchor_lang::prelude::*,
-    clockwork_sdk::thread_program::accounts::{Thread, ThreadAccount},
+    clockwork_sdk::state::{Thread, ThreadAccount},
     pyth_sdk_solana::load_price_feed_from_account_info,
 };
 
@@ -35,7 +35,8 @@ pub fn handler<'info>(ctx: Context<ProcessFeed>) -> Result<()> {
     // update last publish time
     feed.publish_time = price_feed.publish_time;
 
-    match price_feed.get_current_price() {
+    let current_timestamp1 = Clock::get()?.unix_timestamp;
+    match price_feed.get_price_no_older_than(current_timestamp1, 60) {
         Some(price) => {
             msg!(
                 "Price change for {}: {}",
