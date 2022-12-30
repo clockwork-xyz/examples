@@ -20,7 +20,7 @@ pub mod stats {
         calc::handler(ctx)
     }
 
-    pub fn realloc_buffer(ctx: Context<ReallocBuffer>) -> Result<ThreadResponse> {
-        realloc_buffer::handler(ctx)
+    pub fn realloc_buffers(ctx: Context<ReallocBuffers>) -> Result<ThreadResponse> {
+        realloc_buffers::handler(ctx)
     }
 }
