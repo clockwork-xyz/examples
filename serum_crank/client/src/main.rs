@@ -12,30 +12,28 @@ use {
         },
         token,
     },
-    clockwork_client::{
-        thread::{instruction::thread_create, state::Trigger},
-        Client, ClientResult, SplToken,
+    clockwork_sdk::{
+        client::{
+            thread_program::{instruction::thread_create, objects::Trigger},
+            Client, ClientResult, SplToken,
+        },
+        PAYER_PUBKEY,
     },
-    clockwork_sdk::utils::PAYER_PUBKEY,
     solana_sdk::{
-        instruction::Instruction,
-        native_token::LAMPORTS_PER_SOL,
-        signature::Keypair,
-        signer::{keypair::read_keypair_file, Signer},
+        instruction::Instruction, native_token::LAMPORTS_PER_SOL, signature::Keypair,
+        signer::Signer,
     },
     std::{mem::size_of, num::NonZeroU64},
     utils::*,
 };
 
 fn main() -> ClientResult<()> {
-    // Creating a Client with your default paper keypair as payer
-    let client = default_client();
-    client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
-
-    // Security:
-    // Note that we are using your default Solana paper keypair as the thread authority.
-    // Feel free to use whichever authority is appropriate for your use case.
-    let thread_authority = client.payer_pubkey();
+    // Create Client
+    let payer = Keypair::new();
+    #[cfg(feature = "devnet")]
+    let client = Client::new(payer, "https://api.devnet.solana.com".into());
+    #[cfg(not(feature = "devnet"))]
+    let client = Client::new(payer, "http://localhost:8899".into());
 
     let bob = Keypair::new();
 
@@ -55,7 +53,10 @@ fn main() -> ClientResult<()> {
 
     // derive serum_crank PDAs
     let crank = serum_crank::state::Crank::pubkey(market_keys.market);
-    let crank_thread = clockwork_sdk::state::Thread::pubkey(thread_authority, "crank".into());
+    let crank_thread = clockwork_sdk::thread_program::accounts::Thread::pubkey(
+        client.payer_pubkey(),
+        "crank".into(),
+    );
 
     print_explorer_link(crank, "crank".into())?;
     print_explorer_link(crank_thread, "crank_thread".into())?;
@@ -98,8 +99,8 @@ fn main() -> ClientResult<()> {
 
     init_open_orders_account(
         &client,
-        &openbook_dex_pk(),
-        client.payer(),
+        &anchor_spl::dex::ID,
+        &client.payer(),
         &market_keys,
         &mut oo_account_alice,
     )?;
@@ -108,7 +109,7 @@ fn main() -> ClientResult<()> {
 
     init_open_orders_account(
         &client,
-        &openbook_dex_pk(),
+        &anchor_spl::dex::ID,
         &bob,
         &market_keys,
         &mut oo_account_bob,
@@ -118,7 +119,7 @@ fn main() -> ClientResult<()> {
     for _ in 0..5 {
         place_order(
             &client,
-            &openbook_dex_pk(),
+            &anchor_spl::dex::ID,
             &bob,
             &bob_mint_b_wallet.pubkey(),
             &market_keys,
@@ -137,8 +138,8 @@ fn main() -> ClientResult<()> {
 
         place_order(
             &client,
-            &openbook_dex_pk(),
-            client.payer(),
+            &anchor_spl::dex::ID,
+            &client.payer(),
             &alice_mint_a_wallet.pubkey(),
             &market_keys,
             &mut oo_account_alice,
@@ -182,7 +183,7 @@ fn initialize_serum_crank(
         program_id: serum_crank::ID,
         accounts: vec![
             AccountMeta::new(crank, false),
-            AccountMeta::new_readonly(openbook_dex_pk(), false),
+            AccountMeta::new_readonly(anchor_spl::dex::ID, false),
             AccountMeta::new_readonly(event_q, false),
             AccountMeta::new_readonly(market, false),
             AccountMeta::new_readonly(pc_mint, false),
@@ -204,7 +205,7 @@ fn initialize_serum_crank(
             accounts: vec![
                 AccountMeta::new(crank.key(), false),
                 AccountMeta::new(crank_thread.key(), true),
-                AccountMeta::new_readonly(openbook_dex_pk(), false),
+                AccountMeta::new_readonly(anchor_spl::dex::ID, false),
                 AccountMeta::new_readonly(event_q, false),
                 AccountMeta::new_readonly(market, false),
                 AccountMeta::new_readonly(pc_vault, false),
@@ -225,7 +226,7 @@ fn initialize_serum_crank(
     );
 
     sign_send_and_confirm_tx(
-        client,
+        &client,
         vec![initialize_ix, thread_create],
         None,
         "initialize crank and thread_create".into(),
@@ -336,16 +337,4 @@ pub fn place_order(
 
     sign_send_and_confirm_tx(client, instructions, Some(signers), "place_order".into())?;
     Ok(())
-}
-
-fn default_client() -> Client {
-    #[cfg(not(feature = "localnet"))]
-    let host = "https://api.devnet.solana.com";
-    #[cfg(feature = "localnet")]
-    let host = "http://localhost:8899";
-
-    let config_file = solana_cli_config::CONFIG_FILE.as_ref().unwrap().as_str();
-    let config = solana_cli_config::Config::load(config_file).unwrap();
-    let payer = read_keypair_file(&config.keypair_path).unwrap();
-    Client::new(payer, host.into())
 }

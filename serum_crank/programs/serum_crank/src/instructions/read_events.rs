@@ -1,15 +1,12 @@
 use {
     crate::state::*,
     anchor_lang::{
-        prelude::*,
-        solana_program::{instruction::Instruction, system_program},
         system_program::{transfer, Transfer},
+        prelude::*,
+        solana_program::{system_program,instruction::Instruction},
     },
-    anchor_spl::{
-        dex::serum_dex::state::{strip_header, Event, EventQueueHeader, Queue as SerumDexQueue},
-        token::TokenAccount,
-    },
-    clockwork_sdk::state::{Thread, ThreadResponse},
+    anchor_spl::{dex::serum_dex::state::{strip_header, EventQueueHeader, Event, Queue as SerumDexQueue}, token::TokenAccount},
+    clockwork_sdk::{thread_program::accounts::{Thread}, ThreadResponse}
 };
 
 #[derive(Accounts)]
@@ -32,7 +29,8 @@ pub struct ReadEvents<'info> {
     )]
     pub crank_thread: Box<Account<'info, Thread>>,
 
-    pub dex_program: Program<'info, crate::openbook_dex::OpenBookDex>,
+    #[account(address = anchor_spl::dex::ID)]
+    pub dex_program: Program<'info, anchor_spl::dex::Dex>,
 
     /// CHECK: this account is validated against the crank account
     pub event_queue: AccountInfo<'info>,
@@ -51,9 +49,7 @@ pub struct ReadEvents<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler<'info>(
-    ctx: Context<'_, '_, '_, 'info, ReadEvents<'info>>,
-) -> Result<ThreadResponse> {
+pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, ReadEvents<'info>>) -> Result<ThreadResponse> {
     // Get accounts
     let crank = &mut ctx.accounts.crank;
     let crank_thread = &mut ctx.accounts.crank_thread;
@@ -79,18 +75,17 @@ pub fn handler<'info>(
     // deserialize event queue
     let mut open_orders = Vec::new();
 
-    let (header, buf) = strip_header::<EventQueueHeader, Event>(event_queue, false).unwrap();
+    let (header, buf) = 
+        strip_header::<EventQueueHeader, Event>(event_queue, false).unwrap();
     let events = SerumDexQueue::new(header, buf);
     for event in events.iter() {
         // <https://github.com/rust-lang/rust/issues/82523>
         let val = unsafe { std::ptr::addr_of!(event.owner).read_unaligned() };
-        let owner = Pubkey::new(safe_transmute::to_bytes::transmute_one_to_bytes(
-            core::convert::identity(&val),
-        ));
+        let owner = Pubkey::new(safe_transmute::to_bytes::transmute_one_to_bytes(core::convert::identity(&val)));
         open_orders.push(owner);
         next_ix_accounts.push(AccountMeta::new(owner, false));
     }
-
+        
     // write event queue data to crank account
     crank.open_orders = open_orders;
 
@@ -110,22 +105,20 @@ pub fn handler<'info>(
                     to: crank.to_account_info(),
                 },
             ),
-            minimum_rent
-                .checked_sub(crank.to_account_info().lamports())
-                .unwrap(),
+            minimum_rent.checked_sub(crank.to_account_info().lamports()).unwrap()
         )?;
-    }
-
+    }  
+    
     // return consume events ix
-    Ok(ThreadResponse {
+    Ok(ThreadResponse { 
         kickoff_instruction: None,
         next_instruction: Some(
             Instruction {
                 program_id: crate::ID,
                 accounts: next_ix_accounts,
-                data: clockwork_sdk::utils::anchor_sighash("consume_events").into(),
+                data: clockwork_sdk::anchor_sighash("consume_events").into(),
             }
-            .into(),
+            .into()
         ),
-    })
+    }) 
 }

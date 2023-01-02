@@ -1,19 +1,12 @@
 use {
     anchor_lang::{prelude::*, solana_program::sysvar},
     anchor_spl::dex::serum_dex::instruction::initialize_market,
-    clockwork_client::{Client, ClientResult, SplToken},
+    clockwork_sdk::client::{Client, ClientResult, SplToken},
     solana_sdk::{
         instruction::Instruction, native_token::LAMPORTS_PER_SOL, signature::Keypair,
         signer::Signer, transaction::Transaction,
     },
 };
-
-use std::str::FromStr;
-
-pub fn openbook_dex_pk() -> Pubkey {
-    Pubkey::from_str("6QUbdf53eJZToaiLBrWbsJCE8jhXYAvufuJ4rzRskiCJ").unwrap()
-    // anchor_spl::dex::ID
-}
 
 pub fn setup_market(client: &Client) -> ClientResult<MarketKeys> {
     // generate 2 mints to list on market
@@ -30,7 +23,7 @@ pub fn setup_market(client: &Client) -> ClientResult<MarketKeys> {
     // get market listing keys
     let (listing_keys, mut ix) = gen_listing_params(
         client,
-        &openbook_dex_pk(),
+        &anchor_spl::dex::ID,
         &client.payer_pubkey(),
         &coin_mint,
         &pc_mint,
@@ -49,15 +42,15 @@ pub fn setup_market(client: &Client) -> ClientResult<MarketKeys> {
 
     // create ata vaults for the respective mints
     let coin_vault =
-        client.create_associated_token_account(client.payer(), &vault_signer, &coin_mint)?;
+        client.create_associated_token_account(&client.payer(), &vault_signer, &coin_mint)?;
 
     let pc_vault =
-        client.create_associated_token_account(client.payer(), &vault_signer, &pc_mint)?;
+        client.create_associated_token_account(&client.payer(), &vault_signer, &pc_mint)?;
 
     // get the init market ix
     let init_market_ix = initialize_market(
         &market_key.pubkey(),
-        &openbook_dex_pk(),
+        &anchor_spl::dex::ID,
         &coin_mint,
         &pc_mint,
         &coin_vault,
@@ -79,7 +72,7 @@ pub fn setup_market(client: &Client) -> ClientResult<MarketKeys> {
     ix.push(init_market_ix);
 
     sign_send_and_confirm_tx(
-        client,
+        &client,
         ix,
         Some(vec![
             client.payer(),
@@ -177,27 +170,33 @@ pub fn sign_send_and_confirm_tx(
 pub fn print_market_keys(market_keys: &MarketKeys) -> ClientResult<()> {
     println!("serum explorer: https://serum-explorer.vercel.app/market/{}?network=custom&customRPC=http%3A%2F%2Flocalhost%3A8899", market_keys.market);
     println!(
-        "market: https://explorer.solana.com/address/{}?cluster=custom",
+        "{}: https://explorer.solana.com/address/{}?cluster=custom",
+        "market".to_string(),
         market_keys.market
     );
     println!(
-        "event_queue: https://explorer.solana.com/address/{}?cluster=custom",
+        "{}: https://explorer.solana.com/address/{}?cluster=custom",
+        "event_queue".to_string(),
         market_keys.event_q
     );
     println!(
-        "mint_a_vault: https://explorer.solana.com/address/{}?cluster=custom",
+        "{}: https://explorer.solana.com/address/{}?cluster=custom",
+        "mint_a_vault".to_string(),
         market_keys.coin_vault
     );
     println!(
-        "mint_a_wallet: https://explorer.solana.com/address/{}?cluster=custom",
+        "{}: https://explorer.solana.com/address/{}?cluster=custom",
+        "mint_a_wallet".to_string(),
         market_keys.pc_wallet_key.pubkey()
     );
     println!(
-        "mint_b_vault: https://explorer.solana.com/address/{}?cluster=custom",
+        "{}: https://explorer.solana.com/address/{}?cluster=custom",
+        "mint_b_vault".to_string(),
         market_keys.pc_vault
     );
     println!(
-        "mint_b_wallet: https://explorer.solana.com/address/{}?cluster=custom",
+        "{}: https://explorer.solana.com/address/{}?cluster=custom",
+        "mint_b_wallet".to_string(),
         market_keys.coin_wallet_key.pubkey()
     );
     Ok(())
@@ -206,7 +205,8 @@ pub fn print_market_keys(market_keys: &MarketKeys) -> ClientResult<()> {
 pub fn print_explorer_link(address: Pubkey, label: String) -> ClientResult<()> {
     println!(
         "{}: https://explorer.solana.com/address/{}?cluster=custom",
-        label, address
+        label.to_string(),
+        address
     );
 
     Ok(())
