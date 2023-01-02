@@ -31,16 +31,17 @@ pub fn handler<'info>(ctx: Context<ProcessFeed>) -> Result<()> {
 
     // load price feed
     let price_feed = load_price_feed_from_account_info(&pyth_data_feed.to_account_info()).unwrap();
+    let price = price_feed.get_price_unchecked();
 
     // update last publish time
-    feed.publish_time = price_feed.publish_time;
+    feed.publish_time = price.publish_time;
 
     let current_timestamp1 = Clock::get()?.unix_timestamp;
     match price_feed.get_price_no_older_than(current_timestamp1, 60) {
         Some(price) => {
             msg!(
                 "Price change for {}: {}",
-                price_feed.product_id.to_string(),
+                price_feed.id.to_string(),
                 price.price,
             );
         }
