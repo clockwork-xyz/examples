@@ -19,7 +19,7 @@ pub struct Initialize<'info> {
     )]
     pub crank: Account<'info, Crank>,
 
-    pub dex_program: Program<'info, crate::openbook_dex::OpenBookDex>,
+    pub dex_program: Program<'info, OpenBookDex>,
 
     /// CHECK: this account is manually verified in handler
     #[account()]

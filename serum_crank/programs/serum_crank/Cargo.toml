@@ -15,7 +15,7 @@ no-log-ix-name = []
 cpi = ["no-entrypoint"]
 default = []
 localnet = []
-devnet = []
+devnet = ["anchor-spl/devnet"]
 
 [profile.release]
 overflow-checks = true

@@ -8,10 +8,8 @@ use {
     },
 };
 
-use std::str::FromStr;
-
 pub fn openbook_dex_pk() -> Pubkey {
-    Pubkey::from_str("6QUbdf53eJZToaiLBrWbsJCE8jhXYAvufuJ4rzRskiCJ").unwrap()
+    serum_crank::state::OpenBookDex::id()
     // anchor_spl::dex::ID
 }
 

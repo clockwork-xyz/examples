@@ -31,7 +31,7 @@ pub struct ConsumeEvents<'info> {
     )]
     pub crank_thread: Box<Account<'info, Thread>>,
 
-    pub dex_program: Program<'info, crate::openbook_dex::OpenBookDex>,
+    pub dex_program: Program<'info, OpenBookDex>,
 
     /// CHECK: this account is validated against the crank account
     #[account(mut)]

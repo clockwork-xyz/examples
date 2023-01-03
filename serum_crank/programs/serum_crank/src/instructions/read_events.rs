@@ -32,7 +32,7 @@ pub struct ReadEvents<'info> {
     )]
     pub crank_thread: Box<Account<'info, Thread>>,
 
-    pub dex_program: Program<'info, crate::openbook_dex::OpenBookDex>,
+    pub dex_program: Program<'info, crate::state::OpenBookDex>,
 
     /// CHECK: this account is validated against the crank account
     pub event_queue: AccountInfo<'info>,
