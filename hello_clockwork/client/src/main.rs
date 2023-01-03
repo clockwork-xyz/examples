@@ -6,16 +6,15 @@ use {
         },
         InstructionData,
     },
-    clockwork_sdk::{
-        client::{
-            thread_program::{
-                instruction::thread_create,
-                objects::{Thread, Trigger},
-            },
-            Client, ClientResult,
+    clockwork_client::{
+        thread::{
+            instruction::thread_create,
+            ID as thread_program_ID,
+            state::{Thread, Trigger},
         },
-        utils::explorer::Explorer,
+        Client, ClientResult,
     },
+    clockwork_utils::{explorer::Explorer},
     solana_sdk::{signature::read_keypair_file, transaction::Transaction},
 };
 
@@ -57,7 +56,7 @@ fn main() -> ClientResult<()> {
     send_and_confirm_tx(&client, thread_create, "thread_create".into())?;
     println!(
         "thread: 🔗 {}",
-        explorer().thread_url(hello_thread, clockwork_sdk::thread_program::ID)
+        explorer().thread_url(hello_thread, thread_program_ID)
     );
 
     Ok(())
@@ -91,9 +90,9 @@ fn explorer() -> Explorer {
 
 fn default_client() -> Client {
     #[cfg(not(feature = "localnet"))]
-    let host = "https://api.devnet.solana.com";
+        let host = "https://api.devnet.solana.com";
     #[cfg(feature = "localnet")]
-    let host = "http://localhost:8899";
+        let host = "http://localhost:8899";
 
     let config_file = solana_cli_config::CONFIG_FILE.as_ref().unwrap().as_str();
     let config = solana_cli_config::Config::load(config_file).unwrap();

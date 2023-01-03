@@ -2,14 +2,8 @@
 seeds = false
 skip-lint = false
 
-[programs.localnet]
-stats = "5cj44QGY53QhgiqWYaFMQuGtLieeR4gH6rJzCU9iLoAR"
-
-[programs.devnet]
-stats = "5cj44QGY53QhgiqWYaFMQuGtLieeR4gH6rJzCU9iLoAR"
-
 [programs.mainnet]
-stats = "5cj44QGY53QhgiqWYaFMQuGtLieeR4gH6rJzCU9iLoAR"
+pyth_stats = "5cj44QGY53QhgiqWYaFMQuGtLieeR4gH6rJzCU9iLoAR"
 
 [registry]
 url = "https://api.apr.dev"

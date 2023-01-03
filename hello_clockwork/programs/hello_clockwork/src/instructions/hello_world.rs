@@ -1,8 +1,7 @@
 use {
     anchor_lang::prelude::*,
     clockwork_sdk::{
-        thread_program::accounts::{Thread, ThreadAccount},
-        ThreadResponse,
+        state::{Thread, ThreadAccount, ThreadResponse},
     },
 };
 #[derive(Accounts)]
