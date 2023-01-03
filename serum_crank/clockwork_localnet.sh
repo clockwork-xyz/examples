@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-rm -rf test-ledger
 
+rm -rf test-ledger
 anchor build -- --features localnet
 
 clockwork localnet \
