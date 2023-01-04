@@ -1,12 +1,17 @@
 use {
     anchor_lang::{prelude::*, solana_program::sysvar},
     anchor_spl::dex::serum_dex::instruction::initialize_market,
-    clockwork_sdk::client::{Client, ClientResult, SplToken},
+    clockwork_client::{Client, ClientResult, SplToken},
     solana_sdk::{
         instruction::Instruction, native_token::LAMPORTS_PER_SOL, signature::Keypair,
         signer::Signer, transaction::Transaction,
     },
 };
+
+pub fn openbook_dex_pk() -> Pubkey {
+    serum_crank::state::OpenBookDex::id()
+    // anchor_spl::dex::ID
+}
 
 pub fn setup_market(client: &Client) -> ClientResult<MarketKeys> {
     // generate 2 mints to list on market
@@ -23,7 +28,7 @@ pub fn setup_market(client: &Client) -> ClientResult<MarketKeys> {
     // get market listing keys
     let (listing_keys, mut ix) = gen_listing_params(
         client,
-        &anchor_spl::dex::ID,
+        &openbook_dex_pk(),
         &client.payer_pubkey(),
         &coin_mint,
         &pc_mint,
@@ -42,15 +47,15 @@ pub fn setup_market(client: &Client) -> ClientResult<MarketKeys> {
 
     // create ata vaults for the respective mints
     let coin_vault =
-        client.create_associated_token_account(&client.payer(), &vault_signer, &coin_mint)?;
+        client.create_associated_token_account(client.payer(), &vault_signer, &coin_mint)?;
 
     let pc_vault =
-        client.create_associated_token_account(&client.payer(), &vault_signer, &pc_mint)?;
+        client.create_associated_token_account(client.payer(), &vault_signer, &pc_mint)?;
 
     // get the init market ix
     let init_market_ix = initialize_market(
         &market_key.pubkey(),
-        &anchor_spl::dex::ID,
+        &openbook_dex_pk(),
         &coin_mint,
         &pc_mint,
         &coin_vault,
@@ -72,7 +77,7 @@ pub fn setup_market(client: &Client) -> ClientResult<MarketKeys> {
     ix.push(init_market_ix);
 
     sign_send_and_confirm_tx(
-        &client,
+        client,
         ix,
         Some(vec![
             client.payer(),
@@ -170,33 +175,27 @@ pub fn sign_send_and_confirm_tx(
 pub fn print_market_keys(market_keys: &MarketKeys) -> ClientResult<()> {
     println!("serum explorer: https://serum-explorer.vercel.app/market/{}?network=custom&customRPC=http%3A%2F%2Flocalhost%3A8899", market_keys.market);
     println!(
-        "{}: https://explorer.solana.com/address/{}?cluster=custom",
-        "market".to_string(),
+        "market: https://explorer.solana.com/address/{}?cluster=custom",
         market_keys.market
     );
     println!(
-        "{}: https://explorer.solana.com/address/{}?cluster=custom",
-        "event_queue".to_string(),
+        "event_queue: https://explorer.solana.com/address/{}?cluster=custom",
         market_keys.event_q
     );
     println!(
-        "{}: https://explorer.solana.com/address/{}?cluster=custom",
-        "mint_a_vault".to_string(),
+        "mint_a_vault: https://explorer.solana.com/address/{}?cluster=custom",
         market_keys.coin_vault
     );
     println!(
-        "{}: https://explorer.solana.com/address/{}?cluster=custom",
-        "mint_a_wallet".to_string(),
+        "mint_a_wallet: https://explorer.solana.com/address/{}?cluster=custom",
         market_keys.pc_wallet_key.pubkey()
     );
     println!(
-        "{}: https://explorer.solana.com/address/{}?cluster=custom",
-        "mint_b_vault".to_string(),
+        "mint_b_vault: https://explorer.solana.com/address/{}?cluster=custom",
         market_keys.pc_vault
     );
     println!(
-        "{}: https://explorer.solana.com/address/{}?cluster=custom",
-        "mint_b_wallet".to_string(),
+        "mint_b_wallet: https://explorer.solana.com/address/{}?cluster=custom",
         market_keys.coin_wallet_key.pubkey()
     );
     Ok(())
@@ -205,8 +204,7 @@ pub fn print_market_keys(market_keys: &MarketKeys) -> ClientResult<()> {
 pub fn print_explorer_link(address: Pubkey, label: String) -> ClientResult<()> {
     println!(
         "{}: https://explorer.solana.com/address/{}?cluster=custom",
-        label.to_string(),
-        address
+        label, address
     );
 
     Ok(())
