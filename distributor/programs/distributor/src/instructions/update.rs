@@ -8,14 +8,17 @@ use {
         associated_token::{self, get_associated_token_address}, token::{self, Mint}
     },
     clockwork_sdk::{
-        PAYER_PUBKEY, 
-        thread_program::{
-            self, cpi::accounts::ThreadUpdate, 
-            ThreadProgram, 
-            accounts::{
-                ThreadAccount, Thread, 
-                Trigger, ThreadSettings
-            }}},
+        ID as thread_program_ID,
+        cpi::{
+            ThreadUpdate
+        },
+        state::{
+            ThreadAccount, Thread,
+            Trigger, ThreadSettings
+        },
+        ThreadProgram,
+        utils::PAYER_PUBKEY,
+    }
 };
 
 #[derive(Accounts)]
@@ -24,7 +27,7 @@ pub struct Update<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
 
-    #[account(address = thread_program::ID)]
+    #[account(address = thread_program_ID)]
     pub clockwork_program: Program<'info, ThreadProgram>,
 
     #[account(
@@ -94,11 +97,11 @@ pub fn handler<'info>(
             AccountMeta::new_readonly(token::ID, false),
 
         ],
-        data: clockwork_sdk::anchor_sighash("distribute").to_vec()
+        data: clockwork_sdk::utils::anchor_sighash("distribute").to_vec()
     };
 
     // update distributor thread
-    clockwork_sdk::thread_program::cpi::thread_update(
+    clockwork_sdk::cpi::thread_update(
     CpiContext::new_with_signer(
     clockwork_program.to_account_info(),
         ThreadUpdate {

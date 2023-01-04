@@ -1,4 +1,4 @@
-# **Distributor Program**
+# **Pyth Feed Program**
 
 ## Devnet
 **1. Program Side - Deploying the Handler Program**

@@ -4,16 +4,20 @@ use {
         prelude::*,
         solana_program::{instruction::Instruction, system_program},
     },
-    clockwork_sdk::thread_program::{
-        self,
-        accounts::{Thread, ThreadSettings, Trigger},
+    clockwork_sdk::{
+        ID as thread_program_ID,
+        cpi::{
+            thread_create, thread_update,
+            ThreadCreate, ThreadUpdate,
+        },
+        state::{Trigger, Thread, ThreadSettings},
         ThreadProgram,
     },
     std::mem::size_of,
 };
 #[derive(Accounts)]
 pub struct CreateFeed<'info> {
-    #[account(address = thread_program::ID)]
+    #[account(address = thread_program_ID)]
     pub clockwork: Program<'info, ThreadProgram>,
 
     #[account(
@@ -61,14 +65,14 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CreateFeed<'info>>) -> Res
             AccountMeta::new_readonly(feed.pyth_price_feed, false),
             AccountMeta::new(thread.key(), true),
         ],
-        data: clockwork_sdk::anchor_sighash("process_feed").into(),
+        data: clockwork_sdk::utils::anchor_sighash("process_feed").into(),
     };
 
     // initialize thread
-    clockwork_sdk::thread_program::cpi::thread_create(
+    thread_create(
         CpiContext::new_with_signer(
             clockwork.to_account_info(),
-            clockwork_sdk::thread_program::cpi::accounts::ThreadCreate {
+            ThreadCreate {
                 authority: feed.to_account_info(),
                 payer: signer.to_account_info(),
                 thread: thread.to_account_info(),
@@ -86,10 +90,10 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CreateFeed<'info>>) -> Res
     )?;
 
     // set the rate limit of the thread to crank 1 time per slot
-    clockwork_sdk::thread_program::cpi::thread_update(
+    thread_update(
         CpiContext::new_with_signer(
             clockwork.to_account_info(),
-            clockwork_sdk::thread_program::cpi::accounts::ThreadUpdate {
+            ThreadUpdate {
                 authority: feed.to_account_info(),
                 thread: thread.to_account_info(),
                 system_program: system_program.to_account_info(),

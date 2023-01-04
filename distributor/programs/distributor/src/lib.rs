@@ -27,7 +27,7 @@ pub mod distributor {
      */
     pub fn distribute<'info>(
         ctx: Context<'_, '_, '_, 'info, Distribute<'info>>,
-    ) -> Result<clockwork_sdk::ThreadResponse> {
+    ) -> Result<clockwork_sdk::state::ThreadResponse> {
         distribute::handler(ctx)
     }
 
@@ -38,7 +38,7 @@ pub mod distributor {
         ctx: Context<'_, '_, '_, 'info, Update<'info>>,
         new_recipient: Option<Pubkey>,
         mint_amount: Option<u64>,
-        trigger: Option<clockwork_sdk::thread_program::accounts::Trigger>,
+        trigger: Option<clockwork_sdk::state::Trigger>,
     ) -> Result<()> {
         update::handler(ctx, new_recipient, mint_amount, trigger)
     }
