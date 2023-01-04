@@ -11,7 +11,10 @@ use {
         },
         token,
     },
-    clockwork_sdk::client::{thread_program, Client, ClientResult, SplToken},
+    clockwork_client::{
+        thread::{self, state::Thread},
+        Client, ClientResult, SplToken,
+    },
     serum_common::client::rpc::mint_to_new_account,
     solana_sdk::{
         instruction::Instruction, native_token::LAMPORTS_PER_SOL, signature::Keypair,
@@ -47,15 +50,11 @@ fn main() -> ClientResult<()> {
         market_keys.pc_mint,
         market_keys.coin_mint,
     );
-    let investment_thread = clockwork_sdk::thread_program::accounts::Thread::pubkey(
-        investment,
-        "investment".to_string(),
-    );
+    let investment_thread = Thread::pubkey(investment, "investment".to_string());
 
     // derive serum_crank PDAs
     let crank = serum_crank::state::Crank::pubkey(market_keys.market);
-    let crank_thread =
-        clockwork_sdk::thread_program::accounts::Thread::pubkey(crank, "crank".into());
+    let crank_thread = Thread::pubkey(crank, "crank".into());
 
     print_explorer_link(investment_thread, "investment_thread".to_string())?;
     print_explorer_link(crank_thread, "crank_thread".to_string())?;
@@ -284,7 +283,7 @@ fn initialize_serum_crank(
     let initialize_ix = Instruction {
         program_id: serum_crank::ID,
         accounts: vec![
-            AccountMeta::new_readonly(thread_program::ID, false),
+            AccountMeta::new_readonly(thread::ID, false),
             AccountMeta::new(crank, false),
             AccountMeta::new(crank_thread, false),
             AccountMeta::new_readonly(anchor_spl::dex::ID, false),
@@ -329,7 +328,7 @@ fn create_investment_and_deposit(
         program_id: investments_program::ID,
         accounts: vec![
             AccountMeta::new_readonly(associated_token::ID, false),
-            AccountMeta::new_readonly(thread_program::ID, false),
+            AccountMeta::new_readonly(thread::ID, false),
             AccountMeta::new_readonly(anchor_spl::dex::ID, false),
             AccountMeta::new(investment, false),
             AccountMeta::new(investment_mint_a_token_account, false),
