@@ -7,7 +7,7 @@ use {
         },
     },
     anchor_spl::{token::{self, Mint, TokenAccount},associated_token::{self,AssociatedToken}},
-    clockwork_sdk::thread_program::{self, ThreadProgram, accounts::{Thread, Trigger}},
+    clockwork_sdk::{ThreadProgram, state::{Thread, Trigger}},
     std::mem::size_of,
 };
 
@@ -17,7 +17,7 @@ pub struct CreateInvestment<'info> {
     #[account(address = anchor_spl::associated_token::ID)]
     pub associated_token_program: Program<'info, AssociatedToken>,
 
-    #[account(address = thread_program::ID)]
+    #[account(address = clockwork_sdk::ID)]
     pub clockwork_program: Program<'info, ThreadProgram>,
 
     #[account(address = anchor_spl::dex::ID)]
@@ -128,7 +128,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CreateInvestment<'info>>, 
             AccountMeta::new_readonly(investment.key(), false),
             AccountMeta::new(investment_mint_a_token_account.key(), false),
             AccountMeta::new_readonly(investment_thread.key(), false),
-            AccountMeta::new(clockwork_sdk::PAYER_PUBKEY, true),
+            AccountMeta::new(clockwork_sdk::utils::PAYER_PUBKEY, true),
             AccountMeta::new_readonly(sysvar::rent::ID, false),
             AccountMeta::new_readonly(system_program::ID, false),
             AccountMeta::new_readonly(token::ID, false),
@@ -142,14 +142,14 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CreateInvestment<'info>>, 
             AccountMeta::new(market_asks.key(), false),
             AccountMeta::new(open_orders.key(), false),
         ],
-        data: clockwork_sdk::anchor_sighash("swap").into(),
+        data: clockwork_sdk::utils::anchor_sighash("swap").into(),
     };
 
     // Create thread
-    clockwork_sdk::thread_program::cpi::thread_create(
+    clockwork_sdk::cpi::thread_create(
         CpiContext::new_with_signer(
             clockwork_program.to_account_info(),
-            clockwork_sdk::thread_program::cpi::accounts::ThreadCreate {
+            clockwork_sdk::cpi::ThreadCreate {
                 authority: investment.to_account_info(),
                 payer: payer.to_account_info(),
                 thread: investment_thread.to_account_info(),

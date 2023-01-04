@@ -15,7 +15,7 @@ use {
         },
         token::{Token, TokenAccount},
     },
-    clockwork_sdk::{thread_program::accounts::{Thread, ThreadAccount}, ThreadResponse},
+    clockwork_sdk::state::{Thread, ThreadAccount,ThreadResponse},
     std::num::NonZeroU64,
 };
 

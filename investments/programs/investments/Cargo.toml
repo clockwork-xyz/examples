@@ -18,6 +18,7 @@ default = []
 [profile.release]
 overflow-checks = true
 
-anchor-lang = { version = "0.26.0", features = ["init-if-needed"] }
-anchor-spl = { version = "0.26.0", features = ["token"] }
-clockwork-sdk = { version = "1.4.0" }
+[dependencies]
+anchor-spl = { version = "0.26.0", features = ["dex"] }
+anchor-lang = "0.26.0"
+clockwork-sdk = "1.4.0"
