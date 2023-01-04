@@ -5,7 +5,9 @@ use {
         associated_token::AssociatedToken,
         token::{self, Mint, TokenAccount, Transfer}
     },
-    clockwork_sdk::{thread_program::accounts::{Thread, ThreadAccount}, ThreadResponse},
+    clockwork_sdk::{
+        state::{Thread, ThreadAccount, ThreadResponse},
+    },
 };
 
 #[derive(Accounts)]

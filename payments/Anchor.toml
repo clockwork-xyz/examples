@@ -3,10 +3,10 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-payments = "BizvoxsH2YmBwoj1n1tJweTvtJz57AnQiMJkHvUk2jzW"
+payments = "AczpjY2Lyku1YNAM1saMuPhQB4jcJZzffGf9ptstrJZM"
 
 [programs.devnet]
-payments = "BizvoxsH2YmBwoj1n1tJweTvtJz57AnQiMJkHvUk2jzW"
+payments = "AczpjY2Lyku1YNAM1saMuPhQB4jcJZzffGf9ptstrJZM"
 
 [registry]
 url = "https://api.apr.dev"
