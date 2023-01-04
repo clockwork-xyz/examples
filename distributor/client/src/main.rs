@@ -5,26 +5,30 @@ use {
         InstructionData,
     },
     anchor_spl::{associated_token, token},
-    clockwork_sdk::{
-        client::{
-            thread_program::{self, instruction::thread_create, objects::Trigger},
-            Client, ClientResult, SplToken,
+    clockwork_client::{
+        thread::{
+            instruction::thread_create,
+            ID as thread_program_ID,
+            state::{Thread, Trigger},
         },
-        PAYER_PUBKEY,
+        Client, ClientResult, SplToken,
     },
+    clockwork_utils::{explorer::Explorer, PAYER_PUBKEY},
     solana_sdk::{
         instruction::Instruction, native_token::LAMPORTS_PER_SOL, signature::Keypair,
-        signer::Signer, transaction::Transaction,
+        signature::read_keypair_file, signer::Signer, transaction::Transaction,
     },
 };
 
 fn main() -> ClientResult<()> {
-    // Create Client
-    let payer = Keypair::new();
-    #[cfg(feature = "devnet")]
-    let client = Client::new(payer, "https://api.devnet.solana.com".into());
-    #[cfg(not(feature = "devnet"))]
-    let client = Client::new(payer, "http://localhost:8899".into());
+    // Creating a Client with your default paper keypair as payer
+    let client = default_client();
+    client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
+
+    // Security:
+    // Note that we are using your default Solana paper keypair as the thread authority.
+    // Feel free to use whichever authority is appropriate for your use case.
+    let thread_authority = client.payer_pubkey();
 
     let bob = Keypair::new().pubkey();
     let charlie = Keypair::new().pubkey();
@@ -40,8 +44,8 @@ fn main() -> ClientResult<()> {
 
     // derive distributor program PDAs
     let distributor = distributor::state::Distributor::pubkey(mint, client.payer_pubkey());
-    let distributor_thread = clockwork_sdk::thread_program::accounts::Thread::pubkey(
-        client.payer_pubkey(),
+    let distributor_thread = Thread::pubkey(
+        thread_authority,
         "distributor".into(),
     );
 
@@ -77,7 +81,7 @@ fn main() -> ClientResult<()> {
     };
 
     let thread_create = thread_create(
-        client.payer_pubkey(),
+        thread_authority,
         "distributor".into(),
         distribute_ix.into(),
         client.payer_pubkey(),
@@ -89,8 +93,10 @@ fn main() -> ClientResult<()> {
     );
 
     sign_send_and_confirm_tx(&client, vec![thread_create], None, "thread_create".into())?;
-
-    print_explorer_link(distributor_thread, "distributor_thread".into())?;
+    println!(
+        "thread: 🔗 {}",
+        explorer().thread_url(distributor_thread, thread_program_ID)
+    );
 
     // wait 10 seconds to update distributor
     println!("wait 10 seconds to update distributor");
@@ -151,7 +157,7 @@ fn update_distributor(
         program_id: distributor::ID,
         accounts: vec![
             AccountMeta::new(client.payer_pubkey(), true),
-            AccountMeta::new_readonly(thread_program::ID, false),
+            AccountMeta::new_readonly(thread_program_ID, false),
             AccountMeta::new(distributor, false),
             AccountMeta::new(distributor_thread, false),
             AccountMeta::new_readonly(mint, false),
@@ -210,10 +216,31 @@ pub fn sign_send_and_confirm_tx(
     // Send and confirm initialize tx
     match client.send_and_confirm_transaction(&tx) {
         Ok(sig) => println!(
-            "{} tx: ✅ https://explorer.solana.com/tx/{}?cluster=custom",
-            label, sig
+            // Eventually also use EXPLORER.clockwork instead of EXPLORER.solana, so ppl don't have to use two explorers
+            "{} tx: ✅ {}",
+            label,
+            explorer().tx_url(sig)
         ),
         Err(err) => println!("{} tx: ❌ {:#?}", label, err),
     }
     Ok(())
+}
+
+fn explorer() -> Explorer {
+    #[cfg(feature = "localnet")]
+    return Explorer::custom("http://localhost:8899".to_string());
+    #[cfg(not(feature = "localnet"))]
+    Explorer::devnet()
+}
+
+fn default_client() -> Client {
+    #[cfg(not(feature = "localnet"))]
+        let host = "https://api.devnet.solana.com";
+    #[cfg(feature = "localnet")]
+        let host = "http://localhost:8899";
+
+    let config_file = solana_cli_config::CONFIG_FILE.as_ref().unwrap().as_str();
+    let config = solana_cli_config::Config::load(config_file).unwrap();
+    let payer = read_keypair_file(&config.keypair_path).unwrap();
+    Client::new(payer, host.into())
 }
