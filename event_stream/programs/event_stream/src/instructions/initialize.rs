@@ -4,9 +4,9 @@ use {
         prelude::*,
         solana_program::{instruction::Instruction, system_program},
     },
-    clockwork_sdk::thread_program::{
+    clockwork_sdk::{
         self,
-        accounts::{Thread, Trigger},
+        state::{Thread, Trigger},
         ThreadProgram,
     },
     std::mem::size_of,
@@ -23,7 +23,7 @@ pub struct Initialize<'info> {
     )]
     pub authority: Account<'info, Authority>,
 
-    #[account(address = thread_program::ID)]
+    #[account(address = clockwork_sdk::ID)]
     pub clockwork: Program<'info, ThreadProgram>,
 
     #[account(
@@ -42,7 +42,7 @@ pub struct Initialize<'info> {
     pub system_program: Program<'info, System>,
 
     #[account(address = Thread::pubkey(authority.key(), "event".into()))]
-    pub thread: SystemAccount<'info>,
+    pub event_thread: SystemAccount<'info>,
 }
 
 pub fn handler(ctx: Context<Initialize>) -> Result<()> {
@@ -50,7 +50,7 @@ pub fn handler(ctx: Context<Initialize>) -> Result<()> {
     let authority = &ctx.accounts.authority;
     let clockwork = &ctx.accounts.clockwork;
     let event = &mut ctx.accounts.event;
-    let thread = &ctx.accounts.thread;
+    let event_thread = &ctx.accounts.event_thread;
     let signer = &ctx.accounts.signer;
     let system_program = &ctx.accounts.system_program;
 
@@ -65,18 +65,19 @@ pub fn handler(ctx: Context<Initialize>) -> Result<()> {
         accounts: vec![
             AccountMeta::new_readonly(authority.key(), false),
             AccountMeta::new_readonly(event.key(), false),
-            AccountMeta::new_readonly(thread.key(), true),
+            AccountMeta::new_readonly(event_thread.key(), true),
         ],
-        data: clockwork_sdk::anchor_sighash("process_event").into(),
+        data: clockwork_sdk::utils::anchor_sighash("process_event").into(),
     };
-    clockwork_sdk::thread_program::cpi::thread_create(
+
+    clockwork_sdk::cpi::thread_create(
         CpiContext::new_with_signer(
             clockwork.to_account_info(),
-            clockwork_sdk::thread_program::cpi::accounts::ThreadCreate {
+            clockwork_sdk::cpi::ThreadCreate {
                 authority: authority.to_account_info(),
                 payer: signer.to_account_info(),
                 system_program: system_program.to_account_info(),
-                thread: thread.to_account_info(),
+                thread: event_thread.to_account_info(),
             },
             &[&[SEED_AUTHORITY, &[bump]]],
         ),

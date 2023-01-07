@@ -16,5 +16,5 @@ cpi = ["no-entrypoint"]
 default = []
 
 [dependencies]
-anchor-lang = "0.25.0"
-clockwork-sdk = { version = "1.3.9", features = ["thread"] }
+anchor-lang = { version = "0.26.0", features = ["init-if-needed"] }
+clockwork-sdk = { version = "1.4.0" }

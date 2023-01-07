@@ -1,7 +1,7 @@
 use {
     crate::state::*,
     anchor_lang::prelude::*,
-    clockwork_sdk::thread_program::accounts::{Thread, ThreadAccount},
+    clockwork_sdk::state::Thread,
 };
 
 #[derive(Accounts)]
@@ -13,12 +13,12 @@ pub struct ProcessEvent<'info> {
     pub event: Account<'info, Event>,
 
     #[account(
-        address = thread.pubkey(),
-        constraint = thread.id.eq("event"),
+        address = event_thread.key(),
+        constraint = event_thread.id.eq("event"),
         signer,
         has_one = authority
     )]
-    pub thread: Account<'info, Thread>,
+    pub event_thread: Account<'info, Thread>,
 }
 
 pub fn handler(ctx: Context<ProcessEvent>) -> Result<()> {
@@ -29,7 +29,7 @@ pub fn handler(ctx: Context<ProcessEvent>) -> Result<()> {
     msg!(
         "Event was triggered by {} at {}",
         event.user,
-        event.timestamp
+        event.timestamp,
     );
 
     Ok(())
