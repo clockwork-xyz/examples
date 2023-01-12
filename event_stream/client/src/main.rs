@@ -1,19 +1,20 @@
 use {
-    anchor_lang::{prelude::*, solana_program::system_program, InstructionData},
-    clockwork_sdk::client::{Client, ClientResult},
-    solana_sdk::{
-        instruction::Instruction, native_token::LAMPORTS_PER_SOL, signature::Keypair,
-        transaction::Transaction,
+    anchor_lang::{
+        solana_program::{
+            instruction::{AccountMeta, Instruction},
+            native_token::LAMPORTS_PER_SOL,
+            system_program,
+        },
+        InstructionData,
     },
+    clockwork_client::{thread::state::Thread, Client, ClientResult},
+    clockwork_utils::explorer::Explorer,
+    solana_sdk::{signature::read_keypair_file, transaction::Transaction},
 };
 
 fn main() -> ClientResult<()> {
-    // Create Client
-    let payer = Keypair::new();
-    #[cfg(feature = "devnet")]
-    let client = Client::new(payer, "https://api.devnet.solana.com".into());
-    #[cfg(not(feature = "devnet"))]
-    let client = Client::new(payer, "http://localhost:8899".into());
+    // Creating a Client with your default paper keypair as payer
+    let client = default_client();
     client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
 
     // Initialize the event_stream program
@@ -29,34 +30,27 @@ fn main() -> ClientResult<()> {
 }
 
 fn initialize(client: &Client) -> ClientResult<()> {
-    let authority_pubkey = event_stream::state::Authority::pubkey();
-    let event_thread =
-        clockwork_sdk::thread_program::accounts::Thread::pubkey(authority_pubkey, "event".into());
+    let authority = event_stream::state::Authority::pubkey();
+    let event_thread = Thread::pubkey(authority, "event".into());
 
-    // airdrop thread
-    client.airdrop(&event_thread, 2 * LAMPORTS_PER_SOL)?;
-
-    print_explorer_link(event_thread, "event_thread".into())?;
+    // Airdrop to event thread
+    client.airdrop(&event_thread, LAMPORTS_PER_SOL)?;
 
     let initialize_ix = Instruction {
         program_id: event_stream::ID,
         accounts: vec![
-            AccountMeta::new(authority_pubkey, false),
-            AccountMeta::new_readonly(clockwork_sdk::thread_program::ID, false),
+            AccountMeta::new(authority, false),
+            AccountMeta::new_readonly(clockwork_client::thread::ID, false),
             AccountMeta::new(event_stream::state::Event::pubkey(), false),
             AccountMeta::new(client.payer_pubkey(), true),
             AccountMeta::new_readonly(system_program::ID, false),
-            AccountMeta::new(
-                clockwork_sdk::thread_program::accounts::Thread::pubkey(
-                    authority_pubkey,
-                    "event".into(),
-                ),
-                false,
-            ),
+            AccountMeta::new(event_thread, false),
         ],
         data: event_stream::instruction::Initialize {}.data(),
     };
-    sign_send_and_confirm_tx(&client, [initialize_ix].to_vec(), None, "initialize".into())?;
+
+    sign_send_and_confirm_tx(client, initialize_ix, "initialize".into())?;
+
     Ok(())
 }
 
@@ -69,51 +63,45 @@ fn ping(client: &Client) -> ClientResult<()> {
         ],
         data: event_stream::instruction::Ping {}.data(),
     };
-    sign_send_and_confirm_tx(&client, [ping_ix].to_vec(), None, "ping".into())?;
-    Ok(())
-}
-
-pub fn print_explorer_link(address: Pubkey, label: String) -> ClientResult<()> {
-    println!(
-        "{}: https://explorer.solana.com/address/{}?cluster=custom",
-        label.to_string(),
-        address
-    );
+    sign_send_and_confirm_tx(client, ping_ix, "ping".into())?;
 
     Ok(())
 }
 
-pub fn sign_send_and_confirm_tx(
-    client: &Client,
-    ix: Vec<Instruction>,
-    signers: Option<Vec<&Keypair>>,
-    label: String,
-) -> ClientResult<()> {
-    let mut tx;
-
-    match signers {
-        Some(signer_keypairs) => {
-            tx = Transaction::new_signed_with_payer(
-                &ix,
-                Some(&client.payer_pubkey()),
-                &signer_keypairs,
-                client.get_latest_blockhash().unwrap(),
-            );
-        }
-        None => {
-            tx = Transaction::new_with_payer(&ix, Some(&client.payer_pubkey()));
-        }
-    }
-
+fn sign_send_and_confirm_tx(client: &Client, ix: Instruction, label: String) -> ClientResult<()> {
+    // Create tx
+    let mut tx = Transaction::new_with_payer(&[ix], Some(&client.payer_pubkey()));
     tx.sign(&[client.payer()], client.latest_blockhash().unwrap());
 
-    // Send and confirm initialize tx
+    // Send and confirm tx
     match client.send_and_confirm_transaction(&tx) {
         Ok(sig) => println!(
-            "{} tx: ✅ https://explorer.solana.com/tx/{}?cluster=custom",
-            label, sig
+            // Eventually also use EXPLORER.clockwork instead of EXPLORER.solana, so ppl don't have to use two explorers
+            "{} tx: ✅ {}",
+            label,
+            explorer().tx_url(sig)
         ),
         Err(err) => println!("{} tx: ❌ {:#?}", label, err),
     }
+
     Ok(())
+}
+
+fn explorer() -> Explorer {
+    #[cfg(feature = "localnet")]
+    return Explorer::custom("http://localhost:8899".to_string());
+    #[cfg(not(feature = "localnet"))]
+    Explorer::devnet()
+}
+
+fn default_client() -> Client {
+    #[cfg(not(feature = "localnet"))]
+    let host = "https://api.devnet.solana.com";
+    #[cfg(feature = "localnet")]
+    let host = "http://localhost:8899";
+
+    let config_file = solana_cli_config::CONFIG_FILE.as_ref().unwrap().as_str();
+    let config = solana_cli_config::Config::load(config_file).unwrap();
+    let payer = read_keypair_file(&config.keypair_path).unwrap();
+    Client::new(payer, host.into())
 }
