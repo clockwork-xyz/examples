@@ -5,7 +5,10 @@ use {
         prelude::*,
         solana_program::{instruction::Instruction, system_program},
     },
-    anchor_spl::{dex::serum_dex, token::TokenAccount},
+    anchor_spl::{
+        dex::serum_dex,
+        token::{self, Token, TokenAccount},
+    },
     clockwork_sdk::{
         state::{InstructionData, Thread, ThreadAccount, ThreadResponse},
         utils::PAYER_PUBKEY,
@@ -15,19 +18,18 @@ use {
 #[derive(Accounts)]
 pub struct ConsumeEvents<'info> {
     #[account(
-    seeds = [SEED_CRANK, crank.market.as_ref()],
-    bump,
-    has_one = market,
-    has_one = event_queue,
-    has_one = mint_a_vault,
-    has_one = mint_b_vault,
+        seeds = [SEED_CRANK, crank.authority.as_ref(), crank.market.as_ref(), crank.id.as_bytes()],
+        bump,
+        mut,
+        has_one = market,
+        has_one = event_queue,
     )]
     pub crank: Box<Account<'info, Crank>>,
 
     #[account(
-    signer,
-    address = crank_thread.pubkey(),
-    constraint = crank_thread.id.eq("crank"),
+        signer,
+        address = crank_thread.pubkey(),
+        constraint = crank_thread.authority == crank.authority
     )]
     pub crank_thread: Box<Account<'info, Thread>>,
 
@@ -44,11 +46,23 @@ pub struct ConsumeEvents<'info> {
     #[account(mut)]
     pub mint_a_vault: Account<'info, TokenAccount>,
 
+    /// CHECK:
+    pub mint_a_wallet: AccountInfo<'info>,
+
     #[account(mut)]
     pub mint_b_vault: Account<'info, TokenAccount>,
 
+    /// CHECK:
+    pub mint_b_wallet: AccountInfo<'info>,
+
     #[account(address = system_program::ID)]
     pub system_program: Program<'info, System>,
+
+    #[account(address = token::ID)]
+    pub token_program: Program<'info, Token>,
+
+    /// CHECK:
+    pub vault_signer: AccountInfo<'info>,
 }
 
 pub fn handler<'info>(
@@ -61,7 +75,11 @@ pub fn handler<'info>(
     let event_queue = &mut ctx.accounts.event_queue;
     let market = &mut ctx.accounts.market;
     let mint_a_vault = &mut ctx.accounts.mint_a_vault;
+    let mint_a_wallet = &mut ctx.accounts.mint_a_wallet;
     let mint_b_vault = &mut ctx.accounts.mint_b_vault;
+    let mint_b_wallet = &mut ctx.accounts.mint_b_wallet;
+    let token_program = &ctx.accounts.token_program;
+    let vault_signer = &ctx.accounts.vault_signer;
 
     // get crank bump
     let bump = *ctx.bumps.get("crank").unwrap();
@@ -76,8 +94,6 @@ pub fn handler<'info>(
                 AccountMeta::new_readonly(dex_program.key(), false),
                 AccountMeta::new_readonly(event_queue.key(), false),
                 AccountMeta::new_readonly(market.key(), false),
-                AccountMeta::new_readonly(mint_a_vault.key(), false),
-                AccountMeta::new_readonly(mint_b_vault.key(), false),
                 AccountMeta::new(PAYER_PUBKEY, true),
                 AccountMeta::new_readonly(system_program::ID, false),
             ],
@@ -92,6 +108,8 @@ pub fn handler<'info>(
         .iter()
         .map(|pk| pk)
         .collect::<Vec<&Pubkey>>();
+
+    msg!("open order accs len: {}", open_orders_accounts.len());
 
     // if there are orders that need to be cranked
     if open_orders_accounts.len() > 0 {
@@ -122,7 +140,47 @@ pub fn handler<'info>(
         invoke_signed(
             &consume_events_ix,
             &cpi_account_infos,
-            &[&[SEED_CRANK, crank.market.as_ref(), &[bump]]],
+            &[&[
+                SEED_CRANK,
+                crank.market.as_ref(),
+                crank.id.as_bytes(),
+                &[bump],
+            ]],
+        )?;
+
+        let settle_funds_ix = serum_dex::instruction::settle_funds(
+            &dex_program.key(),
+            &market.key(),
+            &token::ID,
+            &crank.open_orders[0],
+            &crank.key(),
+            &mint_b_vault.key(),
+            &mint_b_wallet.key(),
+            &mint_a_vault.key(),
+            &mint_a_wallet.key(),
+            None,
+            &vault_signer.key(),
+        )
+        .unwrap();
+
+        let mut settle_funds_account_infos = vec![
+            mint_a_wallet.to_account_info(),
+            mint_b_wallet.to_account_info(),
+            vault_signer.to_account_info(),
+            token_program.to_account_info(),
+        ];
+
+        settle_funds_account_infos.append(&mut rest_account_infos);
+
+        invoke_signed(
+            &settle_funds_ix,
+            &settle_funds_account_infos,
+            &[&[
+                SEED_CRANK,
+                crank.market.as_ref(),
+                crank.id.as_bytes(),
+                &[bump],
+            ]],
         )?;
 
         // read events again bc there might be more open orders

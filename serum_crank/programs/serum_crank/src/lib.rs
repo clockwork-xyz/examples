@@ -15,8 +15,11 @@ pub mod serum_crank {
     /*
      * initialize crank account
      */
-    pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Result<()> {
-        initialize::handler(ctx)
+    pub fn initialize<'info>(
+        ctx: Context<'_, '_, '_, 'info, Initialize<'info>>,
+        id: String,
+    ) -> Result<()> {
+        initialize::handler(ctx, id)
     }
 
     /*

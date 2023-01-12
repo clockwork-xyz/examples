@@ -5,44 +5,35 @@ use {
         solana_program::{instruction::Instruction, system_program},
         system_program::{transfer, Transfer},
     },
-    anchor_spl::{
-        dex::serum_dex::state::{strip_header, Event, EventQueueHeader, Queue as SerumDexQueue},
-        token::TokenAccount,
-    },
-    clockwork_sdk::state::{Thread, ThreadResponse},
+    anchor_spl::{dex::serum_dex::state::{strip_header, Event, EventQueueHeader, Queue}, token},
+    clockwork_sdk::state::{Thread, ThreadResponse, ThreadAccount},
 };
 
 #[derive(Accounts)]
 pub struct ReadEvents<'info> {
     #[account(
         mut, 
-        seeds = [SEED_CRANK, crank.market.as_ref()],
+        seeds = [SEED_CRANK, crank.authority.as_ref(), crank.market.as_ref(), crank.id.as_bytes()],
         bump, 
         has_one = event_queue,
         has_one = market,
-        has_one = mint_a_vault,
-        has_one = mint_b_vault,
     )]
     pub crank: Box<Account<'info, Crank>>,
 
     #[account(
         signer,
-        address = Thread::pubkey(crank_thread.authority, crank_thread.id.clone()),
-        constraint = crank_thread.id.eq("crank"),
+        constraint = crank_thread.authority == crank.authority,
+        address = crank_thread.pubkey()
     )]
     pub crank_thread: Box<Account<'info, Thread>>,
 
-    pub dex_program: Program<'info, crate::state::OpenBookDex>,
+    pub dex_program: Program<'info, OpenBookDex>,
 
     /// CHECK: this account is validated against the crank account
     pub event_queue: AccountInfo<'info>,
 
     /// CHECK: this account is validated against the crank account
     pub market: AccountInfo<'info>,
-
-    pub mint_a_vault: Box<Account<'info, TokenAccount>>,
-
-    pub mint_b_vault: Box<Account<'info, TokenAccount>>,
 
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -60,8 +51,6 @@ pub fn handler<'info>(
     let dex_program = &ctx.accounts.dex_program;
     let event_queue = &ctx.accounts.event_queue;
     let market = &ctx.accounts.market;
-    let mint_a_vault = &ctx.accounts.mint_a_vault;
-    let mint_b_vault = &ctx.accounts.mint_b_vault;
     let payer = &mut ctx.accounts.payer;
     let system_program = &ctx.accounts.system_program;
 
@@ -71,16 +60,20 @@ pub fn handler<'info>(
         AccountMeta::new_readonly(dex_program.key(), false),
         AccountMeta::new(event_queue.key(), false),
         AccountMeta::new(market.key(), false),
-        AccountMeta::new(mint_a_vault.key(), false),
-        AccountMeta::new(mint_b_vault.key(), false),
+        AccountMeta::new(crank.mint_a_vault, false),
+        AccountMeta::new(crank.mint_a_wallet, false),
+        AccountMeta::new(crank.mint_b_vault, false),
+        AccountMeta::new(crank.mint_b_wallet, false),
         AccountMeta::new_readonly(system_program::ID, false),
+        AccountMeta::new_readonly(token::ID, false),
+        AccountMeta::new(crank.vault_signer, false),
     ];
 
     // deserialize event queue
     let mut open_orders = Vec::new();
 
     let (header, buf) = strip_header::<EventQueueHeader, Event>(event_queue, false).unwrap();
-    let events = SerumDexQueue::new(header, buf);
+    let events = Queue::new(header, buf);
     for event in events.iter() {
         // <https://github.com/rust-lang/rust/issues/82523>
         let val = unsafe { std::ptr::addr_of!(event.owner).read_unaligned() };
