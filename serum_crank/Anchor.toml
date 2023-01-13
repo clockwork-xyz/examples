@@ -1,14 +1,14 @@
 [features]
 seeds = false
 
-[programs.localnet]
-serum_crank = "ANC1TBJi4YAf23iJZtohfk3xLtqDNHozM7gWRePXKGAm"
+[programs.mainnet]
+serum_crank = "4rHBrNiBJBJUxeKd6bnmT31gGbRwW4baBZu3CXqE2h9q"
 
 [registry]
 url = "https://anchor.projectserum.com"
 
 [provider]
-cluster = "localnet"
+cluster = "mainnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

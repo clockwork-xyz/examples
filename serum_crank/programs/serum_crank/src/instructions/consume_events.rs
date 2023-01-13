@@ -20,7 +20,6 @@ pub struct ConsumeEvents<'info> {
     #[account(
         seeds = [SEED_CRANK, crank.authority.as_ref(), crank.market.as_ref(), crank.id.as_bytes()],
         bump,
-        mut,
         has_one = market,
         has_one = event_queue,
     )]
@@ -75,11 +74,12 @@ pub fn handler<'info>(
     let event_queue = &mut ctx.accounts.event_queue;
     let market = &mut ctx.accounts.market;
     let mint_a_vault = &mut ctx.accounts.mint_a_vault;
-    let mint_a_wallet = &mut ctx.accounts.mint_a_wallet;
+    // let mint_a_wallet = &mut ctx.accounts.mint_a_wallet;
     let mint_b_vault = &mut ctx.accounts.mint_b_vault;
-    let mint_b_wallet = &mut ctx.accounts.mint_b_wallet;
-    let token_program = &ctx.accounts.token_program;
-    let vault_signer = &ctx.accounts.vault_signer;
+    // let mint_b_wallet = &mut ctx.accounts.mint_b_wallet;
+    // let token_program = &ctx.accounts.token_program;
+    // let vault_signer = &ctx.accounts.vault_signer;
+    let open_orders_account_infos = ctx.remaining_accounts.clone().to_vec();
 
     // get crank bump
     let bump = *ctx.bumps.get("crank").unwrap();
@@ -102,21 +102,20 @@ pub fn handler<'info>(
         .into(),
     );
 
-    // coerce open orders type
-    let open_orders_accounts = crank
-        .open_orders
+    let open_orders_account_pubkeys = &open_orders_account_infos
         .iter()
-        .map(|pk| pk)
-        .collect::<Vec<&Pubkey>>();
+        .map(|acc| acc.key())
+        .collect::<Vec<Pubkey>>();
 
-    msg!("open order accs len: {}", open_orders_accounts.len());
+    msg!("open order accs len: {}", open_orders_account_pubkeys.len());
+    msg!("open order infos len: {}", open_orders_account_infos.len());
 
     // if there are orders that need to be cranked
-    if open_orders_accounts.len() > 0 {
+    if open_orders_account_pubkeys.len() > 0 {
         // derive consume events ix
         let consume_events_ix = serum_dex::instruction::consume_events(
             &dex_program.key(),
-            open_orders_accounts,
+            open_orders_account_pubkeys.iter().collect::<Vec<&Pubkey>>(),
             &market.key(),
             &event_queue.key(),
             &mint_b_vault.key(),
@@ -125,63 +124,71 @@ pub fn handler<'info>(
         )
         .unwrap();
 
-        // construct account infos vec
-        let mut cpi_account_infos = ctx.remaining_accounts.clone().to_vec();
-        let mut rest_account_infos = vec![
+        let mut consume_events_account_infos = vec![
             market.to_account_info(),
             event_queue.to_account_info(),
             mint_a_vault.to_account_info(),
             mint_b_vault.to_account_info(),
             dex_program.to_account_info(),
         ];
-        cpi_account_infos.append(&mut rest_account_infos);
+
+        consume_events_account_infos.append(&mut open_orders_account_infos.clone());
 
         // invoke crank events ix
         invoke_signed(
             &consume_events_ix,
-            &cpi_account_infos,
+            &consume_events_account_infos,
             &[&[
                 SEED_CRANK,
+                crank.authority.as_ref(),
                 crank.market.as_ref(),
                 crank.id.as_bytes(),
                 &[bump],
             ]],
         )?;
 
-        let settle_funds_ix = serum_dex::instruction::settle_funds(
-            &dex_program.key(),
-            &market.key(),
-            &token::ID,
-            &crank.open_orders[0],
-            &crank.key(),
-            &mint_b_vault.key(),
-            &mint_b_wallet.key(),
-            &mint_a_vault.key(),
-            &mint_a_wallet.key(),
-            None,
-            &vault_signer.key(),
-        )
-        .unwrap();
+        // msg!("open order accs len: {}", open_orders_account_pubkeys.len());
+        // msg!("open order infos len: {}", open_orders_account_infos.len());
 
-        let mut settle_funds_account_infos = vec![
-            mint_a_wallet.to_account_info(),
-            mint_b_wallet.to_account_info(),
-            vault_signer.to_account_info(),
-            token_program.to_account_info(),
-        ];
+        // let settle_funds_ix = serum_dex::instruction::settle_funds(
+        //     &dex_program.key(),
+        //     &market.key(),
+        //     &token::ID,
+        //     &open_orders_account_pubkeys[0],
+        //     &crank.key(),
+        //     &mint_b_vault.key(),
+        //     &mint_b_wallet.key(),
+        //     &mint_a_vault.key(),
+        //     &mint_a_wallet.key(),
+        //     None,
+        //     &vault_signer.key(),
+        // )
+        // .unwrap();
 
-        settle_funds_account_infos.append(&mut rest_account_infos);
+        // let settle_funds_account_infos = vec![
+        //     market.to_account_info(),
+        //     open_orders_account_infos[0].to_account_info(),
+        //     crank.to_account_info(),
+        //     mint_b_vault.to_account_info(),
+        //     mint_a_vault.to_account_info(),
+        //     mint_b_wallet.to_account_info(),
+        //     mint_a_wallet.to_account_info(),
+        //     vault_signer.to_account_info(),
+        //     dex_program.to_account_info(),
+        //     token_program.to_account_info(),
+        // ];
 
-        invoke_signed(
-            &settle_funds_ix,
-            &settle_funds_account_infos,
-            &[&[
-                SEED_CRANK,
-                crank.market.as_ref(),
-                crank.id.as_bytes(),
-                &[bump],
-            ]],
-        )?;
+        // invoke_signed(
+        //     &settle_funds_ix,
+        //     &settle_funds_account_infos,
+        //     &[&[
+        //         SEED_CRANK,
+        //         crank.authority.as_ref(),
+        //         crank.market.as_ref(),
+        //         crank.id.as_bytes(),
+        //         &[bump],
+        //     ]],
+        // )?;
 
         // read events again bc there might be more open orders
         return Ok(ThreadResponse {

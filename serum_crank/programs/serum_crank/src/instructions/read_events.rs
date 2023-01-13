@@ -3,7 +3,7 @@ use {
     anchor_lang::{
         prelude::*,
         solana_program::{instruction::Instruction, system_program},
-        system_program::{transfer, Transfer},
+        // system_program::{transfer, Transfer},
     },
     anchor_spl::{dex::serum_dex::state::{strip_header, Event, EventQueueHeader, Queue}, token},
     clockwork_sdk::state::{Thread, ThreadResponse, ThreadAccount},
@@ -51,9 +51,7 @@ pub fn handler<'info>(
     let dex_program = &ctx.accounts.dex_program;
     let event_queue = &ctx.accounts.event_queue;
     let market = &ctx.accounts.market;
-    let payer = &mut ctx.accounts.payer;
-    let system_program = &ctx.accounts.system_program;
-
+    
     let mut next_ix_accounts = vec![
         AccountMeta::new_readonly(crank.key(), false),
         AccountMeta::new_readonly(crank_thread.key(), true),
@@ -70,8 +68,6 @@ pub fn handler<'info>(
     ];
 
     // deserialize event queue
-    let mut open_orders = Vec::new();
-
     let (header, buf) = strip_header::<EventQueueHeader, Event>(event_queue, false).unwrap();
     let events = Queue::new(header, buf);
     for event in events.iter() {
@@ -80,33 +76,8 @@ pub fn handler<'info>(
         let owner = Pubkey::new(safe_transmute::to_bytes::transmute_one_to_bytes(
             core::convert::identity(&val),
         ));
-        open_orders.push(owner);
+        // open_orders.push(owner);
         next_ix_accounts.push(AccountMeta::new(owner, false));
-    }
-
-    // write event queue data to crank account
-    crank.open_orders = open_orders;
-
-    // realloc memory for crank's account
-    let new_size = 8 + crank.try_to_vec()?.len();
-    crank.to_account_info().realloc(new_size, false)?;
-
-    // pay rent if more space has been allocated
-    let minimum_rent = Rent::get().unwrap().minimum_balance(new_size);
-
-    if minimum_rent > crank.to_account_info().lamports() {
-        transfer(
-            CpiContext::new(
-                system_program.to_account_info(),
-                Transfer {
-                    from: payer.to_account_info(),
-                    to: crank.to_account_info(),
-                },
-            ),
-            minimum_rent
-                .checked_sub(crank.to_account_info().lamports())
-                .unwrap(),
-        )?;
     }
 
     // return consume events ix

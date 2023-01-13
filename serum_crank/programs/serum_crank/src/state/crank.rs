@@ -21,7 +21,6 @@ pub struct Crank {
     pub mint_a_wallet: Pubkey,
     pub mint_b_vault: Pubkey,
     pub mint_b_wallet: Pubkey,
-    pub open_orders: Vec<Pubkey>,
     pub vault_signer: Pubkey,
 }
 
@@ -82,7 +81,6 @@ impl CrankAccount for Account<'_, Crank> {
         vault_signer: Pubkey,
     ) -> Result<()> {
         self.authority = authority;
-        self.open_orders = Vec::new();
         self.id = id;
         self.market = market;
         self.event_queue = event_queue;
