@@ -1,12 +1,12 @@
 import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
-import { SerumCrank } from "../target/types/serum_crank";
+import { OpenbookCrank } from "../target/types/openbook_crank";
 
-describe("serum_crank", () => {
+describe("openbook_crank", () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
 
-  const program = anchor.workspace.SerumCrank as Program<SerumCrank>;
+  const program = anchor.workspace.OpenbookCrank as Program<OpenbookCrank>;
 
   it("Is initialized!", async () => {
     // Add your test here.

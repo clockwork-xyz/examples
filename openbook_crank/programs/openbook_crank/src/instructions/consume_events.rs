@@ -15,19 +15,17 @@ use {
 #[derive(Accounts)]
 pub struct ConsumeEvents<'info> {
     #[account(
-    seeds = [SEED_CRANK, crank.market.as_ref()],
-    bump,
-    has_one = market,
-    has_one = event_queue,
-    has_one = mint_a_vault,
-    has_one = mint_b_vault,
+        seeds = [SEED_CRANK, crank.authority.as_ref(), crank.market.as_ref(), crank.id.as_bytes()],
+        bump,
+        has_one = market,
+        has_one = event_queue,
     )]
     pub crank: Box<Account<'info, Crank>>,
 
     #[account(
-    signer,
-    address = crank_thread.pubkey(),
-    constraint = crank_thread.id.eq("crank"),
+        signer,
+        address = crank_thread.pubkey(),
+        constraint = crank_thread.authority == crank.authority
     )]
     pub crank_thread: Box<Account<'info, Thread>>,
 
@@ -62,6 +60,7 @@ pub fn handler<'info>(
     let market = &mut ctx.accounts.market;
     let mint_a_vault = &mut ctx.accounts.mint_a_vault;
     let mint_b_vault = &mut ctx.accounts.mint_b_vault;
+    let open_orders_account_infos = ctx.remaining_accounts.clone().to_vec();
 
     // get crank bump
     let bump = *ctx.bumps.get("crank").unwrap();
@@ -76,8 +75,6 @@ pub fn handler<'info>(
                 AccountMeta::new_readonly(dex_program.key(), false),
                 AccountMeta::new_readonly(event_queue.key(), false),
                 AccountMeta::new_readonly(market.key(), false),
-                AccountMeta::new_readonly(mint_a_vault.key(), false),
-                AccountMeta::new_readonly(mint_b_vault.key(), false),
                 AccountMeta::new(PAYER_PUBKEY, true),
                 AccountMeta::new_readonly(system_program::ID, false),
             ],
@@ -86,19 +83,19 @@ pub fn handler<'info>(
         .into(),
     );
 
-    // coerce open orders type
-    let open_orders_accounts = crank
-        .open_orders
+    let open_orders_account_pubkeys = &open_orders_account_infos
         .iter()
-        .map(|pk| pk)
-        .collect::<Vec<&Pubkey>>();
+        .map(|acc| acc.key())
+        .collect::<Vec<Pubkey>>();
+
+    msg!("open order accs len: {}", open_orders_account_pubkeys.len());
 
     // if there are orders that need to be cranked
-    if open_orders_accounts.len() > 0 {
+    if open_orders_account_pubkeys.len() > 0 {
         // derive consume events ix
         let consume_events_ix = serum_dex::instruction::consume_events(
             &dex_program.key(),
-            open_orders_accounts,
+            open_orders_account_pubkeys.iter().collect::<Vec<&Pubkey>>(),
             &market.key(),
             &event_queue.key(),
             &mint_b_vault.key(),
@@ -107,22 +104,27 @@ pub fn handler<'info>(
         )
         .unwrap();
 
-        // construct account infos vec
-        let mut cpi_account_infos = ctx.remaining_accounts.clone().to_vec();
-        let mut rest_account_infos = vec![
+        let mut consume_events_account_infos = vec![
             market.to_account_info(),
             event_queue.to_account_info(),
             mint_a_vault.to_account_info(),
             mint_b_vault.to_account_info(),
             dex_program.to_account_info(),
         ];
-        cpi_account_infos.append(&mut rest_account_infos);
+
+        consume_events_account_infos.append(&mut open_orders_account_infos.clone());
 
         // invoke crank events ix
         invoke_signed(
             &consume_events_ix,
-            &cpi_account_infos,
-            &[&[SEED_CRANK, crank.market.as_ref(), &[bump]]],
+            &consume_events_account_infos,
+            &[&[
+                SEED_CRANK,
+                crank.authority.as_ref(),
+                crank.market.as_ref(),
+                crank.id.as_bytes(),
+                &[bump],
+            ]],
         )?;
 
         // read events again bc there might be more open orders
