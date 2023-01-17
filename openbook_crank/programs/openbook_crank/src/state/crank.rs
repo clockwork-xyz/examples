@@ -18,10 +18,7 @@ pub struct Crank {
     pub limit: u16,
     pub market: Pubkey,
     pub mint_a_vault: Pubkey,
-    pub mint_a_wallet: Pubkey,
     pub mint_b_vault: Pubkey,
-    pub mint_b_wallet: Pubkey,
-    pub vault_signer: Pubkey,
 }
 
 impl Crank {
@@ -59,10 +56,7 @@ pub trait CrankAccount {
         limit: u16,
         market: Pubkey,
         mint_a_vault: Pubkey,
-        mint_a_wallet: Pubkey,
         mint_b_vault: Pubkey,
-        mint_b_wallet: Pubkey,
-        vault_signer: Pubkey,
     ) -> Result<()>;
 }
 
@@ -75,21 +69,15 @@ impl CrankAccount for Account<'_, Crank> {
         limit: u16,
         market: Pubkey,
         mint_a_vault: Pubkey,
-        mint_a_wallet: Pubkey,
         mint_b_vault: Pubkey,
-        mint_b_wallet: Pubkey,
-        vault_signer: Pubkey,
     ) -> Result<()> {
         self.authority = authority;
         self.id = id;
         self.market = market;
         self.event_queue = event_queue;
         self.mint_a_vault = mint_a_vault;
-        self.mint_a_wallet = mint_a_wallet;
         self.mint_b_vault = mint_b_vault;
-        self.mint_b_wallet = mint_b_wallet;
         self.limit = limit;
-        self.vault_signer = vault_signer;
         Ok(())
     }
 }

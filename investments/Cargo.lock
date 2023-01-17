@@ -1692,8 +1692,8 @@ dependencies = [
  "anchor-spl",
  "clockwork-client",
  "investments-program",
+ "openbook-crank",
  "serum-common",
- "serum-crank",
  "solana-client",
  "solana-sdk",
 ]
@@ -2156,6 +2156,16 @@ name = "opaque-debug"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
+
+[[package]]
+name = "openbook-crank"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "clockwork-sdk",
+ "safe-transmute",
+]
 
 [[package]]
 name = "openssl-probe"
@@ -2923,16 +2933,6 @@ dependencies = [
  "solana-client",
  "solana-sdk",
  "spl-token 2.0.8",
-]
-
-[[package]]
-name = "serum-crank"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "clockwork-sdk",
- "safe-transmute",
 ]
 
 [[package]]

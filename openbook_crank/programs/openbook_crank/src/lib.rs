@@ -9,7 +9,7 @@ use anchor_lang::prelude::*;
 use instructions::*;
 
 #[program]
-pub mod serum_crank {
+pub mod openbook_crank {
     use super::*;
 
     /*

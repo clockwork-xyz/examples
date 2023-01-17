@@ -38,9 +38,6 @@ pub struct Initialize<'info> {
     )]
     pub mint_a_vault: Box<Account<'info, TokenAccount>>,
 
-    /// CHECK:
-    pub mint_a_wallet: AccountInfo<'info>,
-
     #[account()]
     pub mint_b: Box<Account<'info, Mint>>,
 
@@ -49,17 +46,11 @@ pub struct Initialize<'info> {
     )]
     pub mint_b_vault: Box<Account<'info, TokenAccount>>,
 
-    /// CHECK:
-    pub mint_b_wallet: AccountInfo<'info>,
-
     #[account(mut)]
     pub signer: Signer<'info>,
 
     #[account(address = system_program::ID)]
     pub system_program: Program<'info, System>,
-
-    /// CHECK:
-    pub vault_signer: AccountInfo<'info>,
 }
 
 pub fn handler<'info>(
@@ -72,11 +63,8 @@ pub fn handler<'info>(
     let event_queue = &ctx.accounts.event_queue;
     let market = &ctx.accounts.market;
     let mint_a_vault = &ctx.accounts.mint_a_vault;
-    let mint_a_wallet = &ctx.accounts.mint_a_wallet;
     let mint_b_vault = &ctx.accounts.mint_b_vault;
-    let mint_b_wallet = &ctx.accounts.mint_b_wallet;
     let signer = &ctx.accounts.signer;
-    let vault_signer = &ctx.accounts.vault_signer;
 
     // validate market
     let market_data = Market::load(market, &dex_program.key()).unwrap();
@@ -95,10 +83,7 @@ pub fn handler<'info>(
         10,
         market.key(),
         mint_a_vault.key(),
-        mint_a_wallet.key(),
         mint_b_vault.key(),
-        mint_b_wallet.key(),
-        vault_signer.key(),
     )?;
 
     Ok(())

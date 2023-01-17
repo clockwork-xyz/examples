@@ -3,9 +3,8 @@ use {
     anchor_lang::{
         prelude::*,
         solana_program::{instruction::Instruction, system_program},
-        // system_program::{transfer, Transfer},
     },
-    anchor_spl::{dex::serum_dex::state::{strip_header, Event, EventQueueHeader, Queue}, token},
+    anchor_spl::dex::serum_dex::state::{strip_header, Event, EventQueueHeader, Queue},
     clockwork_sdk::state::{Thread, ThreadResponse, ThreadAccount},
 };
 
@@ -59,12 +58,8 @@ pub fn handler<'info>(
         AccountMeta::new(event_queue.key(), false),
         AccountMeta::new(market.key(), false),
         AccountMeta::new(crank.mint_a_vault, false),
-        AccountMeta::new(crank.mint_a_wallet, false),
         AccountMeta::new(crank.mint_b_vault, false),
-        AccountMeta::new(crank.mint_b_wallet, false),
         AccountMeta::new_readonly(system_program::ID, false),
-        AccountMeta::new_readonly(token::ID, false),
-        AccountMeta::new(crank.vault_signer, false),
     ];
 
     // deserialize event queue

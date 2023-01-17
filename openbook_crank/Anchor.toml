@@ -1,11 +1,11 @@
 [features]
 seeds = false
-
-[programs.mainnet]
-serum_crank = "4rHBrNiBJBJUxeKd6bnmT31gGbRwW4baBZu3CXqE2h9q"
+skip-lint = false
+[programs.localnet]
+openbook_crank = "5VgDg9um65qixinLJRci5exrn5MVjZZ3PpMbsDuSyP8P"
 
 [registry]
-url = "https://anchor.projectserum.com"
+url = "https://api.apr.dev"
 
 [provider]
 cluster = "mainnet"
