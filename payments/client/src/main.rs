@@ -1,11 +1,12 @@
+use clockwork_thread_program::state::InstructionData as ClockworkInstructionData;
 use {
     anchor_lang::{prelude::Pubkey, solana_program::sysvar, InstructionData},
     anchor_spl::{associated_token, token},
     clockwork_client::{
         thread::{
-            ID as thread_program_ID,
             instruction::thread_create,
             state::{Thread, Trigger},
+            ID as thread_program_ID,
         },
         Client, ClientResult, SplToken,
     },
@@ -14,8 +15,8 @@ use {
     solana_sdk::{
         instruction::{AccountMeta, Instruction},
         native_token::LAMPORTS_PER_SOL,
-        signature::Keypair,
         signature::read_keypair_file,
+        signature::Keypair,
         signer::Signer,
         system_program,
         transaction::Transaction,
@@ -41,10 +42,7 @@ fn main() -> ClientResult<()> {
     // Derive PDAs
     let recipient_pubkey = Keypair::new().pubkey();
     let payment_pubkey = Payment::pubkey(client.payer_pubkey(), mint_pubkey, recipient_pubkey);
-    let thread_pubkey = Thread::pubkey(
-        thread_authority,
-        "payment".into(),
-    );
+    let thread_pubkey = Thread::pubkey(thread_authority, "payment".into());
 
     // airdrop to payment thread
     client.airdrop(&thread_pubkey, LAMPORTS_PER_SOL)?;
@@ -78,14 +76,14 @@ fn main() -> ClientResult<()> {
         recipient_ata_pubkey,
     )?;
 
-    // wait 10 seconds to update payment
-    println!("wait 10 seconds to update payment");
-    for n in 0..10 {
-        println!("{}", n);
-        std::thread::sleep(std::time::Duration::from_secs(1));
-    }
+    // // wait 10 seconds to update payment
+    // println!("wait 10 seconds to update payment");
+    // for n in 0..10 {
+    //     println!("{}", n);
+    //     std::thread::sleep(std::time::Duration::from_secs(1));
+    // }
 
-    update_payment(&client, payment_pubkey)?;
+    // update_payment(&client, payment_pubkey)?;
 
     Ok(())
 }
@@ -116,29 +114,20 @@ fn create_payment(
         data: payments::instruction::CreatePayment { amount: 10_000 }.data(),
     };
 
-    let distribute_payment_ix = Instruction {
-        program_id: payments::ID,
-        accounts: vec![
-            AccountMeta::new_readonly(associated_token::ID, false),
-            AccountMeta::new_readonly(client.payer_pubkey(), false),
-            AccountMeta::new(authority_token_account, false),
-            AccountMeta::new_readonly(mint, false),
-            AccountMeta::new(PAYER_PUBKEY, true),
-            AccountMeta::new(payment, false),
-            AccountMeta::new(thread, true),
-            AccountMeta::new_readonly(recipient, false),
-            AccountMeta::new(recipient_ata_pubkey, false),
-            AccountMeta::new_readonly(sysvar::rent::ID, false),
-            AccountMeta::new_readonly(system_program::ID, false),
-            AccountMeta::new_readonly(token::ID, false),
-        ],
-        data: payments::instruction::DisbursePayment.data(),
-    };
+    let kickoff_instruction = DisbursePaymentInstructionData(
+        client,
+        authority_token_account,
+        mint,
+        payment,
+        thread,
+        recipient,
+        recipient_ata_pubkey,
+    );
 
     let thread_create = thread_create(
         client.payer_pubkey(),
         "payment".into(),
-        distribute_payment_ix.into(),
+        vec![kickoff_instruction],
         client.payer_pubkey(),
         thread,
         Trigger::Cron {
@@ -162,6 +151,38 @@ fn create_payment(
     )?;
 
     Ok(())
+}
+
+fn DisbursePaymentInstructionData(
+    client: &Client,
+    authority_token_account: Pubkey,
+    mint: Pubkey,
+    payment: Pubkey,
+    thread: Pubkey,
+    recipient: Pubkey,
+    recipient_ata_pubkey: Pubkey,
+) -> ClockworkInstructionData {
+    let distribute_payment_ix = Instruction {
+        program_id: payments::ID,
+        accounts: vec![
+            AccountMeta::new_readonly(associated_token::ID, false),
+            AccountMeta::new_readonly(client.payer_pubkey(), false),
+            AccountMeta::new(authority_token_account, false),
+            AccountMeta::new_readonly(mint, false),
+            AccountMeta::new(PAYER_PUBKEY, true),
+            AccountMeta::new(payment, false),
+            AccountMeta::new(thread, true),
+            AccountMeta::new_readonly(recipient, false),
+            AccountMeta::new(recipient_ata_pubkey, false),
+            AccountMeta::new_readonly(sysvar::rent::ID, false),
+            AccountMeta::new_readonly(system_program::ID, false),
+            AccountMeta::new_readonly(token::ID, false),
+        ],
+        data: payments::instruction::DisbursePayment.data(),
+    };
+
+    let kickoff_instruction = distribute_payment_ix.into();
+    kickoff_instruction
 }
 
 fn update_payment(client: &Client, payment_pubkey: Pubkey) -> ClientResult<()> {
@@ -241,9 +262,9 @@ fn explorer() -> Explorer {
 
 fn default_client() -> Client {
     #[cfg(not(feature = "localnet"))]
-        let host = "https://api.devnet.solana.com";
+    let host = "https://api.devnet.solana.com";
     #[cfg(feature = "localnet")]
-        let host = "http://localhost:8899";
+    let host = "http://localhost:8899";
 
     let config_file = solana_cli_config::CONFIG_FILE.as_ref().unwrap().as_str();
     let config = solana_cli_config::Config::load(config_file).unwrap();

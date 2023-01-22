@@ -22,8 +22,8 @@ pub struct CreatePayment<'info> {
 
     #[account(
         mut, 
-        associated_token::authority = authority,
-        associated_token::mint = mint,
+        token::authority = authority,
+        token::mint = mint,
     )]
     pub authority_token_account: Account<'info, TokenAccount>,
 
