@@ -73,18 +73,43 @@ pub fn handler<'info>(
         ));
         // open_orders.push(owner);
         next_ix_accounts.push(AccountMeta::new(owner, false));
+        
+        if next_ix_accounts.len() >= 5 {
+            break;
+        }
     }
 
-    // return consume events ix
-    Ok(ThreadResponse {
-        kickoff_instruction: None,
-        next_instruction: Some(
-            Instruction {
-                program_id: crate::ID,
-                accounts: next_ix_accounts,
-                data: clockwork_sdk::utils::anchor_sighash("consume_events").into(),
-            }
-            .into(),
-        ),
-    })
+    if next_ix_accounts.len() > 8 {
+        return Ok(ThreadResponse {
+            kickoff_instruction: None,
+            next_instruction: Some(
+                Instruction {
+                    program_id: crate::ID,
+                    accounts: next_ix_accounts,
+                    data: clockwork_sdk::utils::anchor_sighash("consume_events").into(),
+                }
+                .into(),
+            ),
+        });
+    } else {
+        return Ok(ThreadResponse {
+            kickoff_instruction: Some(
+                Instruction {
+                    program_id: crate::ID,
+                    accounts: vec![
+                        AccountMeta::new(crank.key(), false),
+                        AccountMeta::new(crank_thread.key(), true),
+                        AccountMeta::new_readonly(dex_program.key(), false),
+                        AccountMeta::new_readonly(event_queue.key(), false),
+                        AccountMeta::new_readonly(market.key(), false),
+                        AccountMeta::new(clockwork_sdk::utils::PAYER_PUBKEY, true),
+                        AccountMeta::new_readonly(system_program::ID, false),
+                    ],
+                    data: clockwork_sdk::utils::anchor_sighash("read_events").into(),
+                }
+                .into(),
+            ),
+            next_instruction: None
+        })
+    }
 }
