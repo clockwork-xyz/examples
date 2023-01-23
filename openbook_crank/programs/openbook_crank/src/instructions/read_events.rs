@@ -50,6 +50,9 @@ pub fn handler<'info>(
     let dex_program = &ctx.accounts.dex_program;
     let event_queue = &ctx.accounts.event_queue;
     let market = &ctx.accounts.market;
+
+    const CONSUME_EVENTS_ACC_LEN: usize = 8;
+    const MAX_OPEN_ORDER_ACC_LEN: usize = 5;
     
     let mut next_ix_accounts = vec![
         AccountMeta::new_readonly(crank.key(), false),
@@ -73,18 +76,43 @@ pub fn handler<'info>(
         ));
         // open_orders.push(owner);
         next_ix_accounts.push(AccountMeta::new(owner, false));
+        
+        if next_ix_accounts.len() >= CONSUME_EVENTS_ACC_LEN + MAX_OPEN_ORDER_ACC_LEN {
+            break;
+        }
     }
 
-    // return consume events ix
-    Ok(ThreadResponse {
-        kickoff_instruction: None,
-        next_instruction: Some(
-            Instruction {
-                program_id: crate::ID,
-                accounts: next_ix_accounts,
-                data: clockwork_sdk::utils::anchor_sighash("consume_events").into(),
-            }
-            .into(),
-        ),
-    })
+    if next_ix_accounts.len() > CONSUME_EVENTS_ACC_LEN {
+        return Ok(ThreadResponse {
+            kickoff_instruction: None,
+            next_instruction: Some(
+                Instruction {
+                    program_id: crate::ID,
+                    accounts: next_ix_accounts,
+                    data: clockwork_sdk::utils::anchor_sighash("consume_events").into(),
+                }
+                .into(),
+            ),
+        });
+    } else {
+        return Ok(ThreadResponse {
+            kickoff_instruction: Some(
+                Instruction {
+                    program_id: crate::ID,
+                    accounts: vec![
+                        AccountMeta::new(crank.key(), false),
+                        AccountMeta::new(crank_thread.key(), true),
+                        AccountMeta::new_readonly(dex_program.key(), false),
+                        AccountMeta::new_readonly(event_queue.key(), false),
+                        AccountMeta::new_readonly(market.key(), false),
+                        AccountMeta::new(clockwork_sdk::utils::PAYER_PUBKEY, true),
+                        AccountMeta::new_readonly(system_program::ID, false),
+                    ],
+                    data: clockwork_sdk::utils::anchor_sighash("read_events").into(),
+                }
+                .into(),
+            ),
+            next_instruction: None
+        })
+    }
 }
