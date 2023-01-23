@@ -50,6 +50,9 @@ pub fn handler<'info>(
     let dex_program = &ctx.accounts.dex_program;
     let event_queue = &ctx.accounts.event_queue;
     let market = &ctx.accounts.market;
+
+    const CONSUME_EVENTS_ACC_LEN: usize = 8;
+    const MAX_OPEN_ORDER_ACC_LEN: usize = 5;
     
     let mut next_ix_accounts = vec![
         AccountMeta::new_readonly(crank.key(), false),
@@ -74,12 +77,12 @@ pub fn handler<'info>(
         // open_orders.push(owner);
         next_ix_accounts.push(AccountMeta::new(owner, false));
         
-        if next_ix_accounts.len() >= 5 {
+        if next_ix_accounts.len() >= CONSUME_EVENTS_ACC_LEN + MAX_OPEN_ORDER_ACC_LEN {
             break;
         }
     }
 
-    if next_ix_accounts.len() > 8 {
+    if next_ix_accounts.len() > CONSUME_EVENTS_ACC_LEN {
         return Ok(ThreadResponse {
             kickoff_instruction: None,
             next_instruction: Some(
