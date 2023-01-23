@@ -9,14 +9,17 @@ use anchor_lang::prelude::*;
 use instructions::*;
 
 #[program]
-pub mod serum_crank {
+pub mod openbook_crank {
     use super::*;
 
     /*
      * initialize crank account
      */
-    pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Result<()> {
-        initialize::handler(ctx)
+    pub fn initialize<'info>(
+        ctx: Context<'_, '_, '_, 'info, Initialize<'info>>,
+        id: String,
+    ) -> Result<()> {
+        initialize::handler(ctx, id)
     }
 
     /*

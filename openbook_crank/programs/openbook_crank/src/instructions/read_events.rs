@@ -3,46 +3,36 @@ use {
     anchor_lang::{
         prelude::*,
         solana_program::{instruction::Instruction, system_program},
-        system_program::{transfer, Transfer},
     },
-    anchor_spl::{
-        dex::serum_dex::state::{strip_header, Event, EventQueueHeader, Queue as SerumDexQueue},
-        token::TokenAccount,
-    },
-    clockwork_sdk::state::{Thread, ThreadResponse},
+    anchor_spl::dex::serum_dex::state::{strip_header, Event, EventQueueHeader, Queue},
+    clockwork_sdk::state::{Thread, ThreadResponse, ThreadAccount},
 };
 
 #[derive(Accounts)]
 pub struct ReadEvents<'info> {
     #[account(
         mut, 
-        seeds = [SEED_CRANK, crank.market.as_ref()],
+        seeds = [SEED_CRANK, crank.authority.as_ref(), crank.market.as_ref(), crank.id.as_bytes()],
         bump, 
         has_one = event_queue,
         has_one = market,
-        has_one = mint_a_vault,
-        has_one = mint_b_vault,
     )]
     pub crank: Box<Account<'info, Crank>>,
 
     #[account(
         signer,
-        address = Thread::pubkey(crank_thread.authority, crank_thread.id.clone()),
-        constraint = crank_thread.id.eq("crank"),
+        constraint = crank_thread.authority == crank.authority,
+        address = crank_thread.pubkey()
     )]
     pub crank_thread: Box<Account<'info, Thread>>,
 
-    pub dex_program: Program<'info, crate::state::OpenBookDex>,
+    pub dex_program: Program<'info, OpenBookDex>,
 
     /// CHECK: this account is validated against the crank account
     pub event_queue: AccountInfo<'info>,
 
     /// CHECK: this account is validated against the crank account
     pub market: AccountInfo<'info>,
-
-    pub mint_a_vault: Box<Account<'info, TokenAccount>>,
-
-    pub mint_b_vault: Box<Account<'info, TokenAccount>>,
 
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -60,60 +50,29 @@ pub fn handler<'info>(
     let dex_program = &ctx.accounts.dex_program;
     let event_queue = &ctx.accounts.event_queue;
     let market = &ctx.accounts.market;
-    let mint_a_vault = &ctx.accounts.mint_a_vault;
-    let mint_b_vault = &ctx.accounts.mint_b_vault;
-    let payer = &mut ctx.accounts.payer;
-    let system_program = &ctx.accounts.system_program;
-
+    
     let mut next_ix_accounts = vec![
         AccountMeta::new_readonly(crank.key(), false),
         AccountMeta::new_readonly(crank_thread.key(), true),
         AccountMeta::new_readonly(dex_program.key(), false),
         AccountMeta::new(event_queue.key(), false),
         AccountMeta::new(market.key(), false),
-        AccountMeta::new(mint_a_vault.key(), false),
-        AccountMeta::new(mint_b_vault.key(), false),
+        AccountMeta::new(crank.mint_a_vault, false),
+        AccountMeta::new(crank.mint_b_vault, false),
         AccountMeta::new_readonly(system_program::ID, false),
     ];
 
     // deserialize event queue
-    let mut open_orders = Vec::new();
-
     let (header, buf) = strip_header::<EventQueueHeader, Event>(event_queue, false).unwrap();
-    let events = SerumDexQueue::new(header, buf);
+    let events = Queue::new(header, buf);
     for event in events.iter() {
         // <https://github.com/rust-lang/rust/issues/82523>
         let val = unsafe { std::ptr::addr_of!(event.owner).read_unaligned() };
         let owner = Pubkey::new(safe_transmute::to_bytes::transmute_one_to_bytes(
             core::convert::identity(&val),
         ));
-        open_orders.push(owner);
+        // open_orders.push(owner);
         next_ix_accounts.push(AccountMeta::new(owner, false));
-    }
-
-    // write event queue data to crank account
-    crank.open_orders = open_orders;
-
-    // realloc memory for crank's account
-    let new_size = 8 + crank.try_to_vec()?.len();
-    crank.to_account_info().realloc(new_size, false)?;
-
-    // pay rent if more space has been allocated
-    let minimum_rent = Rent::get().unwrap().minimum_balance(new_size);
-
-    if minimum_rent > crank.to_account_info().lamports() {
-        transfer(
-            CpiContext::new(
-                system_program.to_account_info(),
-                Transfer {
-                    from: payer.to_account_info(),
-                    to: crank.to_account_info(),
-                },
-            ),
-            minimum_rent
-                .checked_sub(crank.to_account_info().lamports())
-                .unwrap(),
-        )?;
     }
 
     // return consume events ix

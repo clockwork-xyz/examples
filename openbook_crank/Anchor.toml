@@ -1,14 +1,14 @@
 [features]
 seeds = false
-
+skip-lint = false
 [programs.localnet]
-serum_crank = "ANC1TBJi4YAf23iJZtohfk3xLtqDNHozM7gWRePXKGAm"
+openbook_crank = "5VgDg9um65qixinLJRci5exrn5MVjZZ3PpMbsDuSyP8P"
 
 [registry]
-url = "https://anchor.projectserum.com"
+url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "mainnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
