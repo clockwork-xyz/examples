@@ -52,15 +52,16 @@ fn main() -> ClientResult<()> {
     );
     let investment_thread = Thread::pubkey(investment, "investment".to_string());
 
-    // derive serum_crank PDAs
-    let crank = serum_crank::state::Crank::pubkey(market_keys.market);
+    // derive openbook_crank PDAs
+    let crank =
+        openbook_crank::state::Crank::pubkey(client.payer_pubkey(), market_keys.market, id.clone());
     let crank_thread = Thread::pubkey(crank, "crank".into());
 
     print_explorer_link(investment_thread, "investment_thread".to_string())?;
     print_explorer_link(crank_thread, "crank_thread".to_string())?;
 
-    // init serum_crank program
-    initialize_serum_crank(&client, crank, crank_thread, &market_keys)?;
+    // init openbook_crank program
+    initialize_openbook_crank(&client, crank, crank_thread, &market_keys)?;
 
     let bob_mint_b_wallet = mint_to_new_account(
         &client,
@@ -272,7 +273,7 @@ fn setup_market(client: &Client) -> ClientResult<MarketKeys> {
     })
 }
 
-fn initialize_serum_crank(
+fn initialize_openbook_crank(
     client: &Client,
     crank: Pubkey,
     crank_thread: Pubkey,
@@ -281,7 +282,7 @@ fn initialize_serum_crank(
     client.airdrop(&crank_thread, LAMPORTS_PER_SOL)?;
 
     let initialize_ix = Instruction {
-        program_id: serum_crank::ID,
+        program_id: openbook_crank::ID,
         accounts: vec![
             AccountMeta::new_readonly(thread::ID, false),
             AccountMeta::new(crank, false),
@@ -296,14 +297,14 @@ fn initialize_serum_crank(
             AccountMeta::new_readonly(client.payer_pubkey(), true),
             AccountMeta::new_readonly(system_program::ID, false),
         ],
-        data: serum_crank::instruction::Initialize.data(),
+        data: openbook_crank::instruction::Initialize { id: todo!() }.data(),
     };
 
     sign_send_and_confirm_tx(
         &client,
         [initialize_ix].to_vec(),
         None,
-        "initialize_serum_crank".to_string(),
+        "initialize_openbook_crank".to_string(),
     )?;
 
     Ok(())
@@ -506,7 +507,7 @@ pub fn place_order(
     wallet: &Pubkey,
     market_keys: &MarketKeys,
     orders: &mut Option<Pubkey>,
-    new_order: anchor_spl::dex::serum_dex::instruction::NewOrderInstructionV3,
+    new_order: anchor_spl::dex::openbook_dex::instruction::NewOrderInstructionV3,
 ) -> ClientResult<()> {
     let mut instructions = Vec::new();
     let orders_keypair;
@@ -525,7 +526,7 @@ pub fn place_order(
     *orders = Some(orders_pubkey);
     let _side = new_order.side;
     let data =
-        anchor_spl::dex::serum_dex::instruction::MarketInstruction::NewOrderV3(new_order).pack();
+        anchor_spl::dex::openbook_dex::instruction::MarketInstruction::NewOrderV3(new_order).pack();
     let instruction = Instruction {
         program_id: *program_id,
         data,

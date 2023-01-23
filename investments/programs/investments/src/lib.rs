@@ -13,16 +13,7 @@ pub mod investments_program {
     use super::*;
 
     /*
-     * initialize open orders account
-     */
-    pub fn create_orders<'info>(
-        ctx: Context<'_, '_, '_, 'info, CreateOrders<'info>>,
-    ) -> Result<()> {
-        create_orders::handler(ctx)
-    }
-
-    /*
-     * create investments account and initialize clockwork thread account
+     * initialize investment and open orders accounts
      */
     pub fn create_investment<'info>(
         ctx: Context<'_, '_, '_, 'info, CreateInvestment<'info>>,
@@ -32,38 +23,19 @@ pub mod investments_program {
     }
 
     /*
-     * deposit into investment mint A token account
-     */
-    pub fn deposit<'info>(
-        ctx: Context<'_, '_, '_, 'info, Deposit<'info>>,
-        amount: u64,
-    ) -> Result<()> {
-        deposit::handler(ctx, amount)
-    }
-
-    /*
-     * withdraw from investment mint A token account
-     */
-    pub fn withdraw<'info>(
-        ctx: Context<'_, '_, '_, 'info, Withdraw<'info>>,
-        amount: u64,
-    ) -> Result<()> {
-        withdraw::handler(ctx, amount)
-    }
-
-    /*
-     * withdraw from investment mint B token account
-     */
-    pub fn claim<'info>(ctx: Context<'_, '_, '_, 'info, Claim<'info>>, amount: u64) -> Result<()> {
-        claim::handler(ctx, amount)
-    }
-
-    /*
      * swap
      */
-    pub fn swap<'info>(
-        ctx: Context<'_, '_, '_, 'info, Swap<'info>>,
-    ) -> Result<clockwork_sdk::state::ThreadResponse> {
+    pub fn swap<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<()> {
         swap::handler(ctx)
+    }
+
+    /*
+     * update investment account's swap amount
+     */
+    pub fn update_investment<'info>(
+        ctx: Context<UpdateInvestment<'info>>,
+        swap_amount: u64,
+    ) -> Result<()> {
+        update_investment::handler(ctx, swap_amount)
     }
 }

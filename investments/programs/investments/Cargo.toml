@@ -22,3 +22,4 @@ overflow-checks = true
 anchor-spl = { version = "0.26.0", features = ["dex"] }
 anchor-lang = "0.26.0"
 clockwork-sdk = "1.4.0"
+safe-transmute = "0.11.0"
