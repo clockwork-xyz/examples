@@ -17,5 +17,5 @@ default = []
 
 [dependencies]
 anchor-lang = { version = "0.26.0", features = ["init-if-needed"] }
-clockwork-sdk = { version = "1.4.0" }
+clockwork-sdk = { version = "1.4.2" }
 pyth-sdk-solana = "0.7.0"
