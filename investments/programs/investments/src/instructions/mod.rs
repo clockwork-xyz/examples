@@ -1,7 +1,15 @@
-pub mod create_investment;
+pub mod claim;
+pub mod deposit;
+pub mod investment_create;
+pub mod investment_delete;
+pub mod investment_update;
+pub mod settle_funds;
 pub mod swap;
-pub mod update_investment;
 
-pub use create_investment::*;
+pub use claim::*;
+pub use deposit::*;
+pub use investment_create::*;
+pub use investment_delete::*;
+pub use investment_update::*;
+pub use settle_funds::*;
 pub use swap::*;
-pub use update_investment::*;

@@ -5,7 +5,7 @@ use {
 
 #[derive(Accounts)]
 #[instruction(swap_amount: u64)]
-pub struct UpdateInvestment<'info> {
+pub struct InvestmentUpdate<'info> {
     #[account(
         mut,
         seeds = [SEED_INVESTMENT, payer.key().as_ref(), market.key().as_ref()],
@@ -24,7 +24,7 @@ pub struct UpdateInvestment<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler<'info>(ctx: Context<UpdateInvestment<'info>>, swap_amount: u64) -> Result<()> {
+pub fn handler<'info>(ctx: Context<InvestmentUpdate<'info>>, swap_amount: u64) -> Result<()> {
     let investment = &mut ctx.accounts.investment;
 
     investment.swap_amount = swap_amount;

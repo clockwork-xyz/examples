@@ -13,14 +13,16 @@ pub const SEED_INVESTMENT: &[u8] = b"investment";
 #[derive(Debug)]
 pub struct Investment {
     pub market: Pubkey,
-    pub payer: Pubkey,
+    pub authority: Pubkey,
+    pub mint_a: Pubkey,
+    pub mint_b: Pubkey,
     pub swap_amount: u64,
 }
 
 impl Investment {
-    pub fn pubkey(payer: Pubkey, market: Pubkey) -> Pubkey {
+    pub fn pubkey(authority: Pubkey, market: Pubkey) -> Pubkey {
         Pubkey::find_program_address(
-            &[SEED_INVESTMENT, payer.as_ref(), market.as_ref()],
+            &[SEED_INVESTMENT, authority.as_ref(), market.as_ref()],
             &crate::ID,
         )
         .0
@@ -39,14 +41,30 @@ impl TryFrom<Vec<u8>> for Investment {
  */
 
 pub trait InvestmentAccount {
-    fn new(&mut self, payer: Pubkey, swap_amount: u64, market: Pubkey) -> Result<()>;
+    fn new(
+        &mut self,
+        authority: Pubkey,
+        market: Pubkey,
+        mint_a: Pubkey,
+        mint_b: Pubkey,
+        swap_amount: u64,
+    ) -> Result<()>;
 }
 
 impl InvestmentAccount for Account<'_, Investment> {
-    fn new(&mut self, payer: Pubkey, swap_amount: u64, market: Pubkey) -> Result<()> {
-        self.payer = payer;
-        self.swap_amount = swap_amount;
+    fn new(
+        &mut self,
+        authority: Pubkey,
+        market: Pubkey,
+        mint_a: Pubkey,
+        mint_b: Pubkey,
+        swap_amount: u64,
+    ) -> Result<()> {
+        self.authority = authority;
         self.market = market;
+        self.mint_a = mint_a;
+        self.mint_b = mint_b;
+        self.swap_amount = swap_amount;
         Ok(())
     }
 }

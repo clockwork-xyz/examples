@@ -1,9 +1,8 @@
-use anchor_lang::__private::bytemuck::Contiguous;
-
 use {
     crate::state::*,
     anchor_lang::{
         prelude::*,
+        __private::bytemuck::Contiguous,
         solana_program::{system_program, sysvar},
     },
     anchor_spl::{ 
@@ -17,6 +16,7 @@ use {
         token::{Token, TokenAccount},
     },
     std::num::NonZeroU64,
+    clockwork_sdk::state::{Thread, ThreadAccount},
 };
 
 #[derive(Accounts)]
@@ -27,22 +27,26 @@ pub struct Swap<'info> {
     #[account(
         seeds = [
             SEED_INVESTMENT, 
-            investment.payer.key().as_ref(), 
+            investment.authority.key().as_ref(), 
             investment.market.key().as_ref(), 
         ], 
         bump,
     )]
     pub investment: Account<'info, Investment>,
-    
-    #[account(mut)]
-    pub payer: Signer<'info>,
+
+    #[account(
+        signer,
+        address = investment_thread.pubkey(),
+        constraint = investment_thread.authority == investment.authority
+    )]
+    pub investment_thread: Account<'info, Thread>,
 
     #[account(
         mut,
-        associated_token::authority = payer,
-        associated_token::mint = investment,
+        associated_token::authority = investment,
+        associated_token::mint = investment.mint_a,
     )]
-    pub payer_mint_a_token_account: Account<'info, TokenAccount>,
+    pub investment_mint_a_vault: Account<'info, TokenAccount>,
 
     #[account(address = sysvar::rent::ID)]
     pub rent: Sysvar<'info, Rent>,
@@ -58,7 +62,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<()
     // get accounts
     let dex_program = &ctx.accounts.dex_program;
     let investment = &ctx.accounts.investment;
-    let payer_mint_a_token_account= &mut ctx.accounts.payer_mint_a_token_account;
+    let investment_mint_a_vault= &mut ctx.accounts.investment_mint_a_vault;
     let rent = &ctx.accounts.rent;
     let token_program = &ctx.accounts.token_program;
 
@@ -90,14 +94,14 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<()
                 market_bids: market_bids.to_account_info(),
                 market_asks: market_asks.to_account_info(),
                 open_orders: open_orders.to_account_info(),
-                order_payer_token_account: payer_mint_a_token_account.to_account_info(),
+                order_payer_token_account: investment_mint_a_vault.to_account_info(),
                 open_orders_authority: investment.to_account_info(),
                 token_program: token_program.to_account_info(),
                 rent: rent.to_account_info(),
             },
             &[&[
                 SEED_INVESTMENT,
-                investment.payer.as_ref(),
+                investment.authority.as_ref(),
                 investment.market.as_ref(),
                 &[bump],
             ]],
