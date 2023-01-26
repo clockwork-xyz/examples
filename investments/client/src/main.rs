@@ -2,553 +2,200 @@ mod utils;
 
 use {
     anchor_lang::{prelude::*, solana_program::sysvar, system_program, InstructionData},
-    anchor_spl::{
-        associated_token,
-        dex::serum_dex::{
-            instruction::{initialize_market, NewOrderInstructionV3, SelfTradeBehavior},
-            matching::{OrderType, Side},
-            state::OpenOrders,
-        },
-        token,
-    },
+    anchor_spl::{associated_token, token},
     clockwork_client::{
-        thread::{self, state::Thread},
-        Client, ClientResult, SplToken,
+        thread::{
+            state::Thread,
+            {instruction::thread_create, state::Trigger},
+        },
+        Client, ClientResult,
     },
-    serum_common::client::rpc::mint_to_new_account,
-    solana_sdk::{
-        instruction::Instruction, native_token::LAMPORTS_PER_SOL, signature::Keypair,
-        signer::Signer,
-    },
-    std::{mem::size_of, num::NonZeroU64},
+    solana_sdk::instruction::Instruction,
+    std::str::FromStr,
     utils::*,
 };
 
 fn main() -> ClientResult<()> {
-    // Create Client
-    let payer = Keypair::new();
-    let client = Client::new(payer, "http://localhost:8899".into());
-    let bob = Keypair::new();
+    let client = default_client();
 
-    // airdrop a bunch bc it's expensive to setup a dex market and for all of the txs lol
-    client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
-    client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
-    client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
-    client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
-    client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
-    client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
-    client.airdrop(&bob.pubkey(), 2 * LAMPORTS_PER_SOL)?;
+    // let sol_usdc_market_keys = MarketKeys {
+    //     market: Pubkey::from_str("8BnEgHoWFysVcuFFX7QztDmzuH8r5ZFvyP3sYwn1XTh6").unwrap(),
+    //     event_q: Pubkey::from_str("8CvwxZ9Db6XbLD46NZwwmVDZZRDy7eydFcAGkXKh9axa").unwrap(),
+    //     bids: Pubkey::from_str("5jWUncPNBMZJ3sTHKmMLszypVkoRK6bfEQMQUHweeQnh").unwrap(),
+    //     asks: Pubkey::from_str("EaXdHx7x3mdGA38j5RSmKYSXMzAFzzUXCLNBEDXDn1d5").unwrap(),
+    //     pc_mint: Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap(),
+    //     pc_vault: Pubkey::from_str("CKxTHwM9fPMRRvZmFnFoqKNd9pQR21c5Aq9bh5h9oghX").unwrap(),
+    //     pc_wallet: Pubkey::from_str("9d7WcMvuk9pU5EnNbUDJzuNdsQjaiJo5G7rLFtAozp17").unwrap(),
+    //     coin_mint: Pubkey::from_str("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v").unwrap(),
+    //     coin_vault: Pubkey::from_str("6A5NHCj1yF6urc9wZNe6Bcjj4LVszQNj5DwAWG97yzMu").unwrap(),
+    //     coin_wallet: Pubkey::from_str("FZnhkDzQeNPZb4VADuucxymVARRRWKxNDh4FsNSSSwAP").unwrap(),
+    //     vault_signer: Pubkey::from_str("CTz5UMLQm2SRWHzQnU62Pi4yJqbNGjgRBHqqp6oDHfF7").unwrap(),
+    // };
 
-    // setup market
-    let market_keys = setup_market(&client)?;
+    let bonk_usdc_market_keys = MarketKeys {
+        market: Pubkey::from_str("8PhnCfgqpgFM7ZJvttGdBVMXHuU4Q23ACxCvWkbs1M71").unwrap(),
+        event_q: Pubkey::from_str("8BjvcgtwT5rdaypEMZFAA35gHeRT992aPFr4dwdcLf1v").unwrap(),
+        req_q: Pubkey::from_str("DoPUJXzG6Q7TwoxXJ1PtETqCUDfovpHLhwvj737KTmua").unwrap(),
+        bids: Pubkey::from_str("5F2yj13thTvdTaNdMvxgsczPRXfbqVd7tr13bJSFg1W7").unwrap(),
+        asks: Pubkey::from_str("GHsWvxp6KJ3Yr8HH5L4pbHkC1YMGk8FzMknsYo1kzzZv").unwrap(),
+        pc_mint: Pubkey::from_str("DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263").unwrap(), // bonk
+        pc_vault: Pubkey::from_str("A9yRKSx8SyqNdCtCMUgr6wDXUs1JmVFkVno6FcscSD6m").unwrap(),
+        pc_wallet: Pubkey::from_str("Fuv3U8c1nuhRWdmPcptBqHTq7Cshb8YKtVeiS5BR6YSJ").unwrap(),
+        coin_mint: Pubkey::from_str("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v").unwrap(), // usdc
+        coin_vault: Pubkey::from_str("D9dojzvwJGs4q3Cx8ytvD8kWVVZszoVKvPZEZ5D8PV1Y").unwrap(),
+        coin_wallet: Pubkey::from_str("DtFi8ZBMoTSURfYfvyViWRMipXbnaLNhzbps5JiowtE8").unwrap(),
+        vault_signer: Pubkey::from_str("3oQLKk1TyyXMT14p2i8p95v5jKqsQ5qzZGwxZCTnFC7p").unwrap(),
+    };
 
-    print_market_keys(&market_keys)?;
-
-    // derive investment_program PDAs
-    let investment = investments_program::state::Investment::pubkey(
+    let investment_pubkey = investments_program::state::Investment::pubkey(
         client.payer_pubkey(),
-        market_keys.pc_mint,
-        market_keys.coin_mint,
+        bonk_usdc_market_keys.market,
     );
-    let investment_thread = Thread::pubkey(investment, "investment".to_string());
+    let investment_thread_pubkey = Thread::pubkey(client.payer_pubkey(), "investment".to_string());
+    let settle_funds_thread_pubkey =
+        Thread::pubkey(client.payer_pubkey(), "settle_funds".to_string());
 
-    // derive openbook_crank PDAs
-    let crank =
-        openbook_crank::state::Crank::pubkey(client.payer_pubkey(), market_keys.market, id.clone());
-    let crank_thread = Thread::pubkey(crank, "crank".into());
+    let mut investment_open_orders_account_pubkey = None;
 
-    print_explorer_link(investment_thread, "investment_thread".to_string())?;
-    print_explorer_link(crank_thread, "crank_thread".to_string())?;
+    init_dex_account(&client, &mut investment_open_orders_account_pubkey)?;
 
-    // init openbook_crank program
-    initialize_openbook_crank(&client, crank, crank_thread, &market_keys)?;
-
-    let bob_mint_b_wallet = mint_to_new_account(
-        &client,
-        &bob,
-        &client.payer(),
-        &market_keys.coin_mint,
-        1_000_000_000_000_000,
-    )
-    .unwrap();
-
-    let mut oo_account_bob = None;
-
-    init_open_orders_account(
-        &client,
-        &anchor_spl::dex::ID,
-        &bob,
-        &market_keys,
-        &mut oo_account_bob,
-    )?;
-
-    // // Derive ATA pubkeys
-    let payer_mint_a_token_account = anchor_spl::associated_token::get_associated_token_address(
+    let authority_mint_a_vault_pubkey = anchor_spl::associated_token::get_associated_token_address(
         &client.payer_pubkey(),
-        &market_keys.pc_mint,
+        &bonk_usdc_market_keys.pc_mint,
     );
-    let payer_mint_b_token_account = anchor_spl::associated_token::get_associated_token_address(
-        &client.payer_pubkey(),
-        &market_keys.coin_mint,
+
+    let investment_mint_a_vault_pubkey = anchor_spl::associated_token::get_associated_token_address(
+        &investment_pubkey,
+        &bonk_usdc_market_keys.pc_mint,
     );
-    let investment_mint_a_token_account =
-        anchor_spl::associated_token::get_associated_token_address(
-            &investment,
-            &market_keys.pc_mint,
-        );
-    let investment_mint_b_token_account =
-        anchor_spl::associated_token::get_associated_token_address(
-            &investment,
-            &market_keys.coin_mint,
-        );
 
-    print_explorer_link(
-        payer_mint_a_token_account,
-        "payer_mint_a_token_account".to_string(),
-    )?;
-    print_explorer_link(
-        payer_mint_b_token_account,
-        "payer_mint_b_token_account".to_string(),
-    )?;
-    print_explorer_link(
-        investment_mint_a_token_account,
-        "investment_mint_a_token_account".to_string(),
-    )?;
-    print_explorer_link(
-        investment_mint_b_token_account,
-        "investment_mint_b_token_account".to_string(),
-    )?;
-
-    // place Ask orders for Bob
-    for _ in 0..5 {
-        place_order(
-            &client,
-            &anchor_spl::dex::ID,
-            &bob,
-            &bob_mint_b_wallet.pubkey(),
-            &market_keys,
-            &mut oo_account_bob,
-            NewOrderInstructionV3 {
-                side: Side::Ask,
-                limit_price: NonZeroU64::new(500).unwrap(),
-                max_coin_qty: NonZeroU64::new(1_000).unwrap(),
-                max_native_pc_qty_including_fees: NonZeroU64::new(500_000).unwrap(),
-                order_type: OrderType::Limit,
-                client_order_id: 019269,
-                self_trade_behavior: SelfTradeBehavior::DecrementTake,
-                limit: std::u16::MAX,
-            },
-        )?;
-    }
-
-    // Alice's open orders account
-    let mut oo_account_alice = None;
-
-    create_investment_and_deposit(
+    investment_create(
         &client,
-        investment,
-        investment_mint_a_token_account,
-        investment_mint_b_token_account,
-        investment_thread,
-        &market_keys,
-        &mut oo_account_alice,
-        payer_mint_a_token_account,
-        payer_mint_b_token_account,
+        investment_pubkey,
+        investment_thread_pubkey,
+        settle_funds_thread_pubkey,
+        authority_mint_a_vault_pubkey,
+        investment_mint_a_vault_pubkey,
+        &mut investment_open_orders_account_pubkey,
+        &bonk_usdc_market_keys,
     )?;
 
     Ok(())
 }
 
-fn setup_market(client: &Client) -> ClientResult<MarketKeys> {
-    // generate 2 mints to list on market
-    let coin_mint = client
-        .create_token_mint(&client.payer_pubkey(), 9)
-        .unwrap()
-        .pubkey();
-
-    let pc_mint = client
-        .create_token_mint(&client.payer_pubkey(), 9)
-        .unwrap()
-        .pubkey();
-
-    // get market listing keys
-    let (listing_keys, mut ix) = gen_listing_params(
-        client,
-        &anchor_spl::dex::ID,
-        &client.payer_pubkey(),
-        &coin_mint,
-        &pc_mint,
-    )?;
-
-    // destructuring market listing keys
-    let ListingKeys {
-        market_key,
-        req_q_key,
-        event_q_key,
-        bids_key,
-        asks_key,
-        vault_signer,
-        vault_signer_nonce,
-    } = listing_keys;
-
-    // create ata vaults for the respective mints
-    let coin_vault =
-        client.create_associated_token_account(&client.payer(), &vault_signer, &coin_mint)?;
-
-    let pc_vault =
-        client.create_associated_token_account(&client.payer(), &vault_signer, &pc_mint)?;
-
-    // get the init market ix
-    let init_market_ix = initialize_market(
-        &market_key.pubkey(),
-        &anchor_spl::dex::ID,
-        &coin_mint,
-        &pc_mint,
-        &coin_vault,
-        &pc_vault,
-        None,
-        None,
-        &bids_key.pubkey(),
-        &asks_key.pubkey(),
-        &req_q_key.pubkey(),
-        &event_q_key.pubkey(),
-        1_000_000_000,
-        1_000_000_000,
-        vault_signer_nonce,
-        100,
-    )
-    .unwrap();
-
-    // add init_market_ix to vector
-    ix.push(init_market_ix);
-
-    sign_send_and_confirm_tx(
-        &client,
-        ix,
-        Some(vec![
-            client.payer(),
-            &market_key,
-            &req_q_key,
-            &event_q_key,
-            &bids_key,
-            &asks_key,
-            &req_q_key,
-            &event_q_key,
-        ]),
-        "setup_market".to_string(),
-    )?;
-
-    // create wallets to then mint to
-    let coin_wallet_key = mint_to_new_account(
-        &client,
-        &client.payer(),
-        &client.payer(),
-        &coin_mint,
-        1_000_000_000_000_000,
-    )
-    .unwrap();
-
-    let pc_wallet_key = mint_to_new_account(
-        &client,
-        &client.payer(),
-        &client.payer(),
-        &pc_mint,
-        1_000_000_000_000_000,
-    )
-    .unwrap();
-
-    Ok(MarketKeys {
-        market: market_key.pubkey(),
-        req_q: req_q_key.pubkey(),
-        event_q: event_q_key.pubkey(),
-        bids: bids_key.pubkey(),
-        asks: asks_key.pubkey(),
-        coin_mint,
-        coin_vault,
-        pc_mint,
-        pc_vault,
-        vault_signer,
-        pc_wallet_key,
-        coin_wallet_key,
-    })
-}
-
-fn initialize_openbook_crank(
+fn investment_create(
     client: &Client,
-    crank: Pubkey,
-    crank_thread: Pubkey,
+    investment_pubkey: Pubkey,
+    investment_thread_pubkey: Pubkey,
+    settle_funds_thread_pubkey: Pubkey,
+    authority_mint_a_vault_pubkey: Pubkey,
+    investment_mint_a_vault_pubkey: Pubkey,
+    investment_open_orders_account_pubkey: &mut Option<Pubkey>,
     market_keys: &MarketKeys,
 ) -> ClientResult<()> {
-    client.airdrop(&crank_thread, LAMPORTS_PER_SOL)?;
+    init_dex_account(&client, investment_open_orders_account_pubkey)?;
 
-    let initialize_ix = Instruction {
-        program_id: openbook_crank::ID,
+    let investment_create_ix = Instruction {
+        program_id: investments_program::ID,
         accounts: vec![
-            AccountMeta::new_readonly(thread::ID, false),
-            AccountMeta::new(crank, false),
-            AccountMeta::new(crank_thread, false),
-            AccountMeta::new_readonly(anchor_spl::dex::ID, false),
-            AccountMeta::new_readonly(market_keys.event_q, false),
+            AccountMeta::new(client.payer_pubkey(), true),
+            AccountMeta::new(authority_mint_a_vault_pubkey, false),
+            AccountMeta::new_readonly(associated_token::ID, false),
+            AccountMeta::new_readonly(openbook_dex_pk(), false),
+            AccountMeta::new(investment_pubkey, false),
+            AccountMeta::new(investment_mint_a_vault_pubkey, false),
             AccountMeta::new_readonly(market_keys.market, false),
             AccountMeta::new_readonly(market_keys.pc_mint, false),
-            AccountMeta::new_readonly(market_keys.pc_vault, false),
             AccountMeta::new_readonly(market_keys.coin_mint, false),
-            AccountMeta::new_readonly(market_keys.coin_vault, false),
-            AccountMeta::new_readonly(client.payer_pubkey(), true),
-            AccountMeta::new_readonly(system_program::ID, false),
-        ],
-        data: openbook_crank::instruction::Initialize { id: todo!() }.data(),
-    };
-
-    sign_send_and_confirm_tx(
-        &client,
-        [initialize_ix].to_vec(),
-        None,
-        "initialize_openbook_crank".to_string(),
-    )?;
-
-    Ok(())
-}
-
-fn create_investment_and_deposit(
-    client: &Client,
-    investment: Pubkey,
-    investment_mint_a_token_account: Pubkey,
-    investment_mint_b_token_account: Pubkey,
-    investment_thread: Pubkey,
-    market_keys: &MarketKeys,
-    orders: &mut Option<Pubkey>,
-    payer_mint_a_token_account: Pubkey,
-    payer_mint_b_token_account: Pubkey,
-) -> ClientResult<()> {
-    init_dex_account(client, orders)?;
-
-    client.airdrop(&investment_thread, LAMPORTS_PER_SOL)?;
-
-    let create_investment_ix = Instruction {
-        program_id: investments_program::ID,
-        accounts: vec![
-            AccountMeta::new_readonly(associated_token::ID, false),
-            AccountMeta::new_readonly(thread::ID, false),
-            AccountMeta::new_readonly(anchor_spl::dex::ID, false),
-            AccountMeta::new(investment, false),
-            AccountMeta::new(investment_mint_a_token_account, false),
-            AccountMeta::new(investment_mint_b_token_account, false),
-            AccountMeta::new(investment_thread, false),
-            AccountMeta::new_readonly(market_keys.pc_mint, false),
-            AccountMeta::new_readonly(market_keys.coin_mint, false),
-            AccountMeta::new(client.payer_pubkey(), true),
-            AccountMeta::new(payer_mint_a_token_account, false),
-            AccountMeta::new(payer_mint_b_token_account, false),
-            AccountMeta::new_readonly(sysvar::rent::ID, false),
-            AccountMeta::new_readonly(system_program::ID, false),
-            AccountMeta::new_readonly(token::ID, false),
-            // Extra accounts
-            AccountMeta::new(market_keys.market, false),
-            AccountMeta::new(market_keys.pc_vault, false),
-            AccountMeta::new(market_keys.coin_vault, false),
-            AccountMeta::new(market_keys.req_q, false),
-            AccountMeta::new(market_keys.event_q, false),
-            AccountMeta::new(market_keys.bids, false),
-            AccountMeta::new(market_keys.asks, false),
-            AccountMeta::new(orders.unwrap(), false),
-        ],
-        data: investments_program::instruction::CreateInvestment {
-            swap_amount: 500_000,
-        }
-        .data(),
-    };
-
-    let create_orders_ix = Instruction {
-        program_id: investments_program::ID,
-        accounts: vec![
-            AccountMeta::new_readonly(anchor_spl::dex::ID, false),
-            AccountMeta::new_readonly(investment, false),
-            AccountMeta::new(client.payer_pubkey(), true),
-            AccountMeta::new_readonly(sysvar::rent::ID, false),
-            AccountMeta::new_readonly(system_program::ID, false),
-            // Extra accounts
-            AccountMeta::new_readonly(market_keys.market, false),
-            AccountMeta::new(orders.unwrap(), false),
-        ],
-        data: investments_program::instruction::CreateOrders {}.data(),
-    };
-
-    sign_send_and_confirm_tx(
-        &client,
-        [create_investment_ix, create_orders_ix].to_vec(),
-        None,
-        "create_investment_and_orders".to_string(),
-    )?;
-
-    // mint to payer's mint A ATA
-    client.mint_to(
-        &client.payer(),
-        &market_keys.pc_mint,
-        &payer_mint_a_token_account,
-        2 * LAMPORTS_PER_SOL,
-        9,
-    )?;
-
-    let deposit_ix = Instruction {
-        program_id: investments_program::ID,
-        accounts: vec![
-            AccountMeta::new_readonly(associated_token::ID, false),
-            AccountMeta::new_readonly(investment, false),
-            AccountMeta::new(investment_mint_a_token_account, false),
-            AccountMeta::new_readonly(market_keys.pc_mint, false),
-            AccountMeta::new(client.payer_pubkey(), true),
-            AccountMeta::new(payer_mint_a_token_account, false),
             AccountMeta::new_readonly(sysvar::rent::ID, false),
             AccountMeta::new_readonly(system_program::ID, false),
             AccountMeta::new_readonly(token::ID, false),
         ],
-        data: investments_program::instruction::Deposit {
-            amount: 2 * LAMPORTS_PER_SOL,
+        data: investments_program::instruction::InvestmentCreate {
+            swap_amount: 000_001,
         }
         .data(),
     };
 
-    sign_send_and_confirm_tx(
-        &client,
-        [deposit_ix].to_vec(),
-        None,
-        "deposit_ix".to_string(),
-    )?;
-
-    Ok(())
-}
-
-pub fn init_dex_account(client: &Client, orders: &mut Option<Pubkey>) -> ClientResult<()> {
-    let orders_keypair;
-    let mut ix = Vec::new();
-    let mut signers = Vec::new();
-
-    let orders_pk = match *orders {
-        Some(pk) => pk,
-        None => {
-            let (orders_key, instruction) = create_dex_account(
-                client,
-                &anchor_spl::dex::ID,
-                &client.payer_pubkey(),
-                size_of::<OpenOrders>(),
-            )?;
-            orders_keypair = orders_key;
-            signers.push(&orders_keypair);
-            ix.push(instruction);
-            orders_keypair.pubkey()
+    // create thread with read events ix
+    let thread_create_deposit_ix = thread_create(
+        client.payer_pubkey(),
+        "investment".into(),
+        Instruction {
+            program_id: investments_program::ID,
+            accounts: vec![
+                AccountMeta::new(authority_mint_a_vault_pubkey, false),
+                AccountMeta::new_readonly(investment_pubkey, false),
+                AccountMeta::new(investment_mint_a_vault_pubkey, false),
+                AccountMeta::new_readonly(investment_thread_pubkey, true),
+                AccountMeta::new(market_keys.market, false),
+                AccountMeta::new_readonly(system_program::ID, false),
+                AccountMeta::new_readonly(token::ID, false),
+                // REMAINING ACCOUNTS
+                AccountMeta::new_readonly(market_keys.event_q, false),
+                AccountMeta::new_readonly(market_keys.req_q, false),
+                AccountMeta::new_readonly(market_keys.bids, false),
+                AccountMeta::new_readonly(market_keys.asks, false),
+                AccountMeta::new_readonly(market_keys.pc_vault, false),
+                AccountMeta::new_readonly(market_keys.coin_vault, false),
+                AccountMeta::new_readonly(investment_open_orders_account_pubkey.unwrap(), false),
+            ],
+            data: investments_program::instruction::Deposit {}.data(),
         }
-    };
-
-    *orders = Some(orders_pk);
-
-    signers.push(client.payer());
-
-    sign_send_and_confirm_tx(client, ix, Some(signers), "init_dex_account".to_string())?;
-
-    Ok(())
-}
-
-pub fn init_open_orders_account(
-    client: &Client,
-    program_id: &Pubkey,
-    owner: &Keypair,
-    market_keys: &MarketKeys,
-    orders: &mut Option<Pubkey>,
-) -> ClientResult<()> {
-    let orders_keypair;
-    let mut ix = Vec::new();
-    let mut signers = Vec::new();
-
-    let orders_pubkey = match *orders {
-        Some(pk) => pk,
-        None => {
-            let (orders_key, instruction) = create_dex_account(
-                client,
-                program_id,
-                &client.payer_pubkey(),
-                size_of::<OpenOrders>(),
-            )
-            .unwrap();
-            orders_keypair = orders_key;
-            signers.push(&orders_keypair);
-            ix.push(instruction);
-            orders_keypair.pubkey()
-        }
-    };
-    *orders = Some(orders_pubkey);
-    ix.push(
-        init_open_orders_ix(
-            program_id,
-            &orders_pubkey,
-            &owner.pubkey(),
-            &market_keys.market,
-        )
-        .unwrap(),
+        .into(),
+        client.payer_pubkey(),
+        settle_funds_thread_pubkey,
+        Trigger::Cron {
+            schedule: "0 */2 * * * *".into(),
+            skippable: true,
+        },
     );
 
-    signers.push(owner);
-    signers.push(client.payer());
+    // create thread with read events ix
+    let thread_create_settle_funds_ix = thread_create(
+        client.payer_pubkey(),
+        "settle_funds".into(),
+        Instruction {
+            program_id: investments_program::ID,
+            accounts: vec![
+                AccountMeta::new_readonly(openbook_dex_pk(), false),
+                AccountMeta::new_readonly(investment_pubkey, false),
+                AccountMeta::new_readonly(investment_thread_pubkey, true),
+                AccountMeta::new_readonly(market_keys.market, false),
+                AccountMeta::new_readonly(system_program::ID, false),
+                AccountMeta::new_readonly(token::ID, false),
+                // REMAINING ACCOUNTS
+                AccountMeta::new_readonly(investment_open_orders_account_pubkey.unwrap(), false),
+                AccountMeta::new_readonly(market_keys.coin_vault, false),
+                AccountMeta::new_readonly(market_keys.coin_wallet, false),
+                AccountMeta::new_readonly(market_keys.pc_vault, false),
+                AccountMeta::new_readonly(market_keys.pc_wallet, false),
+                AccountMeta::new_readonly(market_keys.vault_signer, false),
+            ],
+            data: investments_program::instruction::SettleFunds {}.data(),
+        }
+        .into(),
+        client.payer_pubkey(),
+        investment_thread_pubkey,
+        Trigger::Account {
+            address: investment_open_orders_account_pubkey.unwrap(),
+            offset: 20,
+            size: 20,
+        },
+    );
 
     sign_send_and_confirm_tx(
-        client,
-        ix,
-        Some(signers),
-        "create open orders account".into(),
+        &client,
+        [
+            investment_create_ix, // initialize investment acc and approve token account authority
+            thread_create_deposit_ix, // investment deposit -> swap -> deposit -> ...
+            thread_create_settle_funds_ix, // on open order account state change: settle_funds -> claim -> settle_funds -> ...
+        ]
+        .to_vec(),
+        None,
+        "investment create, deposit/swap thread create, settle_funds/claim thread create"
+            .to_string(),
     )?;
 
-    Ok(())
-}
-
-pub fn place_order(
-    client: &Client,
-    program_id: &Pubkey,
-    payer: &Keypair,
-    wallet: &Pubkey,
-    market_keys: &MarketKeys,
-    orders: &mut Option<Pubkey>,
-    new_order: anchor_spl::dex::openbook_dex::instruction::NewOrderInstructionV3,
-) -> ClientResult<()> {
-    let mut instructions = Vec::new();
-    let orders_keypair;
-    let mut signers = Vec::new();
-    let orders_pubkey = match *orders {
-        Some(pk) => pk,
-        None => {
-            let (orders_key, instruction) =
-                create_dex_account(client, program_id, &payer.pubkey(), size_of::<OpenOrders>())?;
-            orders_keypair = orders_key;
-            signers.push(&orders_keypair);
-            instructions.push(instruction);
-            orders_keypair.pubkey()
-        }
-    };
-    *orders = Some(orders_pubkey);
-    let _side = new_order.side;
-    let data =
-        anchor_spl::dex::openbook_dex::instruction::MarketInstruction::NewOrderV3(new_order).pack();
-    let instruction = Instruction {
-        program_id: *program_id,
-        data,
-        accounts: vec![
-            AccountMeta::new(market_keys.market, false),
-            AccountMeta::new(orders_pubkey, false),
-            AccountMeta::new(market_keys.req_q, false),
-            AccountMeta::new(market_keys.event_q, false),
-            AccountMeta::new(market_keys.bids, false),
-            AccountMeta::new(market_keys.asks, false),
-            AccountMeta::new(*wallet, false),
-            AccountMeta::new_readonly(payer.pubkey(), true),
-            AccountMeta::new(market_keys.coin_vault, false),
-            AccountMeta::new(market_keys.pc_vault, false),
-            AccountMeta::new_readonly(token::spl_token::ID, false),
-            AccountMeta::new_readonly(solana_sdk::sysvar::rent::ID, false),
-        ],
-    };
-    instructions.push(instruction);
-    signers.push(payer);
-    signers.push(client.payer());
-
-    sign_send_and_confirm_tx(client, instructions, Some(signers), "place_order".into())?;
     Ok(())
 }
