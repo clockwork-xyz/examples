@@ -110,6 +110,15 @@ pub fn default_client() -> Client {
     Client::new(payer, host.into())
 }
 
+pub fn print_explorer_link(address: Pubkey, label: String) -> ClientResult<()> {
+    println!(
+        "{}: https://explorer.solana.com/address/{}?cluster=custom",
+        label.to_string(),
+        address,
+    );
+
+    Ok(())
+}
 #[derive(Debug)]
 pub struct MarketKeys {
     pub market: Pubkey,
