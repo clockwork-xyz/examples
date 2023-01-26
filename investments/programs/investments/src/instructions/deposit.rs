@@ -11,19 +11,25 @@ use {
 #[derive(Accounts)]
 pub struct Deposit<'info> {
     #[account(
+        mut,
         associated_token::mint = investment.mint_a,
         associated_token::authority = investment.authority
     )]
     pub authority_mint_a_vault: Account<'info, TokenAccount>,
 
     #[account(
-        seeds = [SEED_INVESTMENT, investment.authority.key().as_ref(), investment.market.key().as_ref()],
+        seeds = [
+            SEED_INVESTMENT, 
+            investment.authority.key().as_ref(), 
+            investment.market.key().as_ref()
+        ],
         bump,
         has_one = market,
     )]
     pub investment: Account<'info, Investment>,
 
     #[account(
+        mut,
         associated_token::mint = investment.mint_a,
         associated_token::authority = investment
     )]
@@ -51,7 +57,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Deposit<'info>>) -> Result
     let investment = &ctx.accounts.investment;
     let investment_mint_a_vault = &mut ctx.accounts.investment_mint_a_vault;
     let investment_thread = &ctx.accounts.investment_thread;
-    let authority_mint_a_vault = &ctx.accounts.authority_mint_a_vault;
+    let authority_mint_a_vault = &mut ctx.accounts.authority_mint_a_vault;
     let token_program = &ctx.accounts.token_program;
 
     // get investment bump
@@ -75,20 +81,33 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Deposit<'info>>) -> Result
         investment.swap_amount,
     )?;
 
+
+    let mut swap_account_metas = vec![
+            AccountMeta::new_readonly(anchor_spl::dex::ID, false),
+            AccountMeta::new_readonly(investment.key(), false),
+            AccountMeta::new_readonly(investment_thread.key(), true),
+            AccountMeta::new(investment_mint_a_vault.key(), false),
+            AccountMeta::new_readonly(sysvar::rent::ID, false),
+            AccountMeta::new_readonly(system_program::ID, false),
+            AccountMeta::new_readonly(token_program.key(), false),
+            AccountMeta::new_readonly(investment.market, false),
+        ];
+
+    let mut remaining_account_metas = 
+            ctx
+            .remaining_accounts
+            .iter()
+            .map(|acc| AccountMeta::new_readonly(acc.key(), false))
+            .collect::<Vec<AccountMeta>>();
+
+    swap_account_metas.append(&mut remaining_account_metas);
+
     Ok(ThreadResponse {
         kickoff_instruction: None,
         next_instruction: Some(
             Instruction {
                 program_id: crate::ID,
-                accounts: vec![
-                    AccountMeta::new_readonly(anchor_spl::dex::ID, false),
-                    AccountMeta::new_readonly(investment.key(), false),
-                    AccountMeta::new_readonly(investment_thread.key(), true),
-                    AccountMeta::new(investment_mint_a_vault.key(), false),
-                    AccountMeta::new_readonly(sysvar::rent::ID, false),
-                    AccountMeta::new_readonly(system_program::ID, false),
-                    AccountMeta::new_readonly(token_program.key(), false),
-                ],
+                accounts: swap_account_metas,
                 data: clockwork_sdk::utils::anchor_sighash("swap").into(),
             }
             .into(),

@@ -1,26 +1,35 @@
 use {
     crate::state::*,
-    anchor_lang::{prelude::*, solana_program::system_program},
+    anchor_lang::{
+        prelude::*,
+        solana_program::{instruction::Instruction, system_program},
+    },
     anchor_spl::token::{transfer, TokenAccount, Transfer},
-    clockwork_sdk::state::{Thread, ThreadAccount},
+    clockwork_sdk::state::{Thread, ThreadAccount, ThreadResponse},
 };
 
 #[derive(Accounts)]
 pub struct Claim<'info> {
     #[account(
+        mut,
         associated_token::mint = investment.mint_b,
         associated_token::authority = investment.authority
     )]
     pub authority_mint_b_vault: Account<'info, TokenAccount>,
 
     #[account(
-        seeds = [SEED_INVESTMENT, investment.authority.key().as_ref(), investment.market.key().as_ref()],
+        seeds = [
+            SEED_INVESTMENT,
+            investment.authority.key().as_ref(), 
+            investment.market.key().as_ref()
+        ],
         bump,
         has_one = market,
     )]
     pub investment: Account<'info, Investment>,
 
     #[account(
+        mut,
         associated_token::mint = investment.mint_b,
         associated_token::authority = investment
     )]
@@ -43,11 +52,13 @@ pub struct Claim<'info> {
     pub token_program: Program<'info, anchor_spl::token::Token>,
 }
 
-pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Claim<'info>>) -> Result<()> {
+pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Claim<'info>>) -> Result<ThreadResponse> {
     // Get accounts
+    let authority_mint_b_vault = &mut ctx.accounts.authority_mint_b_vault;  
     let investment = &ctx.accounts.investment;
     let investment_mint_b_vault = &mut ctx.accounts.investment_mint_b_vault;
-    let authority_mint_b_vault = &ctx.accounts.authority_mint_b_vault;
+    let investment_thread = &ctx.accounts.investment_thread;
+    let market = &ctx.accounts.market;
     let token_program = &ctx.accounts.token_program;
 
     // get investment bump
@@ -71,5 +82,33 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Claim<'info>>) -> Result<(
         investment.swap_amount,
     )?;
 
-    Ok(())
+    let mut settle_funds_account_metas = vec![
+        AccountMeta::new_readonly(anchor_spl::dex::ID, false),
+        AccountMeta::new_readonly(investment.key(), false),
+        AccountMeta::new_readonly(investment_thread.key(), true),
+        AccountMeta::new_readonly(market.key(), false),
+        AccountMeta::new_readonly(system_program::ID, false),
+        AccountMeta::new_readonly(anchor_spl::token::ID, false),
+    ];
+
+    let mut remaining_account_metas = 
+        ctx
+        .remaining_accounts
+        .iter()
+        .map(|acc| AccountMeta::new_readonly(acc.key(), false))
+        .collect::<Vec<AccountMeta>>();
+
+    settle_funds_account_metas.append(&mut remaining_account_metas);
+
+    Ok(ThreadResponse {
+        kickoff_instruction: Some(
+            Instruction {
+                    program_id: crate::ID,
+                    accounts: settle_funds_account_metas,
+                    data: clockwork_sdk::utils::anchor_sighash("settle_funds").into(),
+                }
+                .into(),
+            ),
+        next_instruction: None,
+    })
 }

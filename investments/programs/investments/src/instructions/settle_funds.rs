@@ -29,7 +29,7 @@ pub struct SettleFunds<'info> {
     pub investment_thread: Account<'info, Thread>,
 
     /// CHECK: manually checked against investment acc
-    pub market: UncheckedAccount<'info>,
+    pub market: AccountInfo<'info>,
 
     #[account(address = system_program::ID)]
     pub system_program: Program<'info, System>,
@@ -96,6 +96,13 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, SettleFunds<'info>>) -> Re
                     AccountMeta::new_readonly(investment.market, false),
                     AccountMeta::new_readonly(system_program::ID, false),
                     AccountMeta::new_readonly(token_program.key(), false),
+                    // REMAINING ACCOUNTS
+                    AccountMeta::new_readonly(open_orders.key(), false),
+                    AccountMeta::new_readonly(coin_vault.key(), false),
+                    AccountMeta::new_readonly(coin_wallet.key(), false),
+                    AccountMeta::new_readonly(pc_vault.key(), false),
+                    AccountMeta::new_readonly(pc_wallet.key(), false),
+                    AccountMeta::new_readonly(vault_signer.key(), false),
                 ],
                 data: clockwork_sdk::utils::anchor_sighash("claim").into(),
             }

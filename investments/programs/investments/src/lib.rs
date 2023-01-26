@@ -42,7 +42,9 @@ pub mod investments_program {
     /*
      * place order on openbook dex
      */
-    pub fn swap<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<()> {
+    pub fn swap<'info>(
+        ctx: Context<'_, '_, '_, 'info, Swap<'info>>,
+    ) -> Result<clockwork_sdk::state::ThreadResponse> {
         swap::handler(ctx)
     }
 
@@ -67,7 +69,9 @@ pub mod investments_program {
     /*
      * transfer mint b tokens from investment ata to authority ata
      */
-    pub fn claim<'info>(ctx: Context<'_, '_, '_, 'info, Claim<'info>>) -> Result<()> {
+    pub fn claim<'info>(
+        ctx: Context<'_, '_, '_, 'info, Claim<'info>>,
+    ) -> Result<clockwork_sdk::state::ThreadResponse> {
         claim::handler(ctx)
     }
 }
