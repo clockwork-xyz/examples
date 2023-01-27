@@ -76,14 +76,14 @@ fn main() -> ClientResult<()> {
         recipient_ata_pubkey,
     )?;
 
-    // // wait 10 seconds to update payment
-    // println!("wait 10 seconds to update payment");
-    // for n in 0..10 {
-    //     println!("{}", n);
-    //     std::thread::sleep(std::time::Duration::from_secs(1));
-    // }
+    // wait 10 seconds to update payment
+    println!("wait 10 seconds to update payment");
+    for n in 0..10 {
+        println!("{}", n);
+        std::thread::sleep(std::time::Duration::from_secs(1));
+    }
 
-    // update_payment(&client, payment_pubkey)?;
+    update_payment(&client, payment_pubkey)?;
 
     Ok(())
 }
