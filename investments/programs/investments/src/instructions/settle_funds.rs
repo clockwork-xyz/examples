@@ -29,6 +29,7 @@ pub struct SettleFunds<'info> {
     pub investment_thread: Account<'info, Thread>,
 
     /// CHECK: manually checked against investment acc
+    #[account(mut)]
     pub market: AccountInfo<'info>,
 
     #[account(address = system_program::ID)]
@@ -43,16 +44,16 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, SettleFunds<'info>>) -> Re
     let dex_program = &ctx.accounts.dex_program;
     let investment = &ctx.accounts.investment;
     let investment_thread = &ctx.accounts.investment_thread;
-    let market = &ctx.accounts.market;
+    let market = &mut ctx.accounts.market;
     let token_program = &ctx.accounts.token_program;
 
     // Get remaining accounts
-    let open_orders = ctx.remaining_accounts.get(0).unwrap();
-    let coin_vault = ctx.remaining_accounts.get(1).unwrap();
-    let coin_wallet = ctx.remaining_accounts.get(2).unwrap();
-    let pc_vault = ctx.remaining_accounts.get(3).unwrap();
-    let pc_wallet = ctx.remaining_accounts.get(4).unwrap();
-    let vault_signer = ctx.remaining_accounts.get(5).unwrap();
+    let open_orders = &mut ctx.remaining_accounts.get(0).unwrap();
+    let coin_vault = &mut ctx.remaining_accounts.get(1).unwrap();
+    let coin_wallet = &mut ctx.remaining_accounts.get(2).unwrap();
+    let pc_vault = &mut ctx.remaining_accounts.get(3).unwrap();
+    let pc_wallet = &mut ctx.remaining_accounts.get(4).unwrap();
+    let vault_signer = &mut ctx.remaining_accounts.get(5).unwrap();
 
     // get investment bump
     let bump = *ctx.bumps.get("investment").unwrap();
@@ -78,10 +79,10 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, SettleFunds<'info>>) -> Re
         ]],
     ))?;
 
-    let authority_mint_b_vault = 
-        associated_token::get_associated_token_address(&investment.authority, &investment.mint_b);
-    let investment_mint_b_vault = 
-        associated_token::get_associated_token_address(&investment.key(), &investment.mint_b);
+    let authority_coin_vault = 
+        associated_token::get_associated_token_address(&investment.authority, &investment.coin_mint);
+    let investment_coin_vault = 
+        associated_token::get_associated_token_address(&investment.key(), &investment.coin_mint);
 
      Ok(ThreadResponse {
         kickoff_instruction: None,
@@ -89,9 +90,9 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, SettleFunds<'info>>) -> Re
             Instruction {
                 program_id: crate::ID,
                 accounts: vec![
-                    AccountMeta::new(authority_mint_b_vault, false),
+                    AccountMeta::new(authority_coin_vault, false),
                     AccountMeta::new_readonly(investment.key(), false),
-                    AccountMeta::new(investment_mint_b_vault.key(), false),
+                    AccountMeta::new(investment_coin_vault.key(), false),
                     AccountMeta::new_readonly(investment_thread.key(), true),
                     AccountMeta::new_readonly(investment.market, false),
                     AccountMeta::new_readonly(system_program::ID, false),

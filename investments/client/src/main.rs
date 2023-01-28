@@ -1,3 +1,5 @@
+use solana_sdk::system_instruction::transfer;
+
 mod utils;
 
 use {
@@ -21,14 +23,15 @@ fn main() -> ClientResult<()> {
     // let sol_usdc_market_keys = MarketKeys {
     //     market: Pubkey::from_str("8BnEgHoWFysVcuFFX7QztDmzuH8r5ZFvyP3sYwn1XTh6").unwrap(),
     //     event_q: Pubkey::from_str("8CvwxZ9Db6XbLD46NZwwmVDZZRDy7eydFcAGkXKh9axa").unwrap(),
+    //     req_q: Pubkey::from_str("CPjXDcggXckEq9e4QeXUieVJBpUNpLEmpihLpg5vWjGF").unwrap(),
     //     bids: Pubkey::from_str("5jWUncPNBMZJ3sTHKmMLszypVkoRK6bfEQMQUHweeQnh").unwrap(),
     //     asks: Pubkey::from_str("EaXdHx7x3mdGA38j5RSmKYSXMzAFzzUXCLNBEDXDn1d5").unwrap(),
-    //     pc_mint: Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap(),
-    //     pc_vault: Pubkey::from_str("CKxTHwM9fPMRRvZmFnFoqKNd9pQR21c5Aq9bh5h9oghX").unwrap(),
-    //     pc_wallet: Pubkey::from_str("9d7WcMvuk9pU5EnNbUDJzuNdsQjaiJo5G7rLFtAozp17").unwrap(),
-    //     coin_mint: Pubkey::from_str("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v").unwrap(),
-    //     coin_vault: Pubkey::from_str("6A5NHCj1yF6urc9wZNe6Bcjj4LVszQNj5DwAWG97yzMu").unwrap(),
-    //     coin_wallet: Pubkey::from_str("FZnhkDzQeNPZb4VADuucxymVARRRWKxNDh4FsNSSSwAP").unwrap(),
+    //     coin_mint: Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap(), // Base/Coin/A/SOL
+    //     coin_vault: Pubkey::from_str("CKxTHwM9fPMRRvZmFnFoqKNd9pQR21c5Aq9bh5h9oghX").unwrap(),
+    //     coin_wallet: Pubkey::from_str("9d7WcMvuk9pU5EnNbUDJzuNdsQjaiJo5G7rLFtAozp17").unwrap(),
+    //     pc_mint: Pubkey::from_str("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v").unwrap(), // Quote/PC/B/USDC
+    //     pc_vault: Pubkey::from_str("6A5NHCj1yF6urc9wZNe6Bcjj4LVszQNj5DwAWG97yzMu").unwrap(),
+    //     pc_wallet: Pubkey::from_str("FZnhkDzQeNPZb4VADuucxymVARRRWKxNDh4FsNSSSwAP").unwrap(),
     //     vault_signer: Pubkey::from_str("CTz5UMLQm2SRWHzQnU62Pi4yJqbNGjgRBHqqp6oDHfF7").unwrap(),
     // };
 
@@ -38,12 +41,12 @@ fn main() -> ClientResult<()> {
         req_q: Pubkey::from_str("DoPUJXzG6Q7TwoxXJ1PtETqCUDfovpHLhwvj737KTmua").unwrap(),
         bids: Pubkey::from_str("5F2yj13thTvdTaNdMvxgsczPRXfbqVd7tr13bJSFg1W7").unwrap(),
         asks: Pubkey::from_str("GHsWvxp6KJ3Yr8HH5L4pbHkC1YMGk8FzMknsYo1kzzZv").unwrap(),
-        pc_mint: Pubkey::from_str("DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263").unwrap(), // bonk
-        pc_vault: Pubkey::from_str("A9yRKSx8SyqNdCtCMUgr6wDXUs1JmVFkVno6FcscSD6m").unwrap(),
-        pc_wallet: Pubkey::from_str("Fuv3U8c1nuhRWdmPcptBqHTq7Cshb8YKtVeiS5BR6YSJ").unwrap(),
-        coin_mint: Pubkey::from_str("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v").unwrap(), // usdc
-        coin_vault: Pubkey::from_str("D9dojzvwJGs4q3Cx8ytvD8kWVVZszoVKvPZEZ5D8PV1Y").unwrap(),
-        coin_wallet: Pubkey::from_str("DtFi8ZBMoTSURfYfvyViWRMipXbnaLNhzbps5JiowtE8").unwrap(),
+        coin_mint: Pubkey::from_str("DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263").unwrap(), // Base/Coin/A/SOL
+        coin_vault: Pubkey::from_str("A9yRKSx8SyqNdCtCMUgr6wDXUs1JmVFkVno6FcscSD6m").unwrap(),
+        coin_wallet: Pubkey::from_str("Fuv3U8c1nuhRWdmPcptBqHTq7Cshb8YKtVeiS5BR6YSJ").unwrap(),
+        pc_mint: Pubkey::from_str("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v").unwrap(), // Quote/PC/B/USDC
+        pc_vault: Pubkey::from_str("D9dojzvwJGs4q3Cx8ytvD8kWVVZszoVKvPZEZ5D8PV1Y").unwrap(),
+        pc_wallet: Pubkey::from_str("DtFi8ZBMoTSURfYfvyViWRMipXbnaLNhzbps5JiowtE8").unwrap(),
         vault_signer: Pubkey::from_str("3oQLKk1TyyXMT14p2i8p95v5jKqsQ5qzZGwxZCTnFC7p").unwrap(),
     };
 
@@ -52,31 +55,9 @@ fn main() -> ClientResult<()> {
         bonk_usdc_market_keys.market,
     );
 
-    let authority_coin_vault_pubkey = anchor_spl::associated_token::get_associated_token_address(
-        &client.payer_pubkey(),
-        &bonk_usdc_market_keys.coin_mint,
-    );
-
-    let investment_coin_vault_pubkey = anchor_spl::associated_token::get_associated_token_address(
-        &investment_pubkey,
-        &bonk_usdc_market_keys.coin_mint,
-    );
-
-    let _authority_pc_vault_pubkey = anchor_spl::associated_token::get_associated_token_address(
-        &client.payer_pubkey(),
-        &bonk_usdc_market_keys.pc_mint,
-    );
-
-    let _investment_pc_vault_pubkey = anchor_spl::associated_token::get_associated_token_address(
-        &investment_pubkey,
-        &bonk_usdc_market_keys.pc_mint,
-    );
-
     investment_create(
         &client,
         investment_pubkey,
-        authority_coin_vault_pubkey,
-        investment_coin_vault_pubkey,
         &bonk_usdc_market_keys,
         "BONK_USDC_INVESTMENT_TEST_1".into(),
         "BONK_USDC_SETTLE_FUNDS_TEST_1".into(),
@@ -90,8 +71,6 @@ fn main() -> ClientResult<()> {
 fn investment_create(
     client: &Client,
     investment_pubkey: Pubkey,
-    authority_mint_a_vault_pubkey: Pubkey,
-    investment_mint_a_vault_pubkey: Pubkey,
     market_keys: &MarketKeys,
     investment_thread_id: String,
     settle_funds_thread_id: String,
@@ -104,15 +83,35 @@ fn investment_create(
     let settle_funds_thread_pubkey =
         Thread::pubkey(client.payer_pubkey(), settle_funds_thread_id.clone());
 
+    let authority_coin_vault_pubkey = anchor_spl::associated_token::get_associated_token_address(
+        &client.payer_pubkey(),
+        &market_keys.coin_mint,
+    );
+
+    let investment_coin_vault_pubkey = anchor_spl::associated_token::get_associated_token_address(
+        &investment_pubkey,
+        &market_keys.coin_mint,
+    );
+
+    let authority_pc_vault_pubkey = anchor_spl::associated_token::get_associated_token_address(
+        &client.payer_pubkey(),
+        &market_keys.pc_mint,
+    );
+
+    let investment_pc_vault_pubkey = anchor_spl::associated_token::get_associated_token_address(
+        &investment_pubkey,
+        &market_keys.pc_mint,
+    );
+
     let investment_create_ix = Instruction {
         program_id: investments_program::ID,
         accounts: vec![
             AccountMeta::new(client.payer_pubkey(), true),
-            AccountMeta::new(authority_mint_a_vault_pubkey, false),
+            AccountMeta::new(authority_pc_vault_pubkey, false),
             AccountMeta::new_readonly(associated_token::ID, false),
             AccountMeta::new_readonly(openbook_dex_pk(), false),
             AccountMeta::new(investment_pubkey, false),
-            AccountMeta::new(investment_mint_a_vault_pubkey, false),
+            AccountMeta::new(investment_pc_vault_pubkey, false),
             AccountMeta::new_readonly(market_keys.market, false),
             AccountMeta::new_readonly(market_keys.coin_mint, false),
             AccountMeta::new_readonly(market_keys.pc_mint, false),
@@ -123,7 +122,7 @@ fn investment_create(
             AccountMeta::new(investment_open_orders_account_pubkey.unwrap(), false),
         ],
         data: investments_program::instruction::InvestmentCreate {
-            swap_amount: 000_001,
+            swap_amount: 010_000,
         }
         .data(),
     };
@@ -135,21 +134,21 @@ fn investment_create(
         Instruction {
             program_id: investments_program::ID,
             accounts: vec![
-                AccountMeta::new(authority_mint_a_vault_pubkey, false),
+                AccountMeta::new(authority_pc_vault_pubkey, false),
                 AccountMeta::new_readonly(investment_pubkey, false),
-                AccountMeta::new(investment_mint_a_vault_pubkey, false),
+                AccountMeta::new(investment_pc_vault_pubkey, false),
                 AccountMeta::new_readonly(investment_thread_pubkey, true),
-                AccountMeta::new(market_keys.market, false),
+                AccountMeta::new_readonly(market_keys.market, false),
                 AccountMeta::new_readonly(system_program::ID, false),
                 AccountMeta::new_readonly(token::ID, false),
                 // REMAINING ACCOUNTS
-                AccountMeta::new_readonly(market_keys.event_q, false),
-                AccountMeta::new_readonly(market_keys.req_q, false),
-                AccountMeta::new_readonly(market_keys.bids, false),
-                AccountMeta::new_readonly(market_keys.asks, false),
-                AccountMeta::new_readonly(market_keys.pc_vault, false),
-                AccountMeta::new_readonly(market_keys.coin_vault, false),
-                AccountMeta::new_readonly(investment_open_orders_account_pubkey.unwrap(), false),
+                AccountMeta::new(market_keys.event_q, false),
+                AccountMeta::new(market_keys.req_q, false),
+                AccountMeta::new(market_keys.bids, false),
+                AccountMeta::new(market_keys.asks, false),
+                AccountMeta::new(market_keys.coin_vault, false),
+                AccountMeta::new(market_keys.pc_vault, false),
+                AccountMeta::new(investment_open_orders_account_pubkey.unwrap(), false),
             ],
             data: investments_program::instruction::Deposit {}.data(),
         }
@@ -172,16 +171,16 @@ fn investment_create(
                 AccountMeta::new_readonly(openbook_dex_pk(), false),
                 AccountMeta::new_readonly(investment_pubkey, false),
                 AccountMeta::new_readonly(investment_thread_pubkey, true),
-                AccountMeta::new_readonly(market_keys.market, false),
+                AccountMeta::new(market_keys.market, false),
                 AccountMeta::new_readonly(system_program::ID, false),
                 AccountMeta::new_readonly(token::ID, false),
                 // REMAINING ACCOUNTS
-                AccountMeta::new_readonly(investment_open_orders_account_pubkey.unwrap(), false),
-                AccountMeta::new_readonly(market_keys.coin_vault, false),
-                AccountMeta::new_readonly(market_keys.coin_wallet, false),
-                AccountMeta::new_readonly(market_keys.pc_vault, false),
-                AccountMeta::new_readonly(market_keys.pc_wallet, false),
-                AccountMeta::new_readonly(market_keys.vault_signer, false),
+                AccountMeta::new(investment_open_orders_account_pubkey.unwrap(), false),
+                AccountMeta::new(market_keys.coin_vault, false),
+                AccountMeta::new(market_keys.coin_wallet, false),
+                AccountMeta::new(market_keys.pc_vault, false),
+                AccountMeta::new(market_keys.pc_wallet, false),
+                AccountMeta::new(market_keys.vault_signer, false),
             ],
             data: investments_program::instruction::SettleFunds {}.data(),
         }
@@ -190,28 +189,35 @@ fn investment_create(
         settle_funds_thread_pubkey,
         Trigger::Account {
             address: investment_open_orders_account_pubkey.unwrap(),
-            // pc -> coin (listen for state changes to `native_coin_total`):
-            // - offset: 8 + 8 + 32 + 32 + 8
-            // - size: 8
-
-            // coin -> pc (listen for state changes to `native_pc_total`):
-            // - offset: 8 + 8 + 32 + 32 + 8 + 8 + 8
-            // - size: 8
-            offset: 8 + 8 + 32 + 32 + 8 + 8 + 8,
+            offset: 8 + 8 + 32 + 32 + 8,
             size: 8,
         },
     );
 
+    let fund_deposit_thread_ix =
+        transfer(&client.payer_pubkey(), &investment_thread_pubkey, 100000000);
+    let fund_settle_funds_thread_ix = transfer(
+        &client.payer_pubkey(),
+        &settle_funds_thread_pubkey,
+        100000000,
+    );
+
     print_explorer_link(investment_pubkey, "investment account 📂".into())?;
+    print_explorer_link(
+        investment_open_orders_account_pubkey.unwrap(),
+        "investment open orders account 📂".into(),
+    )?;
     print_explorer_link(investment_thread_pubkey, "investment thread 📂".into())?;
     print_explorer_link(settle_funds_thread_pubkey, "settle funds thread 📂".into())?;
+    print_explorer_link(investment_pc_vault_pubkey, "investment PC vault 💰".into())?;
+    print_explorer_link(authority_pc_vault_pubkey, "authority PC vault 💰".into())?;
     print_explorer_link(
-        investment_mint_a_vault_pubkey,
-        "investment mint A vault 💰".into(),
+        investment_coin_vault_pubkey,
+        "investment Coin vault 💰".into(),
     )?;
     print_explorer_link(
-        authority_mint_a_vault_pubkey,
-        "authority investment mint A vault 💰".into(),
+        authority_coin_vault_pubkey,
+        "authority Coin vault 💰".into(),
     )?;
 
     sign_send_and_confirm_tx(
@@ -227,20 +233,22 @@ fn investment_create(
     sign_send_and_confirm_tx(
         &client,
         [
-            thread_create_deposit_ix, // on schedule: deposit -> swap -> deposit -> ...
+            thread_create_deposit_ix, // on schedule: deposit -> swap; deposit -> ...
+            fund_deposit_thread_ix,
         ]
         .to_vec(),
-        None,
+        Some(vec![client.payer()]),
         "deposit/swap thread create".to_string(),
     )?;
 
     sign_send_and_confirm_tx(
         &client,
         [
-            thread_create_settle_funds_ix, // on open order account state change: settle_funds -> claim -> settle_funds -> ...
+            thread_create_settle_funds_ix, // on open order account state change: settle_funds -> claim; settle_funds -> ...
+            fund_settle_funds_thread_ix,
         ]
         .to_vec(),
-        None,
+        Some(vec![client.payer()]),
         "settle_funds/claim thread create".to_string(),
     )?;
 

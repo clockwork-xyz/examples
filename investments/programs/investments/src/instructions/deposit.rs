@@ -12,10 +12,10 @@ use {
 pub struct Deposit<'info> {
     #[account(
         mut,
-        associated_token::mint = investment.mint_a,
+        associated_token::mint = investment.pc_mint,
         associated_token::authority = investment.authority
     )]
-    pub authority_mint_a_vault: Account<'info, TokenAccount>,
+    pub authority_pc_vault: Account<'info, TokenAccount>,
 
     #[account(
         seeds = [
@@ -30,10 +30,10 @@ pub struct Deposit<'info> {
 
     #[account(
         mut,
-        associated_token::mint = investment.mint_a,
+        associated_token::mint = investment.pc_mint,
         associated_token::authority = investment
     )]
-    pub investment_mint_a_vault: Account<'info, TokenAccount>,
+    pub investment_pc_vault: Account<'info, TokenAccount>,
 
     #[account(
         signer,
@@ -54,10 +54,10 @@ pub struct Deposit<'info> {
 
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Deposit<'info>>) -> Result<ThreadResponse> {
     // Get accounts
+    let authority_pc_vault = &mut ctx.accounts.authority_pc_vault;
     let investment = &ctx.accounts.investment;
-    let investment_mint_a_vault = &mut ctx.accounts.investment_mint_a_vault;
+    let investment_pc_vault = &mut ctx.accounts.investment_pc_vault;
     let investment_thread = &ctx.accounts.investment_thread;
-    let authority_mint_a_vault = &mut ctx.accounts.authority_mint_a_vault;
     let token_program = &ctx.accounts.token_program;
 
     // get investment bump
@@ -67,8 +67,8 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Deposit<'info>>) -> Result
         CpiContext::new_with_signer(
             token_program.to_account_info(),
             Transfer {
-                from: authority_mint_a_vault.to_account_info(),
-                to: investment_mint_a_vault.to_account_info(),
+                from: authority_pc_vault.to_account_info(),
+                to: investment_pc_vault.to_account_info(),
                 authority: investment.to_account_info(),
             },
             &[&[
@@ -86,18 +86,18 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Deposit<'info>>) -> Result
             AccountMeta::new_readonly(anchor_spl::dex::ID, false),
             AccountMeta::new_readonly(investment.key(), false),
             AccountMeta::new_readonly(investment_thread.key(), true),
-            AccountMeta::new(investment_mint_a_vault.key(), false),
+            AccountMeta::new(investment_pc_vault.key(), false),
             AccountMeta::new_readonly(sysvar::rent::ID, false),
             AccountMeta::new_readonly(system_program::ID, false),
             AccountMeta::new_readonly(token_program.key(), false),
-            AccountMeta::new_readonly(investment.market, false),
+            AccountMeta::new(investment.market, false),
         ];
 
     let mut remaining_account_metas = 
             ctx
             .remaining_accounts
             .iter()
-            .map(|acc| AccountMeta::new_readonly(acc.key(), false))
+            .map(|acc| AccountMeta::new(acc.key(), false))
             .collect::<Vec<AccountMeta>>();
 
     swap_account_metas.append(&mut remaining_account_metas);

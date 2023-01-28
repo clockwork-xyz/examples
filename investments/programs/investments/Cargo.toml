@@ -20,6 +20,6 @@ overflow-checks = true
 
 [dependencies]
 anchor-spl = { version = "0.26.0", features = ["dex"] }
-anchor-lang = "0.26.0"
+anchor-lang = { version = "0.26.0", features = ["init-if-needed"] }
 clockwork-sdk = "1.4.0"
 safe-transmute = "0.11.0"

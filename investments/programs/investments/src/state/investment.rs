@@ -14,8 +14,8 @@ pub const SEED_INVESTMENT: &[u8] = b"investment";
 pub struct Investment {
     pub market: Pubkey,
     pub authority: Pubkey,
-    pub mint_a: Pubkey,
-    pub mint_b: Pubkey,
+    pub pc_mint: Pubkey,
+    pub coin_mint: Pubkey,
     pub swap_amount: u64,
 }
 
@@ -45,8 +45,8 @@ pub trait InvestmentAccount {
         &mut self,
         authority: Pubkey,
         market: Pubkey,
-        mint_a: Pubkey,
-        mint_b: Pubkey,
+        pc_mint: Pubkey,
+        coin_mint: Pubkey,
         swap_amount: u64,
     ) -> Result<()>;
 }
@@ -56,14 +56,14 @@ impl InvestmentAccount for Account<'_, Investment> {
         &mut self,
         authority: Pubkey,
         market: Pubkey,
-        mint_a: Pubkey,
-        mint_b: Pubkey,
+        pc_mint: Pubkey,
+        coin_mint: Pubkey,
         swap_amount: u64,
     ) -> Result<()> {
         self.authority = authority;
         self.market = market;
-        self.mint_a = mint_a;
-        self.mint_b = mint_b;
+        self.pc_mint = pc_mint;
+        self.coin_mint = coin_mint;
         self.swap_amount = swap_amount;
         Ok(())
     }

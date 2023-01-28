@@ -12,10 +12,10 @@ use {
 pub struct Claim<'info> {
     #[account(
         mut,
-        associated_token::mint = investment.mint_b,
+        associated_token::mint = investment.coin_mint,
         associated_token::authority = investment.authority
     )]
-    pub authority_mint_b_vault: Account<'info, TokenAccount>,
+    pub authority_coin_vault: Account<'info, TokenAccount>,
 
     #[account(
         seeds = [
@@ -30,10 +30,10 @@ pub struct Claim<'info> {
 
     #[account(
         mut,
-        associated_token::mint = investment.mint_b,
+        associated_token::mint = investment.coin_mint,
         associated_token::authority = investment
     )]
-    pub investment_mint_b_vault: Account<'info, TokenAccount>,
+    pub investment_coin_vault: Account<'info, TokenAccount>,
 
     #[account(
         signer,
@@ -54,9 +54,9 @@ pub struct Claim<'info> {
 
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Claim<'info>>) -> Result<ThreadResponse> {
     // Get accounts
-    let authority_mint_b_vault = &mut ctx.accounts.authority_mint_b_vault;  
+    let authority_coin_vault = &mut ctx.accounts.authority_coin_vault;
     let investment = &ctx.accounts.investment;
-    let investment_mint_b_vault = &mut ctx.accounts.investment_mint_b_vault;
+    let investment_coin_vault = &mut ctx.accounts.investment_coin_vault;
     let investment_thread = &ctx.accounts.investment_thread;
     let market = &ctx.accounts.market;
     let token_program = &ctx.accounts.token_program;
@@ -68,8 +68,8 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Claim<'info>>) -> Result<T
         CpiContext::new_with_signer(
             token_program.to_account_info(),
             Transfer {
-                from: investment_mint_b_vault.to_account_info(),
-                to: authority_mint_b_vault.to_account_info(),
+                from: investment_coin_vault.to_account_info(),
+                to: authority_coin_vault.to_account_info(),
                 authority: investment.to_account_info(),
             },
             &[&[
@@ -86,7 +86,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Claim<'info>>) -> Result<T
         AccountMeta::new_readonly(anchor_spl::dex::ID, false),
         AccountMeta::new_readonly(investment.key(), false),
         AccountMeta::new_readonly(investment_thread.key(), true),
-        AccountMeta::new_readonly(market.key(), false),
+        AccountMeta::new(market.key(), false),
         AccountMeta::new_readonly(system_program::ID, false),
         AccountMeta::new_readonly(anchor_spl::token::ID, false),
     ];
@@ -95,7 +95,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Claim<'info>>) -> Result<T
         ctx
         .remaining_accounts
         .iter()
-        .map(|acc| AccountMeta::new_readonly(acc.key(), false))
+        .map(|acc| AccountMeta::new(acc.key(), false))
         .collect::<Vec<AccountMeta>>();
 
     settle_funds_account_metas.append(&mut remaining_account_metas);

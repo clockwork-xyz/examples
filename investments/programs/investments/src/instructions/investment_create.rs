@@ -20,9 +20,9 @@ pub struct InvestmentCreate<'info> {
     #[account(
         mut,
         associated_token::authority = authority,
-        associated_token::mint = mint_a,
+        associated_token::mint = pc_mint,
     )]
-    pub authority_mint_a_vault: Account<'info, TokenAccount>,
+    pub authority_pc_vault: Account<'info, TokenAccount>,
 
     #[account(address = anchor_spl::associated_token::ID)]
     pub associated_token_program: Program<'info, AssociatedToken>,
@@ -32,7 +32,11 @@ pub struct InvestmentCreate<'info> {
 
     #[account(
         init,
-        seeds = [SEED_INVESTMENT, authority.key().as_ref(), market.key().as_ref()],
+        seeds = [
+            SEED_INVESTMENT, 
+            authority.key().as_ref(), 
+            market.key().as_ref()
+        ],
         bump,
         payer = authority,
         space = 8 + size_of::<Investment>(),
@@ -40,21 +44,21 @@ pub struct InvestmentCreate<'info> {
     pub investment: Account<'info, Investment>,
 
     #[account(
-        init,
+        init_if_needed,
         payer = authority,
-        associated_token::mint = mint_a,
+        associated_token::mint = pc_mint,
         associated_token::authority = investment
     )]
-    pub investment_mint_a_vault: Account<'info, TokenAccount>,
+    pub investment_pc_vault: Account<'info, TokenAccount>,
 
     /// CHECK:
     pub market: AccountInfo<'info>,
 
     /// CHECK:
-    pub mint_a: Account<'info, Mint>,
+    pub coin_mint: Account<'info, Mint>,
 
     /// CHECK:
-    pub mint_b: Account<'info, Mint>,
+    pub pc_mint: Account<'info, Mint>,
 
     #[account(address = sysvar::rent::ID)]
     pub rent: Sysvar<'info, Rent>,
@@ -72,25 +76,28 @@ pub fn handler<'info>(
 ) -> Result<()> {
     // Get accounts
     let authority = &ctx.accounts.authority;
-    let authority_mint_a_vault = &mut ctx.accounts.authority_mint_a_vault;
+    let authority_pc_vault = &mut ctx.accounts.authority_pc_vault;
     let dex_program = &ctx.accounts.dex_program;
     let investment = &mut ctx.accounts.investment;
-    let _investment_mint_a_vault = &ctx.accounts.investment_mint_a_vault;
+    let _investment_pc_vault = &ctx.accounts.investment_pc_vault;
     let market = &ctx.accounts.market;
-    let mint_a = &ctx.accounts.mint_a;
-    let mint_b = &ctx.accounts.mint_b;
+    let coin_mint = &ctx.accounts.coin_mint;
+    let pc_mint = &ctx.accounts.pc_mint;
     let rent = &ctx.accounts.rent;
     let token_program = &ctx.accounts.token_program;
 
     // Get remaining accounts
-    let open_orders = ctx.remaining_accounts.get(0).unwrap();
+    let open_orders = &mut ctx.remaining_accounts.get(0).unwrap();
+
+    // get investment bump
+    let bump = *ctx.bumps.get("investment").unwrap();
 
     // initialize investment account
     investment.new(
         authority.key(),
         market.key(),
-        mint_a.key(),
-        mint_b.key(),
+        pc_mint.key(),
+        coin_mint.key(),
         swap_amount,
     )?;
 
@@ -99,7 +106,7 @@ pub fn handler<'info>(
         CpiContext::new(
             token_program.to_account_info(),
             token::Approve {
-                to: authority_mint_a_vault.to_account_info(),
+                to: authority_pc_vault.to_account_info(),
                 delegate: investment.to_account_info(),
                 authority: authority.to_account_info(),
             },
@@ -107,8 +114,8 @@ pub fn handler<'info>(
         u64::MAX,
     )?;
 
-    // init open order account
-    anchor_spl::dex::init_open_orders(CpiContext::new(
+    // init open order account for investment account
+    anchor_spl::dex::init_open_orders(CpiContext::new_with_signer(
         dex_program.to_account_info(),
         anchor_spl::dex::InitOpenOrders {
             authority: investment.to_account_info(),
@@ -116,6 +123,12 @@ pub fn handler<'info>(
             open_orders: open_orders.to_account_info(),
             rent: rent.to_account_info(),
         },
+        &[&[
+            SEED_INVESTMENT,
+            investment.authority.as_ref(),
+            investment.market.as_ref(),
+            &[bump],
+        ]],
     ))?;
 
     Ok(())

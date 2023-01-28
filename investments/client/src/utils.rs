@@ -41,10 +41,7 @@ pub fn sign_send_and_confirm_tx(
 
     // Send and confirm initialize tx
     match client.send_and_confirm_transaction(&tx) {
-        Ok(sig) => println!(
-            "{} tx: ✅ https://explorer.solana.com/tx/{}?cluster=custom",
-            label, sig
-        ),
+        Ok(sig) => println!("{} tx: ✅ https://explorer.solana.com/tx/{}", label, sig),
         Err(err) => println!("{} tx: ❌ {:#?}", label, err),
     }
     Ok(())
@@ -112,7 +109,7 @@ pub fn default_client() -> Client {
 
 pub fn print_explorer_link(address: Pubkey, label: String) -> ClientResult<()> {
     println!(
-        "{}: https://explorer.solana.com/address/{}?cluster=custom",
+        "{}: https://explorer.solana.com/address/{}",
         label.to_string(),
         address,
     );

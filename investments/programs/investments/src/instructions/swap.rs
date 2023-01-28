@@ -5,7 +5,7 @@ use {
         __private::bytemuck::Contiguous,
         solana_program::{system_program, sysvar, instruction::Instruction},
     },
-    anchor_spl::{ 
+    anchor_spl::{
         dex::{
             serum_dex::{
                 instruction::SelfTradeBehavior,
@@ -44,9 +44,9 @@ pub struct Swap<'info> {
     #[account(
         mut,
         associated_token::authority = investment,
-        associated_token::mint = investment.mint_a,
+        associated_token::mint = investment.pc_mint,
     )]
-    pub investment_mint_a_vault: Account<'info, TokenAccount>,
+    pub investment_pc_vault: Account<'info, TokenAccount>,
 
     #[account(address = sysvar::rent::ID)]
     pub rent: Sysvar<'info, Rent>,
@@ -63,19 +63,19 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<Th
     let dex_program = &ctx.accounts.dex_program;
     let investment = &ctx.accounts.investment;
     let investment_thread = &ctx.accounts.investment_thread;
-    let investment_mint_a_vault= &mut ctx.accounts.investment_mint_a_vault;
+    let investment_pc_vault= &mut ctx.accounts.investment_pc_vault;
     let rent = &ctx.accounts.rent;
     let token_program = &ctx.accounts.token_program;
 
     // get remaining accounts
-    let market = ctx.remaining_accounts.get(0).unwrap();
-    let event_queue = ctx.remaining_accounts.get(1).unwrap();
-    let request_queue = ctx.remaining_accounts.get(2).unwrap();
-    let market_bids = ctx.remaining_accounts.get(3).unwrap();
-    let market_asks = ctx.remaining_accounts.get(4).unwrap();
-    let mint_a_vault = ctx.remaining_accounts.get(5).unwrap();
-    let mint_b_vault = ctx.remaining_accounts.get(6).unwrap();
-    let open_orders = ctx.remaining_accounts.get(7).unwrap();
+    let market = &mut ctx.remaining_accounts.get(0).unwrap();
+    let event_queue = &mut ctx.remaining_accounts.get(1).unwrap();
+    let request_queue = &mut ctx.remaining_accounts.get(2).unwrap();
+    let market_bids = &mut ctx.remaining_accounts.get(3).unwrap();
+    let market_asks = &mut ctx.remaining_accounts.get(4).unwrap();
+    let coin_vault = &mut ctx.remaining_accounts.get(5).unwrap();
+    let pc_vault = &mut ctx.remaining_accounts.get(6).unwrap();
+    let open_orders = &mut ctx.remaining_accounts.get(7).unwrap();
     
     // get investment bump
     let bump = *ctx.bumps.get("investment").unwrap();
@@ -86,14 +86,14 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<Th
             dex_program.to_account_info(),
             NewOrderV3 {
                 market: market.to_account_info(),
-                coin_vault: mint_b_vault.to_account_info(),
-                pc_vault: mint_a_vault.to_account_info(),
+                coin_vault: coin_vault.to_account_info(),
+                pc_vault: pc_vault.to_account_info(),
                 request_queue: request_queue.to_account_info(),
                 event_queue: event_queue.to_account_info(),
                 market_bids: market_bids.to_account_info(),
                 market_asks: market_asks.to_account_info(),
                 open_orders: open_orders.to_account_info(),
-                order_payer_token_account: investment_mint_a_vault.to_account_info(),
+                order_payer_token_account: investment_pc_vault.to_account_info(),
                 open_orders_authority: investment.to_account_info(),
                 token_program: token_program.to_account_info(),
                 rent: rent.to_account_info(),
@@ -115,9 +115,10 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<Th
         std::u16::MAX,
     )?;
 
-    let authority_mint_a_vault_pubkey = anchor_spl::associated_token::get_associated_token_address(
-        &investment.authority,
-        &investment.mint_a,
+    let authority_pc_vault_pubkey = 
+        anchor_spl::associated_token::get_associated_token_address(
+            &investment.authority,
+            &investment.pc_mint,
     );
 
     Ok(ThreadResponse {
@@ -125,21 +126,21 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<Th
             Instruction {
                 program_id: crate::ID,
                 accounts: vec![
-                    AccountMeta::new(authority_mint_a_vault_pubkey, false),
+                    AccountMeta::new(authority_pc_vault_pubkey, false),
                     AccountMeta::new_readonly(investment.key(), false),
-                    AccountMeta::new(investment_mint_a_vault.key(), false),
+                    AccountMeta::new(investment_pc_vault.key(), false),
                     AccountMeta::new_readonly(investment_thread.key(), true),
-                    AccountMeta::new(market.key(), false),
+                    AccountMeta::new_readonly(market.key(), false),
                     AccountMeta::new_readonly(system_program::ID, false),
                     AccountMeta::new_readonly(token_program.key(), false),
                     // REMAINING ACCOUNTS
-                    AccountMeta::new_readonly(event_queue.key(), false),
-                    AccountMeta::new_readonly(request_queue.key(), false),
-                    AccountMeta::new_readonly(market_bids.key(), false),
-                    AccountMeta::new_readonly(market_asks.key(), false),
-                    AccountMeta::new_readonly(mint_a_vault.key(), false),
-                    AccountMeta::new_readonly(mint_b_vault.key(), false),
-                    AccountMeta::new_readonly(open_orders.key(), false),
+                    AccountMeta::new(event_queue.key(), false),
+                    AccountMeta::new(request_queue.key(), false),
+                    AccountMeta::new(market_bids.key(), false),
+                    AccountMeta::new(market_asks.key(), false),
+                    AccountMeta::new(coin_vault.key(), false),
+                    AccountMeta::new(pc_vault.key(), false),
+                    AccountMeta::new(open_orders.key(), false),
                 ],
                 data: clockwork_sdk::utils::anchor_sighash("deposit").into(),
             }
@@ -148,3 +149,17 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<Th
         next_instruction: None,
     })
 }
+
+    // // validation for which vault is the pc/coin vault
+    // let mut pc_vault = mint_a_vault.as_ref();
+    // let mut coin_vault = mint_b_vault.as_ref();
+
+    // if let Some(mint_a_vault_mint) = 
+    //     <SplTokenAccount as GenericTokenAccount>::unpack_account_mint(
+    //         &mint_a_vault.try_borrow_data().unwrap()
+    //     ){
+    //         if mint_a_vault_mint.ne(&investment.coin_mint) {
+    //             pc_vault = mint_b_vault;
+    //             coin_vault = mint_a_vault;
+    //         }   
+    //     };
