@@ -1,14 +1,14 @@
 [features]
 seeds = false
-
-[programs.devnet]
-hello_clockwork = "HCWy1dTbHUUk64LyqBeQxha23AMrRgKfShPXVmDuiUbY"
+skip-lint = false
 
 [programs.localnet]
-hello_clockwork = "HCWy1dTbHUUk64LyqBeQxha23AMrRgKfShPXVmDuiUbY"
+driver = "EM4dw6Gh45nDX5gFJHLfpABDeYRKsu6qQT79PXM3huJj"
+[progreams.devnet]
+driver = "EM4dw6Gh45nDX5gFJHLfpABDeYRKsu6qQT79PXM3huJj"
 
 [registry]
-url = "https://anchor.projectserum.com"
+url = "https://api.apr.dev"
 
 [provider]
 cluster = "devnet"

@@ -1,14 +1,14 @@
 [features]
 seeds = false
-
-[programs.devnet]
-hello_clockwork = "HCWy1dTbHUUk64LyqBeQxha23AMrRgKfShPXVmDuiUbY"
+skip-lint = false
 
 [programs.localnet]
-hello_clockwork = "HCWy1dTbHUUk64LyqBeQxha23AMrRgKfShPXVmDuiUbY"
+hello_clockwork = "Gj5eCcUsKAPAJMftoKK8bLKCSByTaWANQzrESeWZT5Qe"
+[programs.devnet]
+hello_clockwork = "Gj5eCcUsKAPAJMftoKK8bLKCSByTaWANQzrESeWZT5Qe"
 
 [registry]
-url = "https://anchor.projectserum.com"
+url = "https://api.apr.dev"
 
 [provider]
 cluster = "devnet"
