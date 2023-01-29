@@ -5,20 +5,25 @@ use {
         prelude::*,
         solana_program::{instruction::Instruction, system_program},
     },
-    anchor_spl::{dex::serum_dex, token::TokenAccount},
-    clockwork_sdk::{
-        state::{InstructionData, Thread, ThreadAccount, ThreadResponse},
-        utils::PAYER_PUBKEY,
+    anchor_spl::{
+        dex::serum_dex::{
+            instruction::consume_events,
+            state::{strip_header, Event, EventQueueHeader, Queue},
+        },
+        token::TokenAccount,
     },
+    clockwork_sdk::state::{InstructionData, Thread, ThreadAccount, ThreadResponse},
 };
-
 #[derive(Accounts)]
 pub struct ConsumeEvents<'info> {
     #[account(
-        seeds = [SEED_CRANK, crank.authority.as_ref(), crank.market.as_ref(), crank.id.as_bytes()],
+        seeds = [
+            SEED_CRANK, 
+            crank.authority.as_ref(), 
+            crank.market.as_ref(), 
+        ],
         bump,
         has_one = market,
-        has_one = event_queue,
     )]
     pub crank: Box<Account<'info, Crank>>,
 
@@ -40,10 +45,10 @@ pub struct ConsumeEvents<'info> {
     pub market: AccountInfo<'info>,
 
     #[account(mut)]
-    pub mint_a_vault: Account<'info, TokenAccount>,
+    pub coin_vault: Box<Account<'info, TokenAccount>>,
 
     #[account(mut)]
-    pub mint_b_vault: Account<'info, TokenAccount>,
+    pub pc_vault: Box<Account<'info, TokenAccount>>,
 
     #[account(address = system_program::ID)]
     pub system_program: Program<'info, System>,
@@ -52,91 +57,130 @@ pub struct ConsumeEvents<'info> {
 pub fn handler<'info>(
     ctx: Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,
 ) -> Result<ThreadResponse> {
-    // Get accounts
+    // get accounts
     let crank = &ctx.accounts.crank;
     let crank_thread = &ctx.accounts.crank_thread;
     let dex_program = &ctx.accounts.dex_program;
     let event_queue = &mut ctx.accounts.event_queue;
     let market = &mut ctx.accounts.market;
-    let mint_a_vault = &mut ctx.accounts.mint_a_vault;
-    let mint_b_vault = &mut ctx.accounts.mint_b_vault;
+    let coin_vault = &mut ctx.accounts.coin_vault;
+    let pc_vault = &mut ctx.accounts.pc_vault;
     let open_orders_account_infos = ctx.remaining_accounts.clone().to_vec();
 
     // get crank bump
     let bump = *ctx.bumps.get("crank").unwrap();
 
-    // derive read events ix
-    let read_events_ix: Option<InstructionData> = Some(
+    const CONSUME_EVENTS_ACC_LEN: usize = 8;
+    const MAX_OPEN_ORDER_ACC_LEN: usize = 5;
+
+    let mut consume_events_account_metas = vec![
+        AccountMeta::new_readonly(crank.key(), false),
+        AccountMeta::new_readonly(crank_thread.key(), true),
+        AccountMeta::new_readonly(dex_program.key(), false),
+        AccountMeta::new(event_queue.key(), false),
+        AccountMeta::new(market.key(), false),
+        AccountMeta::new(coin_vault.key(), false),
+        AccountMeta::new(pc_vault.key(), false),
+        AccountMeta::new_readonly(system_program::ID, false),
+    ];
+
+    msg!("A");
+
+    // deserialize event queue
+    let (header, buf) = 
+        strip_header::<EventQueueHeader, Event>(event_queue, false).unwrap();
+    let events = Queue::new(header, buf);
+    for event in events.iter() {
+        // <https://github.com/rust-lang/rust/issues/82523>
+        let val = unsafe { std::ptr::addr_of!(event.owner).read_unaligned() };
+        let owner = Pubkey::new(safe_transmute::to_bytes::transmute_one_to_bytes(
+            core::convert::identity(&val),
+        ));
+        consume_events_account_metas.push(AccountMeta::new(owner, false));
+
+        if consume_events_account_metas.len() >= CONSUME_EVENTS_ACC_LEN + MAX_OPEN_ORDER_ACC_LEN {
+            break;
+        }
+    }
+
+    let consume_events_ix: Option<InstructionData> = Some(
         Instruction {
             program_id: crate::ID,
-            accounts: vec![
-                AccountMeta::new(crank.key(), false),
-                AccountMeta::new(crank_thread.key(), true),
-                AccountMeta::new_readonly(dex_program.key(), false),
-                AccountMeta::new_readonly(event_queue.key(), false),
-                AccountMeta::new_readonly(market.key(), false),
-                AccountMeta::new(PAYER_PUBKEY, true),
-                AccountMeta::new_readonly(system_program::ID, false),
-            ],
-            data: clockwork_sdk::utils::anchor_sighash("read_events").into(),
+            accounts: consume_events_account_metas.clone(),
+            data: clockwork_sdk::utils::anchor_sighash("consume_events").into(),
         }
         .into(),
     );
 
-    let open_orders_account_pubkeys = &open_orders_account_infos
-        .iter()
-        .map(|acc| acc.key())
-        .collect::<Vec<Pubkey>>();
+    let open_orders_pubkeys = 
+        &open_orders_account_infos
+            .iter()
+            .map(|acc| acc.key())
+            .collect::<Vec<Pubkey>>();
 
-    msg!("open order accs len: {}", open_orders_account_pubkeys.len());
+    if open_orders_pubkeys.len() > 0 {
+        msg!("B");
 
-    // if there are orders that need to be cranked
-    if open_orders_account_pubkeys.len() > 0 {
+        msg!("open_orders_pubkeys len: {}", open_orders_pubkeys.len());
+
         // derive consume events ix
-        let consume_events_ix = serum_dex::instruction::consume_events(
+        let consume_events_openbook_ix = consume_events(
             &dex_program.key(),
-            open_orders_account_pubkeys.iter().collect::<Vec<&Pubkey>>(),
+            open_orders_pubkeys.iter().collect::<Vec<&Pubkey>>().clone(),
             &market.key(),
             &event_queue.key(),
-            &mint_b_vault.key(),
-            &mint_a_vault.key(),
+            &coin_vault.key(),
+            &pc_vault.key(),
             crank.limit,
-        )
-        .unwrap();
+        ).unwrap();
 
         let mut consume_events_account_infos = vec![
             market.to_account_info(),
             event_queue.to_account_info(),
-            mint_a_vault.to_account_info(),
-            mint_b_vault.to_account_info(),
+            coin_vault.to_account_info(),
+            pc_vault.to_account_info(),
             dex_program.to_account_info(),
         ];
 
+        msg!("C");
+        msg!("consume_events_account_infos len: {}", consume_events_account_infos.len());
+        msg!("open_orders_account_infos len: {}", open_orders_account_infos.len());
+
         consume_events_account_infos.append(&mut open_orders_account_infos.clone());
 
-        // invoke crank events ix
+        msg!("consume_events_account_infos len: {}", consume_events_account_infos.len());
+
+        msg!("D");
+
+        // invoke consume events ix
         invoke_signed(
-            &consume_events_ix,
+            &consume_events_openbook_ix,
             &consume_events_account_infos,
             &[&[
                 SEED_CRANK,
                 crank.authority.as_ref(),
                 crank.market.as_ref(),
-                crank.id.as_bytes(),
                 &[bump],
             ]],
         )?;
+        
 
-        // read events again bc there might be more open orders
-        return Ok(ThreadResponse {
-            kickoff_instruction: None,
-            next_instruction: read_events_ix,
-        });
+        msg!("E");
     }
 
-    // end execution context because there are no more events to consume
-    Ok(ThreadResponse {
-        kickoff_instruction: read_events_ix,
-        next_instruction: None,
-    })
+    msg!("F");
+
+    if consume_events_account_metas.len() > CONSUME_EVENTS_ACC_LEN {
+        msg!("G");
+        return Ok(ThreadResponse {
+            kickoff_instruction: None,
+            next_instruction: consume_events_ix,
+        });
+    } else {
+        msg!("H");
+        return Ok(ThreadResponse {
+            kickoff_instruction: consume_events_ix,
+            next_instruction: None,
+        });
+    }
 }
