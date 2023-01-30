@@ -1,9 +1,12 @@
 use {
     crate::state::*,
-    anchor_lang::solana_program::program::invoke_signed,
     anchor_lang::{
         prelude::*,
-        solana_program::{instruction::Instruction, system_program},
+        solana_program::{   
+            instruction::Instruction, 
+            system_program, 
+            program::invoke_signed
+        },
     },
     anchor_spl::{
         dex::serum_dex::{
@@ -14,6 +17,7 @@ use {
     },
     clockwork_sdk::state::{InstructionData, Thread, ThreadAccount, ThreadResponse},
 };
+
 #[derive(Accounts)]
 pub struct ConsumeEvents<'info> {
     #[account(
@@ -84,8 +88,6 @@ pub fn handler<'info>(
         AccountMeta::new_readonly(system_program::ID, false),
     ];
 
-    msg!("A");
-
     // deserialize event queue
     let (header, buf) = 
         strip_header::<EventQueueHeader, Event>(&event_queue, false).unwrap();
@@ -103,6 +105,8 @@ pub fn handler<'info>(
         }
     }
 
+    drop(events);
+
     let consume_events_ix: Option<InstructionData> = Some(
         Instruction {
             program_id: crate::ID,
@@ -113,8 +117,6 @@ pub fn handler<'info>(
     );
 
     if open_orders_account_infos.len() > 0 {
-        msg!("B");
-
         msg!("open orders account to be consumed: {}", open_orders_account_infos.len());
 
         // derive consume events ix
@@ -142,15 +144,7 @@ pub fn handler<'info>(
             dex_program.to_account_info(),
         ];
 
-        msg!("C");
-        msg!("consume_events_account_infos len: {}", consume_events_account_infos.len());
-        msg!("open_orders_account_infos len: {}", open_orders_account_infos.len());
-
         consume_events_account_infos.append(&mut open_orders_account_infos.clone());
-
-        msg!("consume_events_account_infos len: {}", consume_events_account_infos.len());
-
-        msg!("D");
 
         // invoke consume events ix
         invoke_signed(
@@ -164,20 +158,14 @@ pub fn handler<'info>(
             ]],
         )?;
         
-
-        msg!("E");
     }
 
-    msg!("F");
-
     if consume_events_account_metas.len() > CONSUME_EVENTS_ACC_LEN {
-        msg!("G");
         return Ok(ThreadResponse {
             kickoff_instruction: None,
             next_instruction: consume_events_ix,
         });
     } else {
-        msg!("H");
         return Ok(ThreadResponse {
             kickoff_instruction: consume_events_ix,
             next_instruction: None,
