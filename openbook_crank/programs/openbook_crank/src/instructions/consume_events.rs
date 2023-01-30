@@ -88,7 +88,7 @@ pub fn handler<'info>(
 
     // deserialize event queue
     let (header, buf) = 
-        strip_header::<EventQueueHeader, Event>(event_queue, false).unwrap();
+        strip_header::<EventQueueHeader, Event>(&event_queue, false).unwrap();
     let events = Queue::new(header, buf);
     for event in events.iter() {
         // <https://github.com/rust-lang/rust/issues/82523>
@@ -112,21 +112,21 @@ pub fn handler<'info>(
         .into(),
     );
 
-    let open_orders_pubkeys = 
-        &open_orders_account_infos
-            .iter()
-            .map(|acc| acc.key())
-            .collect::<Vec<Pubkey>>();
-
-    if open_orders_pubkeys.len() > 0 {
+    if open_orders_account_infos.len() > 0 {
         msg!("B");
 
-        msg!("open_orders_pubkeys len: {}", open_orders_pubkeys.len());
+        msg!("open orders account to be consumed: {}", open_orders_account_infos.len());
 
         // derive consume events ix
         let consume_events_openbook_ix = consume_events(
             &dex_program.key(),
-            open_orders_pubkeys.iter().collect::<Vec<&Pubkey>>().clone(),
+            open_orders_account_infos
+                .clone()
+                .iter()
+                .map(|acc| acc.key())
+                .collect::<Vec<Pubkey>>()
+                .iter()
+                .collect::<Vec<&Pubkey>>(),
             &market.key(),
             &event_queue.key(),
             &coin_vault.key(),
