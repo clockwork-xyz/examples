@@ -1,7 +1,7 @@
 pub mod consume_events;
+pub mod delete;
 pub mod initialize;
-pub mod read_events;
 
 pub use consume_events::*;
+pub use delete::*;
 pub use initialize::*;
-pub use read_events::*;
