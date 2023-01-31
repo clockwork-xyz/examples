@@ -3,7 +3,7 @@ use {
     anchor_lang::{
         prelude::*,
         __private::bytemuck::Contiguous,
-        solana_program::{system_program, sysvar, instruction::Instruction},
+        solana_program::{system_program, sysvar},
     },
     anchor_spl::{
         dex::{
@@ -13,14 +13,21 @@ use {
             },
             NewOrderV3,
         },
-        token::{Token, TokenAccount},
+        token::{Token, TokenAccount, transfer, Transfer},
     },
     std::num::NonZeroU64,
-    clockwork_sdk::state::{Thread, ThreadAccount, ThreadResponse},
+    clockwork_sdk::state::{Thread, ThreadAccount},
 };
 
 #[derive(Accounts)]
 pub struct Swap<'info> {
+    #[account(
+        mut,
+        associated_token::mint = investment.pc_mint,
+        associated_token::authority = investment.authority
+    )]
+    pub authority_pc_vault: Box<Account<'info, TokenAccount>>,
+
     #[account(address = anchor_spl::dex::ID)]
     pub dex_program: Program<'info, OpenBookDex>,
 
@@ -32,21 +39,21 @@ pub struct Swap<'info> {
         ], 
         bump,
     )]
-    pub investment: Account<'info, Investment>,
+    pub investment: Box<Account<'info, Investment>>,
+    
+    #[account(
+        mut,
+        associated_token::authority = investment,
+        associated_token::mint = investment.pc_mint,
+    )]
+    pub investment_pc_vault: Box<Account<'info, TokenAccount>>,
 
     #[account(
         signer,
         address = investment_thread.pubkey(),
         constraint = investment_thread.authority == investment.authority
     )]
-    pub investment_thread: Account<'info, Thread>,
-
-    #[account(
-        mut,
-        associated_token::authority = investment,
-        associated_token::mint = investment.pc_mint,
-    )]
-    pub investment_pc_vault: Account<'info, TokenAccount>,
+    pub investment_thread: Box<Account<'info, Thread>>,
 
     #[account(address = sysvar::rent::ID)]
     pub rent: Sysvar<'info, Rent>,
@@ -58,11 +65,11 @@ pub struct Swap<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<ThreadResponse> {
+pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<()> {
     // get accounts
+    let authority_pc_vault = &mut ctx.accounts.authority_pc_vault; 
     let dex_program = &ctx.accounts.dex_program;
     let investment = &ctx.accounts.investment;
-    let investment_thread = &ctx.accounts.investment_thread;
     let investment_pc_vault= &mut ctx.accounts.investment_pc_vault;
     let rent = &ctx.accounts.rent;
     let token_program = &ctx.accounts.token_program;
@@ -79,6 +86,25 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<Th
     
     // get investment bump
     let bump = *ctx.bumps.get("investment").unwrap();
+
+    // transfer swap amount from authority to investment ata
+    transfer(
+        CpiContext::new_with_signer(
+            token_program.to_account_info(),
+            Transfer {
+                from: authority_pc_vault.to_account_info(),
+                to: investment_pc_vault.to_account_info(),
+                authority: investment.to_account_info(),
+            },
+            &[&[
+                SEED_INVESTMENT,
+                investment.authority.as_ref(),
+                investment.market.as_ref(),
+                &[bump],
+            ]],
+        ),
+        investment.swap_amount,
+    )?;
 
     // place order on serum dex
     anchor_spl::dex::new_order_v3(
@@ -115,51 +141,5 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<Th
         std::u16::MAX,
     )?;
 
-    let authority_pc_vault_pubkey = 
-        anchor_spl::associated_token::get_associated_token_address(
-            &investment.authority,
-            &investment.pc_mint,
-    );
-
-    Ok(ThreadResponse {
-        kickoff_instruction: Some(
-            Instruction {
-                program_id: crate::ID,
-                accounts: vec![
-                    AccountMeta::new(authority_pc_vault_pubkey, false),
-                    AccountMeta::new_readonly(investment.key(), false),
-                    AccountMeta::new(investment_pc_vault.key(), false),
-                    AccountMeta::new_readonly(investment_thread.key(), true),
-                    AccountMeta::new_readonly(market.key(), false),
-                    AccountMeta::new_readonly(system_program::ID, false),
-                    AccountMeta::new_readonly(token_program.key(), false),
-                    // REMAINING ACCOUNTS
-                    AccountMeta::new(event_queue.key(), false),
-                    AccountMeta::new(request_queue.key(), false),
-                    AccountMeta::new(market_bids.key(), false),
-                    AccountMeta::new(market_asks.key(), false),
-                    AccountMeta::new(coin_vault.key(), false),
-                    AccountMeta::new(pc_vault.key(), false),
-                    AccountMeta::new(open_orders.key(), false),
-                ],
-                data: clockwork_sdk::utils::anchor_sighash("deposit").into(),
-            }
-            .into(),
-        ),
-        next_instruction: None,
-    })
+    Ok(())
 }
-
-    // // validation for which vault is the pc/coin vault
-    // let mut pc_vault = mint_a_vault.as_ref();
-    // let mut coin_vault = mint_b_vault.as_ref();
-
-    // if let Some(mint_a_vault_mint) = 
-    //     <SplTokenAccount as GenericTokenAccount>::unpack_account_mint(
-    //         &mint_a_vault.try_borrow_data().unwrap()
-    //     ){
-    //         if mint_a_vault_mint.ne(&investment.coin_mint) {
-    //             pc_vault = mint_b_vault;
-    //             coin_vault = mint_a_vault;
-    //         }   
-    //     };
