@@ -49,18 +49,7 @@ pub mod investments_program {
     /*
      * settle funds after order has been cranked
      */
-    pub fn settle_funds<'info>(
-        ctx: Context<'_, '_, '_, 'info, SettleFunds<'info>>,
-    ) -> Result<clockwork_sdk::state::ThreadResponse> {
+    pub fn settle_funds<'info>(ctx: Context<'_, '_, '_, 'info, SettleFunds<'info>>) -> Result<()> {
         settle_funds::handler(ctx)
-    }
-
-    /*
-     * transfer mint b tokens from investment ata to authority ata
-     */
-    pub fn claim<'info>(
-        ctx: Context<'_, '_, '_, 'info, Claim<'info>>,
-    ) -> Result<clockwork_sdk::state::ThreadResponse> {
-        claim::handler(ctx)
     }
 }
