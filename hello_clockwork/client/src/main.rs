@@ -29,7 +29,8 @@ fn main() -> ClientResult<()> {
     let thread_authority = client.payer_pubkey();
 
     // Derive PDAs:
-    let hello_thread = Thread::pubkey(thread_authority, "hello".into());
+    let thread_label = "hello";
+    let hello_thread = Thread::pubkey(thread_authority, thread_label.into());
 
     // airdrop to hello thread
     client.airdrop(&hello_thread, LAMPORTS_PER_SOL)?;
@@ -43,8 +44,8 @@ fn main() -> ClientResult<()> {
 
     let thread_create = thread_create(
         thread_authority,
-        "hello".into(),
-        hello_world_ix.into(),
+        thread_label.into(),
+        vec![hello_world_ix.into()],
         client.payer_pubkey(),
         hello_thread,
         Trigger::Cron {

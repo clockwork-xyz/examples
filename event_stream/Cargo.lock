@@ -698,9 +698,9 @@ dependencies = [
 
 [[package]]
 name = "clockwork-cron"
-version = "1.4.0"
+version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dbc3881dddc06e5186ef288dba9dfce9e44bb00158a5629c32327b5c5fb60e95"
+checksum = "ec00fac13ba4c45201f7bcbfd44df23b659521ef765de9d31d14a1194d028cce"
 dependencies = [
  "chrono",
  "nom",
@@ -709,9 +709,9 @@ dependencies = [
 
 [[package]]
 name = "clockwork-network-program"
-version = "1.4.0"
+version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a281044d28fe35047dec60cd55cf2000307132ad54c68f6b14952c90eaa01a73"
+checksum = "358aa1fb9a328d355cababfabb5ca69134a8bc703d355fe2979442441e30d6b7"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -720,9 +720,9 @@ dependencies = [
 
 [[package]]
 name = "clockwork-sdk"
-version = "1.4.0"
+version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5cb27a6546c10877fb0b309bb94f23fd13903d73ba793dda8b4acab4b70fc286"
+checksum = "7179555c8031a72efc4018a5120280076e4bbe640b9d063615353c3393f6787f"
 dependencies = [
  "anchor-lang",
  "chrono",
@@ -733,9 +733,9 @@ dependencies = [
 
 [[package]]
 name = "clockwork-thread-program"
-version = "1.4.0"
+version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6aa4a3843764e300bd15aefb83b33fbd590de3d0a5ad0b934827833837d2e9f6"
+checksum = "00d8201d1680a1540e157a0a9f3cb84d9cc9a25ad66fcb9328c6f94b2fe14175"
 dependencies = [
  "anchor-lang",
  "chrono",
@@ -748,9 +748,9 @@ dependencies = [
 
 [[package]]
 name = "clockwork-utils"
-version = "1.4.0"
+version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "80a384f1b7b90796c3a3ad3852b4eb56cc6b3f40a8b15fa4d05688e1a034d538"
+checksum = "26a6168b2af3007a81363951be00237defe4152e77e407d96f365f5de1a6dd37"
 dependencies = [
  "anchor-lang",
  "base64 0.13.0",
