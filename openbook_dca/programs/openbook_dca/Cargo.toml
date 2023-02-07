@@ -1,12 +1,12 @@
 [package]
-name = "investments-program"
+name = "openbook-dca"
 version = "0.1.0"
 description = "Created with Anchor"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "investments_program"
+name = "openbook_dca"
 
 [features]
 no-entrypoint = []
@@ -14,9 +14,6 @@ no-idl = []
 no-log-ix-name = []
 cpi = ["no-entrypoint"]
 default = []
-
-[profile.release]
-overflow-checks = true
 
 [dependencies]
 anchor-spl = { version = "0.26.0", features = ["dex"] }

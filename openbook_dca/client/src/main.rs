@@ -50,58 +50,46 @@ fn main() -> ClientResult<()> {
         vault_signer: Pubkey::from_str("3oQLKk1TyyXMT14p2i8p95v5jKqsQ5qzZGwxZCTnFC7p").unwrap(),
     };
 
-    investment_create(
-        &client,
-        &bonk_usdc_market_keys,
-        "BONK_USDC_INVESTMENT".into(),
-    )?;
+    dca_create(&client, &bonk_usdc_market_keys, "BONK_USDC_DCA".into())?;
 
-    // investment_delete(
-    //     &client,
-    //     &bonk_usdc_market_keys,
-    //     "BONK_USDC_INVESTMENT".into(),
-    // )?;
+    // dca_delete(&client, &bonk_usdc_market_keys, "BONK_USDC_DCA".into())?;
 
     Ok(())
 }
 
-fn investment_create(
+fn dca_create(
     client: &Client,
     market_keys: &MarketKeys,
-    investment_thread_id: String,
+    dca_thread_id: String,
 ) -> ClientResult<()> {
-    let mut investment_open_orders_account_pubkey = None;
-    init_dex_account(&client, &mut investment_open_orders_account_pubkey)?;
+    let mut dca_open_orders_account_pubkey = None;
+    init_dex_account(&client, &mut dca_open_orders_account_pubkey)?;
 
-    let investment_pubkey =
-        investments_program::state::Investment::pubkey(client.payer_pubkey(), market_keys.market);
+    let dca_pubkey = openbook_dca::state::Dca::pubkey(client.payer_pubkey(), market_keys.market);
 
-    let investment_thread_pubkey =
-        Thread::pubkey(client.payer_pubkey(), investment_thread_id.clone());
+    let dca_thread_pubkey = Thread::pubkey(client.payer_pubkey(), dca_thread_id.clone());
 
     let authority_coin_vault_pubkey =
         get_associated_token_address(&client.payer_pubkey(), &market_keys.coin_mint);
 
-    let investment_coin_vault_pubkey =
-        get_associated_token_address(&investment_pubkey, &market_keys.coin_mint);
+    let dca_coin_vault_pubkey = get_associated_token_address(&dca_pubkey, &market_keys.coin_mint);
 
     let authority_pc_vault_pubkey =
         get_associated_token_address(&client.payer_pubkey(), &market_keys.pc_mint);
 
-    let investment_pc_vault_pubkey =
-        get_associated_token_address(&investment_pubkey, &market_keys.pc_mint);
+    let dca_pc_vault_pubkey = get_associated_token_address(&dca_pubkey, &market_keys.pc_mint);
 
-    let investment_create_ix = Instruction {
-        program_id: investments_program::ID,
+    let dca_create_ix = Instruction {
+        program_id: openbook_dca::ID,
         accounts: vec![
             AccountMeta::new(client.payer_pubkey(), true),
             AccountMeta::new(authority_coin_vault_pubkey, false),
             AccountMeta::new(authority_pc_vault_pubkey, false),
             AccountMeta::new_readonly(associated_token::ID, false),
             AccountMeta::new_readonly(openbook_dex_pk(), false),
-            AccountMeta::new(investment_pubkey, false),
-            AccountMeta::new(investment_coin_vault_pubkey, false),
-            AccountMeta::new(investment_pc_vault_pubkey, false),
+            AccountMeta::new(dca_pubkey, false),
+            AccountMeta::new(dca_coin_vault_pubkey, false),
+            AccountMeta::new(dca_pc_vault_pubkey, false),
             AccountMeta::new_readonly(market_keys.market, false),
             AccountMeta::new_readonly(market_keys.coin_mint, false),
             AccountMeta::new_readonly(market_keys.pc_mint, false),
@@ -109,9 +97,9 @@ fn investment_create(
             AccountMeta::new_readonly(system_program::ID, false),
             AccountMeta::new_readonly(token::ID, false),
             // REMAINING ACCOUNTS
-            AccountMeta::new(investment_open_orders_account_pubkey.unwrap(), false),
+            AccountMeta::new(dca_open_orders_account_pubkey.unwrap(), false),
         ],
-        data: investments_program::instruction::InvestmentCreate {
+        data: openbook_dca::instruction::DcaCreate {
             swap_amount: 1000000,
         }
         .data(),
@@ -120,17 +108,17 @@ fn investment_create(
     // create thread to transfer & swap
     let thread_create_swap_ix = thread_create(
         client.payer_pubkey(),
-        investment_thread_id,
+        dca_thread_id,
         Instruction {
-            program_id: investments_program::ID,
+            program_id: openbook_dca::ID,
             accounts: vec![
                 AccountMeta::new(authority_coin_vault_pubkey, false),
                 AccountMeta::new(authority_pc_vault_pubkey, false),
                 AccountMeta::new_readonly(openbook_dex_pk(), false),
-                AccountMeta::new_readonly(investment_pubkey, false),
-                AccountMeta::new(investment_coin_vault_pubkey, false),
-                AccountMeta::new(investment_pc_vault_pubkey, false),
-                AccountMeta::new_readonly(investment_thread_pubkey, true),
+                AccountMeta::new_readonly(dca_pubkey, false),
+                AccountMeta::new(dca_coin_vault_pubkey, false),
+                AccountMeta::new(dca_pc_vault_pubkey, false),
+                AccountMeta::new_readonly(dca_thread_pubkey, true),
                 AccountMeta::new_readonly(sysvar::rent::ID, false),
                 AccountMeta::new_readonly(system_program::ID, false),
                 AccountMeta::new_readonly(token::ID, false),
@@ -143,39 +131,35 @@ fn investment_create(
                 AccountMeta::new(market_keys.coin_vault, false),
                 AccountMeta::new(market_keys.pc_vault, false),
                 AccountMeta::new(market_keys.vault_signer, false),
-                AccountMeta::new(investment_open_orders_account_pubkey.unwrap(), false),
+                AccountMeta::new(dca_open_orders_account_pubkey.unwrap(), false),
             ],
-            data: investments_program::instruction::Swap {}.data(),
+            data: openbook_dca::instruction::Swap {}.data(),
         }
         .into(),
         client.payer_pubkey(),
-        investment_thread_pubkey,
+        dca_thread_pubkey,
         Trigger::Cron {
             schedule: "0 */2 * * * *".into(),
             skippable: true,
         },
     );
 
-    let fund_swap_thread_ix =
-        transfer(&client.payer_pubkey(), &investment_thread_pubkey, 100000000);
+    let fund_swap_thread_ix = transfer(&client.payer_pubkey(), &dca_thread_pubkey, 100000000);
 
     {
-        print_explorer_link(investment_pubkey, "investment account 📂".into())?;
+        print_explorer_link(dca_pubkey, "dca account 📂".into())?;
         print_explorer_link(
-            investment_open_orders_account_pubkey.unwrap(),
-            "investment OOs account 📂".into(),
+            dca_open_orders_account_pubkey.unwrap(),
+            "dca OOs account 📂".into(),
         )?;
         print_explorer_link(
-            investment_open_orders_account_pubkey.unwrap(),
-            "investment open orders account 📂".into(),
+            dca_open_orders_account_pubkey.unwrap(),
+            "dca open orders account 📂".into(),
         )?;
-        print_explorer_link(investment_thread_pubkey, "investment thread 📂".into())?;
-        print_explorer_link(investment_pc_vault_pubkey, "investment PC vault 💰".into())?;
+        print_explorer_link(dca_thread_pubkey, "dca thread 📂".into())?;
+        print_explorer_link(dca_pc_vault_pubkey, "dca PC vault 💰".into())?;
         print_explorer_link(authority_pc_vault_pubkey, "authority PC vault 💰".into())?;
-        print_explorer_link(
-            investment_coin_vault_pubkey,
-            "investment Coin vault 💰".into(),
-        )?;
+        print_explorer_link(dca_coin_vault_pubkey, "dca Coin vault 💰".into())?;
         print_explorer_link(
             authority_coin_vault_pubkey,
             "authority Coin vault 💰".into(),
@@ -185,11 +169,11 @@ fn investment_create(
     sign_send_and_confirm_tx(
         &client,
         [
-            investment_create_ix, // initialize investment acc and approve token account authority
+            dca_create_ix, // initialize dca acc and approve token account authority
         ]
         .to_vec(),
         None,
-        "investment create".to_string(),
+        "dca create".to_string(),
     )?;
 
     sign_send_and_confirm_tx(
@@ -206,37 +190,35 @@ fn investment_create(
     Ok(())
 }
 
-pub fn investment_delete(
+pub fn dca_delete(
     client: &Client,
     market_keys: &MarketKeys,
-    investment_thread_id: String,
+    dca_thread_id: String,
 ) -> ClientResult<()> {
-    let investment_pubkey =
-        investments_program::state::Investment::pubkey(client.payer_pubkey(), market_keys.market);
-    let investment_thread_pubkey =
-        Thread::pubkey(client.payer_pubkey(), investment_thread_id.clone());
+    let dca_pubkey = openbook_dca::state::Dca::pubkey(client.payer_pubkey(), market_keys.market);
+    let dca_thread_pubkey = Thread::pubkey(client.payer_pubkey(), dca_thread_id.clone());
 
-    let investments_thread_delete_ix = thread_delete(
+    let dcas_thread_delete_ix = thread_delete(
         client.payer_pubkey(),
         client.payer_pubkey(),
-        investment_thread_pubkey,
+        dca_thread_pubkey,
     );
 
-    let investment_delete_ix = Instruction {
-        program_id: investments_program::ID,
+    let dca_delete_ix = Instruction {
+        program_id: openbook_dca::ID,
         accounts: vec![
             AccountMeta::new_readonly(client.payer_pubkey(), true),
             AccountMeta::new(client.payer_pubkey(), false),
-            AccountMeta::new(investment_pubkey, false),
+            AccountMeta::new(dca_pubkey, false),
         ],
-        data: investments_program::instruction::InvestmentDelete {}.data(),
+        data: openbook_dca::instruction::DcaDelete {}.data(),
     };
 
     sign_send_and_confirm_tx(
         &client,
-        [investment_delete_ix, investments_thread_delete_ix].to_vec(),
+        [dca_delete_ix, dcas_thread_delete_ix].to_vec(),
         None,
-        "investment delete".to_string(),
+        "dca delete".to_string(),
     )?;
 
     Ok(())

@@ -13,7 +13,7 @@ use {
 
 #[derive(Accounts)]
 #[instruction(swap_amount: u64)]
-pub struct InvestmentCreate<'info> {
+pub struct DcaCreate<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
 
@@ -41,31 +41,31 @@ pub struct InvestmentCreate<'info> {
     #[account(
         init,
         seeds = [
-            SEED_INVESTMENT, 
+            SEED_DCA, 
             authority.key().as_ref(), 
             market.key().as_ref()
         ],
         bump,
         payer = authority,
-        space = 8 + size_of::<Investment>(),
+        space = 8 + size_of::<Dca>(),
     )]
-    pub investment: Box<Account<'info, Investment>>,
+    pub dca: Box<Account<'info, Dca>>,
 
     #[account(
         init_if_needed,
         payer = authority,
         associated_token::mint = coin_mint,
-        associated_token::authority = investment
+        associated_token::authority = dca
     )]
-    pub investment_coin_vault: Box<Account<'info, TokenAccount>>,
+    pub dca_coin_vault: Box<Account<'info, TokenAccount>>,
    
     #[account(
         init_if_needed,
         payer = authority,
         associated_token::mint = pc_mint,
-        associated_token::authority = investment
+        associated_token::authority = dca
     )]
-    pub investment_pc_vault: Box<Account<'info, TokenAccount>>,
+    pub dca_pc_vault: Box<Account<'info, TokenAccount>>,
 
     /// CHECK:
     pub market: AccountInfo<'info>,
@@ -87,14 +87,14 @@ pub struct InvestmentCreate<'info> {
 }
 
 pub fn handler<'info>(
-    ctx: Context<'_, '_, '_, 'info, InvestmentCreate<'info>>,
+    ctx: Context<'_, '_, '_, 'info, DcaCreate<'info>>,
     swap_amount: u64,
 ) -> Result<()> {
     // Get accounts
     let authority = &ctx.accounts.authority;
     let authority_pc_vault = &mut ctx.accounts.authority_pc_vault;
     let dex_program = &ctx.accounts.dex_program;
-    let investment = &mut ctx.accounts.investment;
+    let dca = &mut ctx.accounts.dca;
     let market = &ctx.accounts.market;
     let coin_mint = &ctx.accounts.coin_mint;
     let pc_mint = &ctx.accounts.pc_mint;
@@ -104,11 +104,11 @@ pub fn handler<'info>(
     // Get remaining accounts
     let open_orders = &mut ctx.remaining_accounts.get(0).unwrap();
 
-    // get investment bump
-    let bump = *ctx.bumps.get("investment").unwrap();
+    // get dca bump
+    let bump = *ctx.bumps.get("dca").unwrap();
 
-    // initialize investment account
-    investment.new(
+    // initialize dca account
+    dca.new(
         authority.key(),
         market.key(),
         pc_mint.key(),
@@ -116,32 +116,32 @@ pub fn handler<'info>(
         swap_amount,
     )?;
 
-    // Approve the investment account to spend from the authority's token account.
+    // Approve the dca account to spend from the authority's token account.
     token::approve(
         CpiContext::new(
             token_program.to_account_info(),
             token::Approve {
                 to: authority_pc_vault.to_account_info(),
-                delegate: investment.to_account_info(),
+                delegate: dca.to_account_info(),
                 authority: authority.to_account_info(),
             },
         ),
         u64::MAX,
     )?;
 
-    // init open order account for investment account
+    // init open order account for dca account
     anchor_spl::dex::init_open_orders(CpiContext::new_with_signer(
         dex_program.to_account_info(),
         anchor_spl::dex::InitOpenOrders {
-            authority: investment.to_account_info(),
+            authority: dca.to_account_info(),
             market: market.to_account_info(),
             open_orders: open_orders.to_account_info(),
             rent: rent.to_account_info(),
         },
         &[&[
-            SEED_INVESTMENT,
-            investment.authority.as_ref(),
-            investment.market.as_ref(),
+            SEED_DCA,
+            dca.authority.as_ref(),
+            dca.market.as_ref(),
             &[bump],
         ]],
     ))?;

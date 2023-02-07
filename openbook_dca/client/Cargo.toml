@@ -1,10 +1,10 @@
 [package]
-name = "investments-client"
+name = "dca-client"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-investments-program = { path = "../programs/investments", features = ["no-entrypoint"], version = "0.1.0" }
+openbook-dca = { path = "../programs/openbook_dca", features = ["no-entrypoint"], version = "0.1.0" }
 clockwork-client = "1.4.0"
 anchor-spl = { version = "0.26.0", features = ["dex"] }
 anchor-lang = "0.26.0"

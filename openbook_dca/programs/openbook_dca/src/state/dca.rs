@@ -3,15 +3,15 @@ use {
     std::convert::TryFrom,
 };
 
-pub const SEED_INVESTMENT: &[u8] = b"investment";
+pub const SEED_DCA: &[u8] = b"dca";
 
 /**
- * Investment
+ * Dca
  */
 
 #[account]
 #[derive(Debug)]
-pub struct Investment {
+pub struct Dca {
     pub market: Pubkey,
     pub authority: Pubkey,
     pub pc_mint: Pubkey,
@@ -19,28 +19,24 @@ pub struct Investment {
     pub swap_amount: u64,
 }
 
-impl Investment {
+impl Dca {
     pub fn pubkey(authority: Pubkey, market: Pubkey) -> Pubkey {
-        Pubkey::find_program_address(
-            &[SEED_INVESTMENT, authority.as_ref(), market.as_ref()],
-            &crate::ID,
-        )
-        .0
+        Pubkey::find_program_address(&[SEED_DCA, authority.as_ref(), market.as_ref()], &crate::ID).0
     }
 }
 
-impl TryFrom<Vec<u8>> for Investment {
+impl TryFrom<Vec<u8>> for Dca {
     type Error = Error;
     fn try_from(data: Vec<u8>) -> std::result::Result<Self, Self::Error> {
-        Investment::try_deserialize(&mut data.as_slice())
+        Dca::try_deserialize(&mut data.as_slice())
     }
 }
 
 /**
- * InvestmentAccount
+ * DCAAccount
  */
 
-pub trait InvestmentAccount {
+pub trait DcaAccount {
     fn new(
         &mut self,
         authority: Pubkey,
@@ -51,7 +47,7 @@ pub trait InvestmentAccount {
     ) -> Result<()>;
 }
 
-impl InvestmentAccount for Account<'_, Investment> {
+impl DcaAccount for Account<'_, Dca> {
     fn new(
         &mut self,
         authority: Pubkey,

@@ -5,14 +5,14 @@ use {
 
 #[derive(Accounts)]
 #[instruction(swap_amount: u64)]
-pub struct InvestmentUpdate<'info> {
+pub struct DcaUpdate<'info> {
     #[account(
         mut,
-        seeds = [SEED_INVESTMENT, payer.key().as_ref(), market.key().as_ref()],
+        seeds = [SEED_DCA, payer.key().as_ref(), market.key().as_ref()],
         bump,
         has_one = market
     )]
-    pub investment: Account<'info, Investment>,
+    pub dca: Account<'info, Dca>,
 
     /// CHECK:
     pub market: AccountInfo<'info>,
@@ -24,10 +24,10 @@ pub struct InvestmentUpdate<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler<'info>(ctx: Context<InvestmentUpdate<'info>>, swap_amount: u64) -> Result<()> {
-    let investment = &mut ctx.accounts.investment;
+pub fn handler<'info>(ctx: Context<DcaUpdate<'info>>, swap_amount: u64) -> Result<()> {
+    let dca = &mut ctx.accounts.dca;
 
-    investment.swap_amount = swap_amount;
+    dca.swap_amount = swap_amount;
 
     Ok(())
 }

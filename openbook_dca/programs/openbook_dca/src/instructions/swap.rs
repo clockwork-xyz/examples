@@ -24,15 +24,15 @@ use {
 pub struct Swap<'info> {
     #[account(
         mut,
-        associated_token::mint = investment.coin_mint,
-        associated_token::authority = investment.authority
+        associated_token::mint = dca.coin_mint,
+        associated_token::authority = dca.authority
     )]
     pub authority_coin_vault: Box<Account<'info, TokenAccount>>,
 
     #[account(
         mut,
-        associated_token::mint = investment.pc_mint,
-        associated_token::authority = investment.authority
+        associated_token::mint = dca.pc_mint,
+        associated_token::authority = dca.authority
     )]
     pub authority_pc_vault: Box<Account<'info, TokenAccount>>,
 
@@ -41,34 +41,34 @@ pub struct Swap<'info> {
 
     #[account(
         seeds = [
-            SEED_INVESTMENT, 
-            investment.authority.key().as_ref(), 
-            investment.market.key().as_ref(), 
+            SEED_DCA, 
+            dca.authority.key().as_ref(), 
+            dca.market.key().as_ref(), 
         ], 
         bump,
     )]
-    pub investment: Box<Account<'info, Investment>>,
+    pub dca: Box<Account<'info, Dca>>,
     
     #[account(
         mut,
-        associated_token::authority = investment,
-        associated_token::mint = investment.coin_mint,
+        associated_token::authority = dca,
+        associated_token::mint = dca.coin_mint,
     )]
-    pub investment_coin_vault: Box<Account<'info, TokenAccount>>,
+    pub dca_coin_vault: Box<Account<'info, TokenAccount>>,
 
     #[account(
         mut,
-        associated_token::authority = investment,
-        associated_token::mint = investment.pc_mint,
+        associated_token::authority = dca,
+        associated_token::mint = dca.pc_mint,
     )]
-    pub investment_pc_vault: Box<Account<'info, TokenAccount>>,
+    pub dca_pc_vault: Box<Account<'info, TokenAccount>>,
 
     #[account(
         signer,
-        address = investment_thread.pubkey(),
-        constraint = investment_thread.authority == investment.authority
+        address = dca_thread.pubkey(),
+        constraint = dca_thread.authority == dca.authority
     )]
-    pub investment_thread: Box<Account<'info, Thread>>,
+    pub dca_thread: Box<Account<'info, Thread>>,
 
     #[account(address = sysvar::rent::ID)]
     pub rent: Sysvar<'info, Rent>,
@@ -85,9 +85,9 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<()
     let authority_coin_vault = &mut ctx.accounts.authority_coin_vault; 
     let authority_pc_vault = &mut ctx.accounts.authority_pc_vault; 
     let dex_program = &ctx.accounts.dex_program;
-    let investment = &ctx.accounts.investment;
-    let investment_coin_vault= &mut ctx.accounts.investment_coin_vault;
-    let investment_pc_vault= &mut ctx.accounts.investment_pc_vault;
+    let dca = &ctx.accounts.dca;
+    let dca_coin_vault= &mut ctx.accounts.dca_coin_vault;
+    let dca_pc_vault= &mut ctx.accounts.dca_pc_vault;
     let rent = &ctx.accounts.rent;
     let token_program = &ctx.accounts.token_program;
 
@@ -102,26 +102,26 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<()
     let vault_signer = &mut ctx.remaining_accounts.get(7).unwrap();
     let open_orders = &mut ctx.remaining_accounts.get(8).unwrap();
     
-    // get investment bump
-    let bump = *ctx.bumps.get("investment").unwrap();
+    // get dca bump
+    let bump = *ctx.bumps.get("dca").unwrap();
 
-    // transfer swap amount from authority to investment ata
+    // transfer swap amount from authority to dca ata
     transfer(
         CpiContext::new_with_signer(
             token_program.to_account_info(),
             Transfer {
                 from: authority_pc_vault.to_account_info(),
-                to: investment_pc_vault.to_account_info(),
-                authority: investment.to_account_info(),
+                to: dca_pc_vault.to_account_info(),
+                authority: dca.to_account_info(),
             },
             &[&[
-                SEED_INVESTMENT,
-                investment.authority.as_ref(),
-                investment.market.as_ref(),
+                SEED_DCA,
+                dca.authority.as_ref(),
+                dca.market.as_ref(),
                 &[bump],
             ]],
         ),
-        investment.swap_amount,
+        dca.swap_amount,
     )?;
 
     // place order on serum dex
@@ -137,22 +137,22 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<()
                 market_bids: market_bids.to_account_info(),
                 market_asks: market_asks.to_account_info(),
                 open_orders: open_orders.to_account_info(),
-                order_payer_token_account: investment_pc_vault.to_account_info(),
-                open_orders_authority: investment.to_account_info(),
+                order_payer_token_account: dca_pc_vault.to_account_info(),
+                open_orders_authority: dca.to_account_info(),
                 token_program: token_program.to_account_info(),
                 rent: rent.to_account_info(),
             },
             &[&[
-                SEED_INVESTMENT,
-                investment.authority.as_ref(),
-                investment.market.as_ref(),
+                SEED_DCA,
+                dca.authority.as_ref(),
+                dca.market.as_ref(),
                 &[bump],
             ]],
         ),
         Side::Bid,
         NonZeroU64::new(NonZeroU64::MAX_VALUE).unwrap(),
         NonZeroU64::new(NonZeroU64::MAX_VALUE).unwrap(),
-        NonZeroU64::new(investment.swap_amount).unwrap(),
+        NonZeroU64::new(dca.swap_amount).unwrap(),
         SelfTradeBehavior::DecrementTake,
         OrderType::Limit,
         0,
@@ -165,41 +165,41 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<()
             SettleFunds {
                 market: market.to_account_info(),
                 open_orders: open_orders.to_account_info(),
-                open_orders_authority: investment.to_account_info(),
+                open_orders_authority: dca.to_account_info(),
                 coin_vault: coin_vault.to_account_info(),
                 pc_vault: pc_vault.to_account_info(),
-                coin_wallet: investment_coin_vault.to_account_info(),
-                pc_wallet: investment_pc_vault.to_account_info(),
+                coin_wallet: dca_coin_vault.to_account_info(),
+                pc_wallet: dca_pc_vault.to_account_info(),
                 vault_signer: vault_signer.to_account_info(),
                 token_program: token_program.to_account_info(),
             }, 
         &[&[
-                SEED_INVESTMENT,
-                investment.authority.as_ref(),
-                investment.market.as_ref(),
+                SEED_DCA,
+                dca.authority.as_ref(),
+                dca.market.as_ref(),
                 &[bump],
             ]],
     ))?;
 
-    investment_coin_vault.reload()?;
+    dca_coin_vault.reload()?;
 
      // settle funds back to user
     transfer(
         CpiContext::new_with_signer(
             token_program.to_account_info(),
             Transfer {
-                from: investment_coin_vault.to_account_info(),
+                from: dca_coin_vault.to_account_info(),
                 to: authority_coin_vault.to_account_info(),
-                authority: investment.to_account_info(),
+                authority: dca.to_account_info(),
             },
             &[&[
-                SEED_INVESTMENT,
-                investment.authority.as_ref(),
-                investment.market.as_ref(),
+                SEED_DCA,
+                dca.authority.as_ref(),
+                dca.market.as_ref(),
                 &[bump],
             ]],
         ),
-        investment_coin_vault.amount,
+        dca_coin_vault.amount,
     )?;
 
 
