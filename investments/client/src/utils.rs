@@ -125,9 +125,7 @@ pub struct MarketKeys {
     pub asks: Pubkey,
     pub coin_mint: Pubkey,
     pub coin_vault: Pubkey,
-    pub coin_wallet: Pubkey,
     pub pc_mint: Pubkey,
     pub pc_vault: Pubkey,
-    pub pc_wallet: Pubkey,
     pub vault_signer: Pubkey,
 }

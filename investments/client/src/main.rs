@@ -1,18 +1,22 @@
-use solana_sdk::system_instruction::transfer;
-
 mod utils;
 
 use {
     anchor_lang::{prelude::*, solana_program::sysvar, system_program, InstructionData},
-    anchor_spl::{associated_token, token},
+    anchor_spl::{
+        associated_token::{self, get_associated_token_address},
+        token,
+    },
     clockwork_client::{
         thread::{
             state::Thread,
-            {instruction::thread_create, state::Trigger},
+            {
+                instruction::{thread_create, thread_delete},
+                state::Trigger,
+            },
         },
         Client, ClientResult,
     },
-    solana_sdk::instruction::Instruction,
+    solana_sdk::{instruction::Instruction, system_instruction::transfer},
     std::str::FromStr,
     utils::*,
 };
@@ -28,11 +32,9 @@ fn main() -> ClientResult<()> {
     //     asks: Pubkey::from_str("EaXdHx7x3mdGA38j5RSmKYSXMzAFzzUXCLNBEDXDn1d5").unwrap(),
     //     coin_mint: Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap(), // Base/Coin/A/SOL
     //     coin_vault: Pubkey::from_str("CKxTHwM9fPMRRvZmFnFoqKNd9pQR21c5Aq9bh5h9oghX").unwrap(),
-    //     coin_wallet: Pubkey::from_str("9d7WcMvuk9pU5EnNbUDJzuNdsQjaiJo5G7rLFtAozp17").unwrap(),
     //     pc_mint: Pubkey::from_str("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v").unwrap(), // Quote/PC/B/USDC
     //     pc_vault: Pubkey::from_str("6A5NHCj1yF6urc9wZNe6Bcjj4LVszQNj5DwAWG97yzMu").unwrap(),
-    //     pc_wallet: Pubkey::from_str("FZnhkDzQeNPZb4VADuucxymVARRRWKxNDh4FsNSSSwAP").unwrap(),
-    //     vault_signer: Pubkey::from_str("CTz5UMLQm2SRWHzQnU62Pi4yJqbNGjgRBHqqp6oDHfF7").unwrap(),
+    // vault_signer: Pubkey::from_str("CTz5UMLQm2SRWHzQnU62Pi4yJqbNGjgRBHqqp6oDHfF7").unwrap(),
     // };
 
     let bonk_usdc_market_keys = MarketKeys {
@@ -43,74 +45,62 @@ fn main() -> ClientResult<()> {
         asks: Pubkey::from_str("GHsWvxp6KJ3Yr8HH5L4pbHkC1YMGk8FzMknsYo1kzzZv").unwrap(),
         coin_mint: Pubkey::from_str("DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263").unwrap(), // Base/Coin/A/SOL
         coin_vault: Pubkey::from_str("A9yRKSx8SyqNdCtCMUgr6wDXUs1JmVFkVno6FcscSD6m").unwrap(),
-        coin_wallet: Pubkey::from_str("Fuv3U8c1nuhRWdmPcptBqHTq7Cshb8YKtVeiS5BR6YSJ").unwrap(),
         pc_mint: Pubkey::from_str("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v").unwrap(), // Quote/PC/B/USDC
         pc_vault: Pubkey::from_str("D9dojzvwJGs4q3Cx8ytvD8kWVVZszoVKvPZEZ5D8PV1Y").unwrap(),
-        pc_wallet: Pubkey::from_str("DtFi8ZBMoTSURfYfvyViWRMipXbnaLNhzbps5JiowtE8").unwrap(),
         vault_signer: Pubkey::from_str("3oQLKk1TyyXMT14p2i8p95v5jKqsQ5qzZGwxZCTnFC7p").unwrap(),
     };
 
-    let investment_pubkey = investments_program::state::Investment::pubkey(
-        client.payer_pubkey(),
-        bonk_usdc_market_keys.market,
-    );
-
     investment_create(
         &client,
-        investment_pubkey,
         &bonk_usdc_market_keys,
-        "BONK_USDC_INVESTMENT_TEST_1".into(),
-        "BONK_USDC_SETTLE_FUNDS_TEST_1".into(),
+        "BONK_USDC_INVESTMENT".into(),
     )?;
 
-    // investment_delete(&client, investment_pubkey)?;
+    // investment_delete(
+    //     &client,
+    //     &bonk_usdc_market_keys,
+    //     "BONK_USDC_INVESTMENT".into(),
+    // )?;
 
     Ok(())
 }
 
 fn investment_create(
     client: &Client,
-    investment_pubkey: Pubkey,
     market_keys: &MarketKeys,
     investment_thread_id: String,
-    settle_funds_thread_id: String,
 ) -> ClientResult<()> {
     let mut investment_open_orders_account_pubkey = None;
     init_dex_account(&client, &mut investment_open_orders_account_pubkey)?;
 
+    let investment_pubkey =
+        investments_program::state::Investment::pubkey(client.payer_pubkey(), market_keys.market);
+
     let investment_thread_pubkey =
         Thread::pubkey(client.payer_pubkey(), investment_thread_id.clone());
-    let settle_funds_thread_pubkey =
-        Thread::pubkey(client.payer_pubkey(), settle_funds_thread_id.clone());
 
-    let authority_coin_vault_pubkey = anchor_spl::associated_token::get_associated_token_address(
-        &client.payer_pubkey(),
-        &market_keys.coin_mint,
-    );
+    let authority_coin_vault_pubkey =
+        get_associated_token_address(&client.payer_pubkey(), &market_keys.coin_mint);
 
-    let investment_coin_vault_pubkey = anchor_spl::associated_token::get_associated_token_address(
-        &investment_pubkey,
-        &market_keys.coin_mint,
-    );
+    let investment_coin_vault_pubkey =
+        get_associated_token_address(&investment_pubkey, &market_keys.coin_mint);
 
-    let authority_pc_vault_pubkey = anchor_spl::associated_token::get_associated_token_address(
-        &client.payer_pubkey(),
-        &market_keys.pc_mint,
-    );
+    let authority_pc_vault_pubkey =
+        get_associated_token_address(&client.payer_pubkey(), &market_keys.pc_mint);
 
-    let investment_pc_vault_pubkey = anchor_spl::associated_token::get_associated_token_address(
-        &investment_pubkey,
-        &market_keys.pc_mint,
-    );
+    let investment_pc_vault_pubkey =
+        get_associated_token_address(&investment_pubkey, &market_keys.pc_mint);
 
     let investment_create_ix = Instruction {
         program_id: investments_program::ID,
         accounts: vec![
             AccountMeta::new(client.payer_pubkey(), true),
+            AccountMeta::new(authority_coin_vault_pubkey, false),
             AccountMeta::new(authority_pc_vault_pubkey, false),
             AccountMeta::new_readonly(associated_token::ID, false),
             AccountMeta::new_readonly(openbook_dex_pk(), false),
             AccountMeta::new(investment_pubkey, false),
+            AccountMeta::new(investment_coin_vault_pubkey, false),
             AccountMeta::new(investment_pc_vault_pubkey, false),
             AccountMeta::new_readonly(market_keys.market, false),
             AccountMeta::new_readonly(market_keys.coin_mint, false),
@@ -122,35 +112,40 @@ fn investment_create(
             AccountMeta::new(investment_open_orders_account_pubkey.unwrap(), false),
         ],
         data: investments_program::instruction::InvestmentCreate {
-            swap_amount: 010_000,
+            swap_amount: 1000000,
         }
         .data(),
     };
 
-    // create thread with read events ix
-    let thread_create_deposit_ix = thread_create(
+    // create thread to transfer & swap
+    let thread_create_swap_ix = thread_create(
         client.payer_pubkey(),
         investment_thread_id,
         Instruction {
             program_id: investments_program::ID,
             accounts: vec![
+                AccountMeta::new(authority_coin_vault_pubkey, false),
                 AccountMeta::new(authority_pc_vault_pubkey, false),
+                AccountMeta::new_readonly(openbook_dex_pk(), false),
                 AccountMeta::new_readonly(investment_pubkey, false),
+                AccountMeta::new(investment_coin_vault_pubkey, false),
                 AccountMeta::new(investment_pc_vault_pubkey, false),
                 AccountMeta::new_readonly(investment_thread_pubkey, true),
-                AccountMeta::new_readonly(market_keys.market, false),
+                AccountMeta::new_readonly(sysvar::rent::ID, false),
                 AccountMeta::new_readonly(system_program::ID, false),
                 AccountMeta::new_readonly(token::ID, false),
                 // REMAINING ACCOUNTS
+                AccountMeta::new(market_keys.market, false),
                 AccountMeta::new(market_keys.event_q, false),
                 AccountMeta::new(market_keys.req_q, false),
                 AccountMeta::new(market_keys.bids, false),
                 AccountMeta::new(market_keys.asks, false),
                 AccountMeta::new(market_keys.coin_vault, false),
                 AccountMeta::new(market_keys.pc_vault, false),
+                AccountMeta::new(market_keys.vault_signer, false),
                 AccountMeta::new(investment_open_orders_account_pubkey.unwrap(), false),
             ],
-            data: investments_program::instruction::Deposit {}.data(),
+            data: investments_program::instruction::Swap {}.data(),
         }
         .into(),
         client.payer_pubkey(),
@@ -161,64 +156,31 @@ fn investment_create(
         },
     );
 
-    // create thread with read events ix
-    let thread_create_settle_funds_ix = thread_create(
-        client.payer_pubkey(),
-        settle_funds_thread_id,
-        Instruction {
-            program_id: investments_program::ID,
-            accounts: vec![
-                AccountMeta::new_readonly(openbook_dex_pk(), false),
-                AccountMeta::new_readonly(investment_pubkey, false),
-                AccountMeta::new_readonly(investment_thread_pubkey, true),
-                AccountMeta::new(market_keys.market, false),
-                AccountMeta::new_readonly(system_program::ID, false),
-                AccountMeta::new_readonly(token::ID, false),
-                // REMAINING ACCOUNTS
-                AccountMeta::new(investment_open_orders_account_pubkey.unwrap(), false),
-                AccountMeta::new(market_keys.coin_vault, false),
-                AccountMeta::new(market_keys.coin_wallet, false),
-                AccountMeta::new(market_keys.pc_vault, false),
-                AccountMeta::new(market_keys.pc_wallet, false),
-                AccountMeta::new(market_keys.vault_signer, false),
-            ],
-            data: investments_program::instruction::SettleFunds {}.data(),
-        }
-        .into(),
-        client.payer_pubkey(),
-        settle_funds_thread_pubkey,
-        Trigger::Account {
-            address: investment_open_orders_account_pubkey.unwrap(),
-            offset: 8 + 8 + 32 + 32 + 8,
-            size: 8,
-        },
-    );
-
-    let fund_deposit_thread_ix =
+    let fund_swap_thread_ix =
         transfer(&client.payer_pubkey(), &investment_thread_pubkey, 100000000);
-    let fund_settle_funds_thread_ix = transfer(
-        &client.payer_pubkey(),
-        &settle_funds_thread_pubkey,
-        100000000,
-    );
 
-    print_explorer_link(investment_pubkey, "investment account 📂".into())?;
-    print_explorer_link(
-        investment_open_orders_account_pubkey.unwrap(),
-        "investment open orders account 📂".into(),
-    )?;
-    print_explorer_link(investment_thread_pubkey, "investment thread 📂".into())?;
-    print_explorer_link(settle_funds_thread_pubkey, "settle funds thread 📂".into())?;
-    print_explorer_link(investment_pc_vault_pubkey, "investment PC vault 💰".into())?;
-    print_explorer_link(authority_pc_vault_pubkey, "authority PC vault 💰".into())?;
-    print_explorer_link(
-        investment_coin_vault_pubkey,
-        "investment Coin vault 💰".into(),
-    )?;
-    print_explorer_link(
-        authority_coin_vault_pubkey,
-        "authority Coin vault 💰".into(),
-    )?;
+    {
+        print_explorer_link(investment_pubkey, "investment account 📂".into())?;
+        print_explorer_link(
+            investment_open_orders_account_pubkey.unwrap(),
+            "investment OOs account 📂".into(),
+        )?;
+        print_explorer_link(
+            investment_open_orders_account_pubkey.unwrap(),
+            "investment open orders account 📂".into(),
+        )?;
+        print_explorer_link(investment_thread_pubkey, "investment thread 📂".into())?;
+        print_explorer_link(investment_pc_vault_pubkey, "investment PC vault 💰".into())?;
+        print_explorer_link(authority_pc_vault_pubkey, "authority PC vault 💰".into())?;
+        print_explorer_link(
+            investment_coin_vault_pubkey,
+            "investment Coin vault 💰".into(),
+        )?;
+        print_explorer_link(
+            authority_coin_vault_pubkey,
+            "authority Coin vault 💰".into(),
+        )?;
+    }
 
     sign_send_and_confirm_tx(
         &client,
@@ -233,29 +195,33 @@ fn investment_create(
     sign_send_and_confirm_tx(
         &client,
         [
-            thread_create_deposit_ix, // on schedule: deposit -> swap; deposit -> ...
-            fund_deposit_thread_ix,
+            thread_create_swap_ix, // on schedule: transfer & swap; transfer & swap; ...
+            fund_swap_thread_ix,
         ]
         .to_vec(),
         Some(vec![client.payer()]),
-        "deposit/swap thread create".to_string(),
-    )?;
-
-    sign_send_and_confirm_tx(
-        &client,
-        [
-            thread_create_settle_funds_ix, // on open order account state change: settle_funds -> claim; settle_funds -> ...
-            fund_settle_funds_thread_ix,
-        ]
-        .to_vec(),
-        Some(vec![client.payer()]),
-        "settle_funds/claim thread create".to_string(),
+        "swap thread create".to_string(),
     )?;
 
     Ok(())
 }
 
-pub fn investment_delete(client: &Client, investment_pubkey: Pubkey) -> ClientResult<()> {
+pub fn investment_delete(
+    client: &Client,
+    market_keys: &MarketKeys,
+    investment_thread_id: String,
+) -> ClientResult<()> {
+    let investment_pubkey =
+        investments_program::state::Investment::pubkey(client.payer_pubkey(), market_keys.market);
+    let investment_thread_pubkey =
+        Thread::pubkey(client.payer_pubkey(), investment_thread_id.clone());
+
+    let investments_thread_delete_ix = thread_delete(
+        client.payer_pubkey(),
+        client.payer_pubkey(),
+        investment_thread_pubkey,
+    );
+
     let investment_delete_ix = Instruction {
         program_id: investments_program::ID,
         accounts: vec![
@@ -268,7 +234,7 @@ pub fn investment_delete(client: &Client, investment_pubkey: Pubkey) -> ClientRe
 
     sign_send_and_confirm_tx(
         &client,
-        [investment_delete_ix].to_vec(),
+        [investment_delete_ix, investments_thread_delete_ix].to_vec(),
         None,
         "investment delete".to_string(),
     )?;
