@@ -7,6 +7,7 @@ use {
     },
     anchor_spl::{
         dex::{
+            new_order_v3, settle_funds, SettleFunds,
             serum_dex::{
                 instruction::SelfTradeBehavior,
                 matching::{OrderType, Side},
@@ -21,6 +22,13 @@ use {
 
 #[derive(Accounts)]
 pub struct Swap<'info> {
+    #[account(
+        mut,
+        associated_token::mint = investment.coin_mint,
+        associated_token::authority = investment.authority
+    )]
+    pub authority_coin_vault: Box<Account<'info, TokenAccount>>,
+
     #[account(
         mut,
         associated_token::mint = investment.pc_mint,
@@ -41,6 +49,13 @@ pub struct Swap<'info> {
     )]
     pub investment: Box<Account<'info, Investment>>,
     
+    #[account(
+        mut,
+        associated_token::authority = investment,
+        associated_token::mint = investment.coin_mint,
+    )]
+    pub investment_coin_vault: Box<Account<'info, TokenAccount>>,
+
     #[account(
         mut,
         associated_token::authority = investment,
@@ -67,9 +82,11 @@ pub struct Swap<'info> {
 
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<()> {
     // get accounts
+    let authority_coin_vault = &mut ctx.accounts.authority_coin_vault; 
     let authority_pc_vault = &mut ctx.accounts.authority_pc_vault; 
     let dex_program = &ctx.accounts.dex_program;
     let investment = &ctx.accounts.investment;
+    let investment_coin_vault= &mut ctx.accounts.investment_coin_vault;
     let investment_pc_vault= &mut ctx.accounts.investment_pc_vault;
     let rent = &ctx.accounts.rent;
     let token_program = &ctx.accounts.token_program;
@@ -82,7 +99,8 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<()
     let market_asks = &mut ctx.remaining_accounts.get(4).unwrap();
     let coin_vault = &mut ctx.remaining_accounts.get(5).unwrap();
     let pc_vault = &mut ctx.remaining_accounts.get(6).unwrap();
-    let open_orders = &mut ctx.remaining_accounts.get(7).unwrap();
+    let vault_signer = &mut ctx.remaining_accounts.get(7).unwrap();
+    let open_orders = &mut ctx.remaining_accounts.get(8).unwrap();
     
     // get investment bump
     let bump = *ctx.bumps.get("investment").unwrap();
@@ -107,7 +125,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<()
     )?;
 
     // place order on serum dex
-    anchor_spl::dex::new_order_v3(
+    new_order_v3(
         CpiContext::new_with_signer(
             dex_program.to_account_info(),
             NewOrderV3 {
@@ -137,9 +155,53 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<()
         NonZeroU64::new(investment.swap_amount).unwrap(),
         SelfTradeBehavior::DecrementTake,
         OrderType::Limit,
-        019269,
+        0,
         std::u16::MAX,
     )?;
+
+    settle_funds(
+        CpiContext::new_with_signer(
+            dex_program.to_account_info(), 
+            SettleFunds {
+                market: market.to_account_info(),
+                open_orders: open_orders.to_account_info(),
+                open_orders_authority: investment.to_account_info(),
+                coin_vault: coin_vault.to_account_info(),
+                pc_vault: pc_vault.to_account_info(),
+                coin_wallet: investment_coin_vault.to_account_info(),
+                pc_wallet: investment_pc_vault.to_account_info(),
+                vault_signer: vault_signer.to_account_info(),
+                token_program: token_program.to_account_info(),
+            }, 
+        &[&[
+                SEED_INVESTMENT,
+                investment.authority.as_ref(),
+                investment.market.as_ref(),
+                &[bump],
+            ]],
+    ))?;
+
+    investment_coin_vault.reload()?;
+
+     // settle funds back to user
+    transfer(
+        CpiContext::new_with_signer(
+            token_program.to_account_info(),
+            Transfer {
+                from: investment_coin_vault.to_account_info(),
+                to: authority_coin_vault.to_account_info(),
+                authority: investment.to_account_info(),
+            },
+            &[&[
+                SEED_INVESTMENT,
+                investment.authority.as_ref(),
+                investment.market.as_ref(),
+                &[bump],
+            ]],
+        ),
+        investment_coin_vault.amount,
+    )?;
+
 
     Ok(())
 }

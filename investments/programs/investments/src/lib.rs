@@ -45,11 +45,4 @@ pub mod investments_program {
     pub fn swap<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<()> {
         swap::handler(ctx)
     }
-
-    /*
-     * settle funds after order has been cranked
-     */
-    pub fn settle_funds<'info>(ctx: Context<'_, '_, '_, 'info, SettleFunds<'info>>) -> Result<()> {
-        settle_funds::handler(ctx)
-    }
 }
