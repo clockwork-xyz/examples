@@ -155,7 +155,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<()
         NonZeroU64::new(dca.swap_amount).unwrap(),
         SelfTradeBehavior::DecrementTake,
         OrderType::Limit,
-        0,
+        u64::try_from_slice(&dca.key().to_bytes()[0..8]).unwrap(),
         std::u16::MAX,
     )?;
 
