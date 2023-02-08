@@ -1,7 +1,11 @@
 use {
     anchor_lang::prelude::*,
     clockwork_client::{Client, ClientResult},
-    solana_sdk::{instruction::Instruction, signature::Keypair, transaction::Transaction},
+    solana_sdk::{
+        instruction::Instruction,
+        signature::{read_keypair_file, Keypair},
+        transaction::Transaction,
+    },
 };
 
 pub fn openbook_dex_pk() -> Pubkey {
@@ -34,13 +38,32 @@ pub fn sign_send_and_confirm_tx(
 
     // Send and confirm initialize tx
     match client.send_and_confirm_transaction(&tx) {
-        Ok(sig) => println!(
-            "{} tx: ✅ https://explorer.solana.com/tx/{}?cluster=custom",
-            label, sig
-        ),
+        Ok(sig) => println!("{} tx: ✅ https://explorer.solana.com/tx/{}", label, sig),
         Err(err) => println!("{} tx: ❌ {:#?}", label, err),
     }
     Ok(())
+}
+
+pub fn print_explorer_link(address: Pubkey, label: String) -> ClientResult<()> {
+    println!(
+        "{}: https://explorer.solana.com/address/{}",
+        label.to_string(),
+        address,
+    );
+
+    Ok(())
+}
+
+pub fn default_client() -> Client {
+    #[cfg(not(feature = "localnet"))]
+    let host = "https://api.mainnet-beta.solana.com";
+    #[cfg(feature = "localnet")]
+    let host = "http://localhost:8899";
+
+    let config_file = solana_cli_config::CONFIG_FILE.as_ref().unwrap().as_str();
+    let config = solana_cli_config::Config::load(config_file).unwrap();
+    let payer = read_keypair_file(&config.keypair_path).unwrap();
+    Client::new(payer, host.into())
 }
 
 #[derive(Debug)]

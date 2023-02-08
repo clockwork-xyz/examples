@@ -15,20 +15,8 @@ pub mod openbook_crank {
     /*
      * initialize crank account
      */
-    pub fn initialize<'info>(
-        ctx: Context<'_, '_, '_, 'info, Initialize<'info>>,
-        id: String,
-    ) -> Result<()> {
-        initialize::handler(ctx, id)
-    }
-
-    /*
-     * read events from event queue
-     */
-    pub fn read_events<'info>(
-        ctx: Context<'_, '_, '_, 'info, ReadEvents<'info>>,
-    ) -> Result<clockwork_sdk::state::ThreadResponse> {
-        read_events::handler(ctx)
+    pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Result<()> {
+        initialize::handler(ctx)
     }
 
     /*
@@ -38,5 +26,12 @@ pub mod openbook_crank {
         ctx: Context<'_, '_, '_, 'info, ConsumeEvents<'info>>,
     ) -> Result<clockwork_sdk::state::ThreadResponse> {
         consume_events::handler(ctx)
+    }
+
+    /*
+     * delete crank account
+     */
+    pub fn delete<'info>(ctx: Context<'_, '_, '_, 'info, Delete<'info>>) -> Result<()> {
+        delete::handler(ctx)
     }
 }
