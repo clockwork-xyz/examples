@@ -124,7 +124,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Swap<'info>>) -> Result<()
         dca.swap_amount,
     )?;
 
-    // place order on serum dex
+    // place order on openbook dex
     new_order_v3(
         CpiContext::new_with_signer(
             dex_program.to_account_info(),
