@@ -138,7 +138,7 @@ fn create_payment(
     let thread_create = thread_create(
         client.payer_pubkey(),
         "payment".into(),
-        vec![distribute_payment_ix.into()],
+        distribute_payment_ix.into(),
         client.payer_pubkey(),
         thread,
         Trigger::Cron {

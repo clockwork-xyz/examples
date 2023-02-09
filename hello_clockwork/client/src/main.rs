@@ -45,7 +45,7 @@ fn main() -> ClientResult<()> {
     let thread_create = thread_create(
         thread_authority,
         thread_label.into(),
-        vec![hello_world_ix.into()],
+        hello_world_ix.into(),
         client.payer_pubkey(),
         hello_thread,
         Trigger::Cron {
