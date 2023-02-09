@@ -99,7 +99,7 @@ fn create_feed(
     let create_thread_ix = thread_create(
         client.payer_pubkey(),
         thread_id.into(),
-        vec![Instruction {
+        Instruction {
             program_id: pyth_stats::ID,
             accounts: vec![
                 AccountMeta::new(avg_buffer_pubkey, false),
@@ -111,7 +111,7 @@ fn create_feed(
             ],
             data: pyth_stats::instruction::Calc {}.data(),
         }
-        .into()],
+        .into(),
         client.payer_pubkey(),
         stat_thread_pubkey,
         Trigger::Cron {

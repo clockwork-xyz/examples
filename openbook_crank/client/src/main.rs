@@ -103,7 +103,7 @@ fn initialize_openbook_crank(
     let crank_thread_create = thread_create(
         client.payer_pubkey(),
         id,
-        vec![Instruction {
+        Instruction {
             program_id: openbook_crank::ID,
             accounts: vec![
                 AccountMeta::new_readonly(crank_pubkey, false),
@@ -117,7 +117,7 @@ fn initialize_openbook_crank(
             ],
             data: openbook_crank::instruction::ConsumeEvents.data(),
         }
-        .into()],
+        .into(),
         client.payer_pubkey(),
         crank_thread_pubkey,
         Trigger::Account {

@@ -83,7 +83,7 @@ fn main() -> ClientResult<()> {
     let thread_create = thread_create(
         thread_authority,
         "distributor".into(),
-        vec![distribute_ix.into()],
+        distribute_ix.into(),
         client.payer_pubkey(),
         distributor_thread,
         Trigger::Cron {
