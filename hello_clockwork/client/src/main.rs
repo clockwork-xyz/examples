@@ -50,7 +50,7 @@ fn main() -> ClientResult<()> {
         hello_thread,
         Trigger::Cron {
             schedule: "*/10 * * * * * *".into(),
-            skippable: true,
+            skippale: true,
         },
     );
 
