@@ -71,19 +71,20 @@ fn dca_create(
 
     let dca_create_ix = Instruction {
         program_id: orca_dca::ID,
-        accounts: vec![
-            AccountMeta::new_readonly(associated_token::ID, false),
-            AccountMeta::new(client.payer_pubkey(), true),
-            AccountMeta::new(authority_a_vault_pubkey, false),
-            AccountMeta::new_readonly(pool_params.token_ids.1, false),
-            AccountMeta::new(authority_b_vault_pubkey, false),
-            AccountMeta::new_readonly(pool_params.token_ids.0, false),
-            AccountMeta::new(dca_pubkey, false),
-            AccountMeta::new(dca_a_vault_pubkey, false),
-            AccountMeta::new(dca_b_vault_pubkey, false),
-            AccountMeta::new_readonly(system_program::ID, false),
-            AccountMeta::new_readonly(token::ID, false),
-        ],
+        accounts: orca_dca::accounts::DcaCreate {
+            associated_token_program: associated_token::ID,
+            authority: client.payer_pubkey(),
+            authority_a_vault: authority_a_vault_pubkey,
+            a_mint: pool_params.token_ids.1,
+            authority_b_vault: authority_b_vault_pubkey,
+            b_mint: pool_params.token_ids.0,
+            dca: dca_pubkey,
+            dca_a_vault: dca_a_vault_pubkey,
+            dca_b_vault: dca_b_vault_pubkey,
+            system_program: system_program::ID,
+            token_program: token::ID,
+        }
+        .to_account_metas(Some(true)),
         data: orca_dca::instruction::DcaCreate {
             amount_in: 10000,
             minimum_amount_out: 10000,
@@ -97,27 +98,33 @@ fn dca_create(
         dca_thread_id,
         Instruction {
             program_id: orca_dca::ID,
-            accounts: vec![
-                AccountMeta::new(authority_a_vault_pubkey, false),
-                AccountMeta::new(authority_b_vault_pubkey, false),
-                AccountMeta::new_readonly(dca_pubkey, false),
-                AccountMeta::new(dca_a_vault_pubkey, false),
-                AccountMeta::new(dca_b_vault_pubkey, false),
-                AccountMeta::new_readonly(dca_thread_pubkey, true),
-                AccountMeta::new_readonly(
-                    Pubkey::from_str("9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP").unwrap(),
-                    false,
-                ),
-                AccountMeta::new_readonly(system_program::ID, false),
-                AccountMeta::new_readonly(token::ID, false),
+            accounts: [
+                orca_dca::accounts::ProxySwap {
+                    authority_a_vault: authority_a_vault_pubkey,
+                    authority_b_vault: authority_b_vault_pubkey,
+                    dca: dca_pubkey,
+                    dca_a_vault: dca_a_vault_pubkey,
+                    dca_b_vault: dca_b_vault_pubkey,
+                    dca_thread: dca_thread_pubkey,
+                    orca_swap_program: Pubkey::from_str(
+                        "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
+                    )
+                    .unwrap(),
+                    system_program: system_program::ID,
+                    token_program: token::ID,
+                }
+                .to_account_metas(Some(true)),
                 // REMAINING ACCOUNTS
-                AccountMeta::new(pool_params.address, false),
-                AccountMeta::new(pool_params.authority, false),
-                AccountMeta::new(pool_params.pool_b_vault, false),
-                AccountMeta::new(pool_params.pool_a_vault, false),
-                AccountMeta::new(pool_params.pool_token_mint, false),
-                AccountMeta::new(pool_params.fee_account, false),
-            ],
+                vec![
+                    AccountMeta::new(pool_params.address, false),
+                    AccountMeta::new(pool_params.authority, false),
+                    AccountMeta::new(pool_params.pool_b_vault, false),
+                    AccountMeta::new(pool_params.pool_a_vault, false),
+                    AccountMeta::new(pool_params.pool_token_mint, false),
+                    AccountMeta::new(pool_params.fee_account, false),
+                ],
+            ]
+            .concat(),
             data: orca_dca::instruction::ProxySwap {}.data(),
         }
         .into(),
@@ -184,11 +191,12 @@ pub fn dca_delete(
 
     let dca_delete_ix = Instruction {
         program_id: orca_dca::ID,
-        accounts: vec![
-            AccountMeta::new_readonly(client.payer_pubkey(), true),
-            AccountMeta::new(client.payer_pubkey(), false),
-            AccountMeta::new(dca_pubkey, false),
-        ],
+        accounts: orca_dca::accounts::DcaDelete {
+            authority: client.payer_pubkey(),
+            close_to: client.payer_pubkey(),
+            dca: dca_pubkey,
+        }
+        .to_account_metas(Some(true)),
         data: orca_dca::instruction::DcaDelete {}.data(),
     };
 
