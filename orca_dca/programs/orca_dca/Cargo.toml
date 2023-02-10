@@ -1,0 +1,22 @@
+[package]
+name = "orca-dca"
+version = "0.1.0"
+description = "Created with Anchor"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "orca_dca"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+[dependencies]
+anchor-lang = { version = "0.26.0", features = ["init-if-needed"] }
+anchor-spl = "0.26.0"
+clockwork-sdk = "1.4.2"
+spl-token-swap = { version ="3.0.0", features = ["no-entrypoint"] }
