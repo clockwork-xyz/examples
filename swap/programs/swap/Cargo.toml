@@ -1,0 +1,26 @@
+[package]
+name = "swap"
+version = "0.1.0"
+description = "Created with Anchor"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "swap"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+[dependencies]
+anchor-lang = "0.26.0"
+# anchor-lang = { git = "https://github.com/eliascm17/anchor", version = "0.26.0" }
+# anchor-lang = { path = "../../../../../Eliascm17/anchor/lang" }
+# anchor-spl = { path = "../../../../../Eliascm17/anchor/spl" }
+anchor-spl = "0.26.0"
+# clockwork-sdk = { path = "/Users/eliasmoreno/work/clockwork-xyz/clockwork/sdk" }
+clockwork-sdk = "1.4.2"
+whirlpool = { path = "../../crates/whirlpool" }

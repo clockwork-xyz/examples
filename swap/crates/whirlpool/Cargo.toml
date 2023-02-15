@@ -1,0 +1,18 @@
+[package]
+name = "whirlpool"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = ["cpi"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+
+[dependencies]
+# anchor-lang = { path = "/Users/eliasmoreno/work/Eliascm17/anchor/lang" }
+anchor-lang = "0.26.0"
+# anchor-gen = { path = "/Users/eliasmoreno/work/Eliascm17/anchor-gen/crates/anchor-gen", features = ["compat-program-result"] }
+# bytemuck = "1.13.0"
+anchor-gen = { git = "https://github.com/eliascm17/anchor-gen", version = "^0.3.1", features = ["compat-program-result"] }
