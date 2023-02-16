@@ -9,14 +9,15 @@
   dependencies:
     regenerator-runtime "^0.13.11"
 
-"@clockwork-xyz/sdk@^0.0.6":
-  version "0.0.6"
-  resolved "https://registry.yarnpkg.com/@clockwork-xyz/sdk/-/sdk-0.0.6.tgz#5a25e32bbda05740dbfda21b93f0e7f390a322ae"
-  integrity sha512-sKzE6m3HmykaREfSeZ9u1aCBqT15/8+BsJr8cqfYVJBpBkN3VwsuNm9r16X3RNu8ApHLycHlFbGBuxnO1SkZZA==
+"@clockwork-xyz/sdk@^0.0.9":
+  version "0.0.9"
+  resolved "https://registry.yarnpkg.com/@clockwork-xyz/sdk/-/sdk-0.0.9.tgz#a6b670cf0c387ffa344f2cbe98bad0656c002a4d"
+  integrity sha512-PLz9ZiPcTuLze6oIzf9UBM/Xrm0ypulyofOtnuJnWEfMWInztAeKYWAdVxa/bUbggCHsAUNUPSCIsUdXAJPDhQ==
   dependencies:
     "@project-serum/anchor" "^0.25.0"
     "@solana/web3.js" "^1.50.1"
     date-fns "^2.29.2"
+    short-uuid "^4.2.2"
 
 "@coral-xyz/borsh@^0.26.0":
   version "0.26.0"
@@ -204,6 +205,11 @@ ansi-styles@^4.0.0, ansi-styles@^4.1.0:
   integrity sha512-zbB9rCJAT1rbjiVDb2hqKFHNYLxgtk8NURxZ3IZwD3F6NtxbXZQCnnSi1Lkx+IDohdPlFp222wVALIheZJQSEg==
   dependencies:
     color-convert "^2.0.1"
+
+any-base@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/any-base/-/any-base-1.1.0.tgz#ae101a62bc08a597b4c9ab5b7089d456630549fe"
+  integrity sha512-uMgjozySS8adZZYePpaWs8cxB9/kdzmpX6SgJZ+wbz1K5eYk5QMYDVJaZKhxyIHUdnnJkfR7SVgStgH7LkGUyg==
 
 anymatch@~3.1.2:
   version "3.1.3"
@@ -975,6 +981,14 @@ serialize-javascript@6.0.0:
   integrity sha512-Qr3TosvguFt8ePWqsvRfrKyQXIiW+nGbYpy8XK24NQHE83caxWt+mIymTT19DGFbNWNLfEwsrkSmN64lVWB9ag==
   dependencies:
     randombytes "^2.1.0"
+
+short-uuid@^4.2.2:
+  version "4.2.2"
+  resolved "https://registry.yarnpkg.com/short-uuid/-/short-uuid-4.2.2.tgz#4bb3d926da04a4a5f34420d17b5551fd6d9d535c"
+  integrity sha512-IE7hDSGV2U/VZoCsjctKX6l5t5ak2jE0+aeGJi3KtvjIUNuZVmHVYUjNBhmo369FIWGDtaieRaO8A83Lvwfpqw==
+  dependencies:
+    any-base "^1.1.0"
+    uuid "^8.3.2"
 
 snake-case@^3.0.4:
   version "3.0.4"

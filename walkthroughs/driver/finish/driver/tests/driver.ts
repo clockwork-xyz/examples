@@ -4,8 +4,7 @@ import * as anchor from "@project-serum/anchor";
 import {Program} from "@project-serum/anchor";
 import {Driver} from "../target/types/driver";
 // 👇 The new import
-import {CLOCKWORK_THREAD_PROGRAM_ID} from "@clockwork-xyz/sdk";
-import {getThreadAddress} from "@clockwork-xyz/sdk/lib/pdas";
+import {getThreadAddress, CLOCKWORK_THREAD_PROGRAM_ID} from "@clockwork-xyz/sdk";
 
 const provider = anchor.AnchorProvider.env();
 anchor.setProvider(provider);

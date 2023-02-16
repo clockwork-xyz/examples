@@ -5,8 +5,7 @@ import {Program} from "@project-serum/anchor";
 import {HelloClockwork} from "../target/types/hello_clockwork";
 
 // 👇 The new import
-import {getThreadProgram} from "@clockwork-xyz/sdk";
-import {getThreadAddress} from "@clockwork-xyz/sdk/lib/pdas";
+import { getThreadAddress, createThread } from "@clockwork-xyz/sdk";
 
 const provider = anchor.AnchorProvider.env();
 anchor.setProvider(provider);
@@ -40,28 +39,15 @@ describe("hello_clockwork", () => {
         const threadAddress = getThreadAddress(threadAuthority, threadLabel);
 
         // 3️⃣ Create Thread
-        const threadProgram = getThreadProgram(provider, "1.4.2");
-        const createThreadIx = threadProgram.methods
-            .threadCreate(
-                threadLabel,
-                {
-                    programId: targetIx.programId,
-                    accounts: [
-                        { pubkey: threadAddress, isSigner: false, isWritable: true }
-                    ],
-                    data: targetIx.data,
-                },
-                trigger,
-            )
-            .accounts({
-                authority: threadAuthority,
-                payer: payer,
-                thread: threadAddress,
-                systemProgram: SystemProgram.programId,
-            });
+        const createThreadIx = createThread({
+            instruction: targetIx,
+            trigger: trigger,
+            threadName: threadLabel,
+            threadAuthority: threadAuthority
+        }, provider);
 
         try {
-            const tx = await createThreadIx.rpc();
+            const tx = await createThreadIx;
             print_address("🤖 Program", program.programId.toString());
             print_thread_address("🧵 Thread", threadAddress);
             print_tx("✍️ Tx", tx);
