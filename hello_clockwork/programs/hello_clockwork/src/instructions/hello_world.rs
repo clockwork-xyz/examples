@@ -18,8 +18,5 @@ pub fn handler(_ctx: Context<HelloWorld>, name: String) -> Result<ThreadResponse
         Clock::get().unwrap().unix_timestamp
     );
 
-    Ok(ThreadResponse {
-        next_instruction: None,
-        kickoff_instruction: None,
-    })
+    Ok(ThreadResponse::default())
 }
