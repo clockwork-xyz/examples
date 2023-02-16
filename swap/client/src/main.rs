@@ -111,8 +111,8 @@ fn dca_create(
         whirlpool::state::Whirlpool::try_deserialize(&mut whirlpool_data).unwrap();
 
     let orca_whirlpool_swap_data = swap::instruction::OrcaWhirlpoolSwap {
-        amount: 10_000_000_000,
-        a_to_b: true,
+        amount: 100000,
+        a_to_b: false,
     };
 
     let tick_array = get_tick_array_pubkeys(

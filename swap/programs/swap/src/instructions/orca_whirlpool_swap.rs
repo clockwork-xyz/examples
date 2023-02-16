@@ -1,7 +1,9 @@
-use anchor_lang::solana_program::instruction::Instruction;
-
 use {
-    anchor_lang::{prelude::*, solana_program::system_program, InstructionData},
+    anchor_lang::{
+        prelude::*,
+        solana_program::{instruction::Instruction, system_program},
+        InstructionData,
+    },
     anchor_spl::token::{transfer, Mint, Token, TokenAccount, Transfer},
     clockwork_sdk::state::{Thread, ThreadAccount, ThreadResponse},
     whirlpool::utils::get_tick_array_pubkeys,
@@ -99,11 +101,12 @@ pub fn handler<'info>(
     let tick_array1 = ctx.remaining_accounts.get(1).unwrap();
     let tick_array2 = ctx.remaining_accounts.get(2).unwrap();
 
+    // deserialize whirlpool state
     let whirlpool_data = whirlpool.try_borrow_data().unwrap().to_owned();
     let whirlpool_state =
         whirlpool::state::Whirlpool::try_deserialize(&mut whirlpool_data.as_slice()).unwrap();
 
-    // get tick array pubkeys
+    // get tick array pubkeys for next swap
     let tick_array_pubkeys = get_tick_array_pubkeys(
         whirlpool_state.tick_current_index,
         whirlpool_state.tick_spacing,
@@ -133,6 +136,7 @@ pub fn handler<'info>(
         amount,
     )?;
 
+    // perform orca whirlpool swap
     whirlpool::cpi::swap(
         CpiContext::new(
             orca_whirlpool_program.to_account_info(),
@@ -185,6 +189,7 @@ pub fn handler<'info>(
         swap_thread_b_vault.amount,
     )?;
 
+    // return swap as the kickoff_instruction because this program is stateless
     Ok(ThreadResponse {
         kickoff_instruction: Some(
             Instruction {
@@ -210,110 +215,14 @@ pub fn handler<'info>(
                     // REMAINING ACCOUNTS
                     tick_array_pubkeys
                         .iter()
-                        .map(|pk| AccountMeta::new_readonly(*pk, false))
+                        .map(|pk| AccountMeta::new(*pk, false))
                         .collect::<Vec<AccountMeta>>(),
                 ]
                 .concat(),
-                data: crate::instruction::OrcaWhirlpoolSwap {
-                    amount: 10_000_000_000,
-                    a_to_b: true,
-                }
-                .data(),
+                data: crate::instruction::OrcaWhirlpoolSwap { amount, a_to_b }.data(),
             }
             .into(),
         ),
         next_instruction: None,
     })
 }
-
-// #[inline(always)]
-// fn to_account_metas_datas(
-//     context: &Context<OrcaWhirlpoolSwap>,
-// ) -> Vec<clockwork_sdk::state::AccountMetaData> {
-//     let mut account_metas = Vec::with_capacity(14);
-//     account_metas.push(AccountMetaData::new_readonly(
-//         context.accounts.a_mint.key(),
-//         false,
-//     ));
-//     account_metas.push(AccountMetaData::new_readonly(
-//         context.accounts.b_mint.key(),
-//         false,
-//     ));
-//     account_metas.push(AccountMetaData::new(
-//         context.accounts.authority_a_vault.key(),
-//         false,
-//     ));
-//     account_metas.push(AccountMetaData::new(
-//         context.accounts.authority_b_vault.key(),
-//         false,
-//     ));
-//     account_metas.push(AccountMetaData::new(
-//         context.accounts.swap_thread_a_vault.key(),
-//         false,
-//     ));
-//     account_metas.push(AccountMetaData::new(
-//         context.accounts.swap_thread_b_vault.key(),
-//         false,
-//     ));
-//     account_metas.push(AccountMetaData::new_readonly(
-//         context.accounts.swap_thread.key(),
-//         true,
-//     ));
-//     account_metas.push(AccountMetaData::new_readonly(
-//         context.accounts.oracle.key(),
-//         false,
-//     ));
-//     account_metas.push(AccountMetaData::new_readonly(
-//         context.accounts.orca_whirlpool_program.key(),
-//         false,
-//     ));
-//     account_metas.push(AccountMetaData::new_readonly(
-//         context.accounts.system_program.key(),
-//         false,
-//     ));
-//     account_metas.push(AccountMetaData::new_readonly(
-//         context.accounts.token_program.key(),
-//         false,
-//     ));
-//     account_metas.push(AccountMetaData::new(whirlpool::ID, false));
-//     account_metas.push(AccountMetaData::new(
-//         context.accounts.whirlpool_token_a_vault.key(),
-//         false,
-//     ));
-//     account_metas.push(AccountMetaData::new(
-//         context.accounts.whirlpool_token_b_vault.key(),
-//         false,
-//     ));
-//     account_metas
-// }
-
-// The sighash of a named instruction in an Anchor program.
-// fn anchor_sighash(name: &str, mut data: Vec<u8>) -> Vec<u8> {
-//     let preimage = format!("{}:{}", "global", name);
-//     let mut sighash = [0u8; 8];
-//     sighash.copy_from_slice(
-//         &anchor_lang::solana_program::hash::hash(preimage.as_bytes()).to_bytes()[..8],
-//     );
-//     let mut d = sighash.to_vec();
-//     d.append(&mut data);
-//     d
-// }
-
-// crate::accounts::OrcaWhirlpoolSwap {
-//     a_mint: ctx.accounts.a_mint.key(),
-//     b_mint: ctx.accounts.b_mint.key(),
-//     authority_a_vault: ctx.accounts.authority_a_vault.key(),
-//     authority_b_vault: ctx.accounts.authority_b_vault.key(),
-//     swap_thread: ctx.accounts.swap_thread.key(),
-//     swap_thread_a_vault: ctx.accounts.swap_thread_a_vault.key(),
-//     swap_thread_b_vault: ctx.accounts.swap_thread_b_vault.key(),
-//     oracle: ctx.accounts.oracle.key(),
-//     system_program: ctx.accounts.system_program.key(),
-//     token_program: ctx.accounts.token_program.key(),
-//     whirlpool: ctx.accounts.whirlpool.key(),
-//     orca_whirlpool_program: whirlpool::ID,
-//     whirlpool_token_a_vault: whirlpool_state.token_vault_a,
-//     whirlpool_token_b_vault: whirlpool_state.token_vault_b,
-// }
-// .to_account_metas(Some(true)),
-// REMAINING ACCOUNTS

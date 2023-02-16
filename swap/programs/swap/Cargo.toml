@@ -17,10 +17,6 @@ default = []
 
 [dependencies]
 anchor-lang = "0.26.0"
-# anchor-lang = { git = "https://github.com/eliascm17/anchor", version = "0.26.0" }
-# anchor-lang = { path = "../../../../../Eliascm17/anchor/lang" }
-# anchor-spl = { path = "../../../../../Eliascm17/anchor/spl" }
 anchor-spl = "0.26.0"
-# clockwork-sdk = { path = "/Users/eliasmoreno/work/clockwork-xyz/clockwork/sdk" }
 clockwork-sdk = "1.4.2"
 whirlpool = { path = "../../crates/whirlpool" }
