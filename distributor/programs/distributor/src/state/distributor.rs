@@ -5,7 +5,6 @@ pub const SEED_DISTRIBUTOR: &[u8] = b"distributor";
 /**
  * Distributor
  */
-
 #[account]
 #[derive(Debug)]
 pub struct Distributor {
@@ -22,7 +21,7 @@ impl Distributor {
             &[SEED_DISTRIBUTOR, mint.as_ref(), authority.as_ref()],
             &crate::ID,
         )
-        .0
+            .0
     }
 }
 

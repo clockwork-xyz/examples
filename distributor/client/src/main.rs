@@ -33,9 +33,6 @@ fn main() -> ClientResult<()> {
     let bob = Keypair::new().pubkey();
     let charlie = Keypair::new().pubkey();
 
-    // airdrop to alice
-    client.airdrop(&client.payer_pubkey(), 2 * LAMPORTS_PER_SOL)?;
-
     // initialize mint
     let mint = client
         .create_token_mint(&client.payer_pubkey(), 9)
@@ -44,9 +41,10 @@ fn main() -> ClientResult<()> {
 
     // derive distributor program PDAs
     let distributor = distributor::state::Distributor::pubkey(mint, client.payer_pubkey());
+    let thread_name = "distributor_rust_feb28-0240".to_string();
     let distributor_thread = Thread::pubkey(
         thread_authority,
-        "distributor".into(),
+        thread_name.clone(),
     );
 
     // get ATAs
@@ -61,7 +59,7 @@ fn main() -> ClientResult<()> {
     create_distributor(&client, distributor, mint, bob, bobs_token_account)?;
 
     // airdrop distributor thread
-    client.airdrop(&distributor_thread, 2 * LAMPORTS_PER_SOL)?;
+    client.airdrop(&distributor_thread, LAMPORTS_PER_SOL)?;
 
     let distribute_ix = Instruction {
         program_id: distributor::ID,
@@ -82,7 +80,7 @@ fn main() -> ClientResult<()> {
 
     let thread_create = thread_create(
         thread_authority,
-        "distributor".into(),
+        thread_name.clone(),
         distribute_ix.into(),
         client.payer_pubkey(),
         distributor_thread,
@@ -166,10 +164,7 @@ fn update_distributor(
         data: distributor::instruction::Update {
             new_recipient: Some(charlie),
             mint_amount: Some(200_000_000),
-            trigger: Some(Trigger::Cron {
-                schedule: "*/15 * * * * * *".into(),
-                skippable: true,
-            }),
+            schedule: Some("*/15 * * * * * *".to_string()),
         }
         .data(),
     };
@@ -181,7 +176,7 @@ fn update_distributor(
 
 pub fn print_explorer_link(address: Pubkey, label: String) -> ClientResult<()> {
     println!(
-        "{}: https://explorer.solana.com/address/{}?cluster=custom",
+        "{}: https://explorer.solana.com/address/{}?cluster=devnet",
         label.to_string(),
         address
     );

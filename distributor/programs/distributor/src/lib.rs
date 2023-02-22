@@ -38,8 +38,8 @@ pub mod distributor {
         ctx: Context<'_, '_, '_, 'info, Update<'info>>,
         new_recipient: Option<Pubkey>,
         mint_amount: Option<u64>,
-        trigger: Option<clockwork_sdk::state::Trigger>,
+        schedule: Option<String>,
     ) -> Result<()> {
-        update::handler(ctx, new_recipient, mint_amount, trigger)
+        update::handler(ctx, new_recipient, mint_amount, schedule)
     }
 }

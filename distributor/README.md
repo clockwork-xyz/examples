@@ -10,9 +10,9 @@ We start by defining an instruction to execute, that is the __"WHAT"__:
 **2. Client Side - Creating a Thread**
 
 Time to switch perspective, we need to do some work off-chain now, we will create a Thread, that's the __"HOW"__:
-- Navigate to the `client` directory. _We have prepared a Rust client, but you
-  can very well use any Solana client you prefer (JS, Python, etc)._
-- Run `cargo run`.
+- Check the `tests` folder, we are using anchor tests as a client.
+- Run `anchor tests`, this will create a __Thread__ that continuously distributes tokens according to the
+  distributor account.
 
 ## How do I know if it works?
 Let's see how we can observe our newly created Thread:
@@ -51,10 +51,10 @@ We start by defining an instruction to execute, that is the __"WHAT"__:
 **2. Client Side - Creating a Thread**
 
 Time to switch perspective, we need to do some work off-chain now, we will create a Thread, that's the __"HOW"__:
-- Navigate to the `client` directory. _We have prepared a Rust client, but you
-  can very well use any Solana client you prefer (JS, Python, etc)._
-- Run `cargo run --features localnet`, this will create a __Thread__ that continuously calls your program handler, and so continously
-  prints "Hello World".
+- Check the `tests` folder, we are using anchor tests as a client.
+- Run `anchor tests`, this will create a __Thread__ that continuously distributes tokens according to the 
+  distributor account.
+
 
 ## Common Errors
 Please refer to the [FAQ](https://github.com/clockwork-xyz/docs/blob/main/FAQ.md#common-errors).

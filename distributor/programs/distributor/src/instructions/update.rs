@@ -14,36 +14,38 @@ use {
         },
         state::{
             ThreadAccount, Thread,
-            Trigger, ThreadSettings
+            Trigger, ThreadSettings,
         },
         ThreadProgram,
         utils::PAYER_PUBKEY,
-    }
+    },
 };
 
 #[derive(Accounts)]
-#[instruction(new_recipient: Option<Pubkey>, mint_amount: Option<u64>, trigger: Option<Trigger>)]
+#[instruction(new_recipient: Option <Pubkey>, mint_amount: Option < u64 >, trigger: Option < String >)]
 pub struct Update<'info> {
-    #[account(mut)]
+    #[account(
+    mut,
+    address = distributor_thread.authority
+    )]
     pub authority: Signer<'info>,
 
     #[account(address = thread_program_ID)]
     pub clockwork_program: Program<'info, ThreadProgram>,
 
     #[account(
-        mut,
-        seeds = [SEED_DISTRIBUTOR, distributor.mint.as_ref(), distributor.authority.as_ref()],
-        bump,
-        has_one = mint,
-        has_one = authority,
+    mut,
+    seeds = [SEED_DISTRIBUTOR, distributor.mint.as_ref(), distributor.authority.as_ref()],
+    bump,
+    has_one = mint,
+    has_one = authority,
     )]
     pub distributor: Account<'info, Distributor>,
 
     #[account(
-        mut, 
-        address = distributor_thread.pubkey(),
-        constraint = distributor_thread.id.eq("distributor")
-     )]
+    mut,
+    address = distributor_thread.pubkey(),
+    )]
     pub distributor_thread: Account<'info, Thread>,
     
     pub mint: Account<'info, Mint>,
@@ -53,12 +55,12 @@ pub struct Update<'info> {
 }
 
 pub fn handler<'info>(
-    ctx: Context<'_, '_, '_, 'info, Update<'info>>, 
-    new_recipient: Option<Pubkey>, 
-    mint_amount: Option<u64>, 
-    trigger: Option<Trigger>
+    ctx: Context<'_, '_, '_, 'info, Update<'info>>,
+    new_recipient: Option<Pubkey>,
+    mint_amount: Option<u64>,
+    schedule: Option<String>,
 ) -> Result<()> {
-     // get accounts
+    // get accounts
     let clockwork_program = &ctx.accounts.clockwork_program;
     let authority = &ctx.accounts.authority;
     let distributor = &mut ctx.accounts.distributor;
@@ -78,7 +80,6 @@ pub fn handler<'info>(
     if let Some(new_recipient) = new_recipient {
         distributor.recipient = new_recipient;
         distributor.recipient_token_account = get_associated_token_address(&new_recipient, &distributor.mint);
-
     }
 
     // new ix data
@@ -95,28 +96,35 @@ pub fn handler<'info>(
             AccountMeta::new_readonly(sysvar::rent::ID, false),
             AccountMeta::new_readonly(system_program::ID, false),
             AccountMeta::new_readonly(token::ID, false),
-
         ],
-        data: clockwork_sdk::utils::anchor_sighash("distribute").to_vec()
+        data: clockwork_sdk::utils::anchor_sighash("distribute").to_vec(),
     };
+
+    let mut trigger: Option<Trigger> = None;
+    if let Some(schedule) = schedule {
+        trigger = Some(Trigger::Cron {
+            schedule,
+            skippable: true,
+        });
+    }
 
     // update distributor thread
     clockwork_sdk::cpi::thread_update(
-    CpiContext::new_with_signer(
-    clockwork_program.to_account_info(),
-        ThreadUpdate {
-                    authority: authority.to_account_info(), 
-                    thread: distributor_thread.to_account_info(), 
-                    system_program: system_program.to_account_info()
-                },             
-        &[&[SEED_DISTRIBUTOR, distributor.mint.as_ref(), distributor.authority.as_ref(), &[bump]]],
+        CpiContext::new_with_signer(
+            clockwork_program.to_account_info(),
+            ThreadUpdate {
+                authority: authority.to_account_info(),
+                thread: distributor_thread.to_account_info(),
+                system_program: system_program.to_account_info(),
+            },
+            &[&[SEED_DISTRIBUTOR, distributor.mint.as_ref(), distributor.authority.as_ref(), &[bump]]],
         ),
-    ThreadSettings {
-                kickoff_instruction: Some(mint_token_ix.into()), 
-                fee: None, 
-                rate_limit: None, 
-                trigger
-            }
+        ThreadSettings {
+            kickoff_instruction: Some(mint_token_ix.into()),
+            fee: None,
+            rate_limit: None,
+            trigger,
+        },
     )?;
 
 
