@@ -47,10 +47,10 @@ describe("hello_clockwork", () => {
         }, provider);
 
         try {
-            const tx = await createThreadIx;
+            const r = await createThreadIx;
             print_address("🤖 Program", program.programId.toString());
             print_thread_address("🧵 Thread", threadAddress);
-            print_tx("✍️ Tx", tx);
+            print_tx("✍️ Tx", r.transaction);
         } catch (e) {
             // ❌
             // 'Program log: Instruction: ThreadCreate',
