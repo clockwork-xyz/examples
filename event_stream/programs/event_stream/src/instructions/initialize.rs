@@ -13,6 +13,7 @@ use {
 };
 
 #[derive(Accounts)]
+#[instruction(thread_label: String)]
 pub struct Initialize<'info> {
     #[account(
         init,
@@ -41,11 +42,11 @@ pub struct Initialize<'info> {
     #[account(address = system_program::ID)]
     pub system_program: Program<'info, System>,
 
-    #[account(address = Thread::pubkey(authority.key(), "event".into()))]
+    #[account(mut, address = Thread::pubkey(authority.key(), thread_label))]
     pub event_thread: SystemAccount<'info>,
 }
 
-pub fn handler(ctx: Context<Initialize>) -> Result<()> {
+pub fn handler(ctx: Context<Initialize>, thread_label: String) -> Result<()> {
     // Get accounts
     let authority = &ctx.accounts.authority;
     let clockwork = &ctx.accounts.clockwork;
@@ -81,7 +82,7 @@ pub fn handler(ctx: Context<Initialize>) -> Result<()> {
             },
             &[&[SEED_AUTHORITY, &[bump]]],
         ),
-        "event".into(),
+        thread_label,
         process_event_ix.into(),
         Trigger::Account {
             address: event.key(),

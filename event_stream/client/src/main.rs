@@ -30,8 +30,9 @@ fn main() -> ClientResult<()> {
 }
 
 fn initialize(client: &Client) -> ClientResult<()> {
+    let thread_label = "event_22-2110".to_string();
     let authority = event_stream::state::Authority::pubkey();
-    let event_thread = Thread::pubkey(authority, "event".into());
+    let event_thread = Thread::pubkey(authority, thread_label.clone());
 
     // Airdrop to event thread
     client.airdrop(&event_thread, LAMPORTS_PER_SOL)?;
@@ -46,7 +47,7 @@ fn initialize(client: &Client) -> ClientResult<()> {
             AccountMeta::new_readonly(system_program::ID, false),
             AccountMeta::new(event_thread, false),
         ],
-        data: event_stream::instruction::Initialize {}.data(),
+        data: event_stream::instruction::Initialize {thread_label}.data(),
     };
 
     sign_send_and_confirm_tx(client, initialize_ix, "initialize".into())?;

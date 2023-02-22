@@ -12,8 +12,8 @@ pub use id::ID;
 pub mod event_stream {
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
-        initialize::handler(ctx)
+    pub fn initialize(ctx: Context<Initialize>, thread_label: String) -> Result<()> {
+        initialize::handler(ctx, thread_label)
     }
 
     pub fn ping(ctx: Context<Ping>) -> Result<()> {

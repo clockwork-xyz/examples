@@ -14,7 +14,6 @@ pub struct ProcessEvent<'info> {
 
     #[account(
         address = event_thread.key(),
-        constraint = event_thread.id.eq("event"),
         signer,
         has_one = authority
     )]

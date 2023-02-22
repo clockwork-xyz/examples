@@ -29,7 +29,7 @@ We start by defining an instruction to execute, that is the __"WHAT"__:
 
 Time to switch perspective, we need to do some work off-chain now, we will create a Thread, that's the __"HOW"__:
 - Check the `tests` folder, we are using anchor tests as a client.
-- Run `anchor tests`, this will create a __Thread__ that continuously calls your program handler, and so continously prints "Hello World".
+- Run `anchor tests`, this will create a __Thread__ that continuously calls your program handler, and so continuously prints "Hello World".
 
 ## How do I know if it works?
 Let's see how we can observe our newly created Thread:
@@ -74,7 +74,7 @@ We start by defining an instruction to execute, that is the __"WHAT"__:
 
 Time to switch perspective, we need to do some work off-chain now, we will create a Thread, that's the __"HOW"__:
 - Check the `tests` folder, we are using anchor tests as a client.
-- Run `anchor tests`, this will create a __Thread__ that continuously calls your program handler, and so continously prints "Hello World".
+- Run `anchor tests`, this will create a __Thread__ that continuously calls your program handler, and so continuously prints "Hello World".
 
 ## Common Errors
 Please refer to the [FAQ](https://github.com/clockwork-xyz/docs/blob/main/FAQ.md#common-errors).
