@@ -6,11 +6,14 @@ use {
     },
     anchor_spl::token::{transfer, Mint, Token, TokenAccount, Transfer},
     clockwork_sdk::state::{Thread, ThreadAccount, ThreadResponse},
-    whirlpool::utils::get_tick_array_pubkeys,
+    whirlpool::{state::Whirlpool, utils::sqrt_price_from_tick_index},
 };
 
 #[derive(Accounts)]
-#[instruction(amount: u64, a_to_b: bool)]
+#[instruction(
+    amount: u64,
+    a_to_b: bool,
+)]
 pub struct OrcaWhirlpoolSwap<'info> {
     /// CHECK:
     pub a_mint: Box<Account<'info, Mint>>,
@@ -67,7 +70,7 @@ pub struct OrcaWhirlpoolSwap<'info> {
 
     /// CHECK:
     #[account(mut)]
-    pub whirlpool: AccountInfo<'info>,
+    pub whirlpool: Account<'info, Whirlpool>,
 
     /// CHECK:
     #[account(mut)]
@@ -101,19 +104,11 @@ pub fn handler<'info>(
     let tick_array1 = ctx.remaining_accounts.get(1).unwrap();
     let tick_array2 = ctx.remaining_accounts.get(2).unwrap();
 
-    // deserialize whirlpool state
-    let whirlpool_data = whirlpool.try_borrow_data().unwrap().to_owned();
-    let whirlpool_state =
-        whirlpool::state::Whirlpool::try_deserialize(&mut whirlpool_data.as_slice()).unwrap();
-
-    // get tick array pubkeys for next swap
-    let tick_array_pubkeys = get_tick_array_pubkeys(
-        whirlpool_state.tick_current_index,
-        whirlpool_state.tick_spacing,
-        a_to_b,
-        &whirlpool::ID,
-        &whirlpool.key(),
-    );
+    let sqrt_price_limit = if a_to_b {
+        sqrt_price_from_tick_index(whirlpool.tick_current_index - whirlpool.tick_spacing as i32)
+    } else {
+        sqrt_price_from_tick_index(whirlpool.tick_current_index + whirlpool.tick_spacing as i32)
+    };
 
     // transfer swap amount from authority to swap_thread ata
     transfer(
@@ -156,8 +151,8 @@ pub fn handler<'info>(
         ),
         amount,
         0,
-        whirlpool_state.sqrt_price,
-        false,
+        sqrt_price_limit,
+        true,
         a_to_b,
     )?;
 
@@ -189,37 +184,28 @@ pub fn handler<'info>(
         swap_thread_b_vault.amount,
     )?;
 
-    // return swap as the kickoff_instruction because this program is stateless
     Ok(ThreadResponse {
         kickoff_instruction: Some(
             Instruction {
                 program_id: crate::ID,
-                accounts: [
-                    crate::accounts::OrcaWhirlpoolSwap {
-                        a_mint: ctx.accounts.a_mint.key(),
-                        b_mint: ctx.accounts.b_mint.key(),
-                        authority_a_vault: ctx.accounts.authority_a_vault.key(),
-                        authority_b_vault: ctx.accounts.authority_b_vault.key(),
-                        swap_thread: ctx.accounts.swap_thread.key(),
-                        swap_thread_a_vault: ctx.accounts.swap_thread_a_vault.key(),
-                        swap_thread_b_vault: ctx.accounts.swap_thread_b_vault.key(),
-                        oracle: ctx.accounts.oracle.key(),
-                        system_program: ctx.accounts.system_program.key(),
-                        token_program: ctx.accounts.token_program.key(),
-                        whirlpool: ctx.accounts.whirlpool.key(),
-                        orca_whirlpool_program: whirlpool::ID,
-                        whirlpool_token_a_vault: whirlpool_state.token_vault_a,
-                        whirlpool_token_b_vault: whirlpool_state.token_vault_b,
-                    }
-                    .to_account_metas(Some(true)),
-                    // REMAINING ACCOUNTS
-                    tick_array_pubkeys
-                        .iter()
-                        .map(|pk| AccountMeta::new(*pk, false))
-                        .collect::<Vec<AccountMeta>>(),
-                ]
-                .concat(),
-                data: crate::instruction::OrcaWhirlpoolSwap { amount, a_to_b }.data(),
+                accounts: crate::accounts::OrcaWhirlpoolPreSwap {
+                    a_mint: ctx.accounts.a_mint.key(),
+                    b_mint: ctx.accounts.b_mint.key(),
+                    authority_a_vault: ctx.accounts.authority_a_vault.key(),
+                    authority_b_vault: ctx.accounts.authority_b_vault.key(),
+                    swap_thread: ctx.accounts.swap_thread.key(),
+                    swap_thread_a_vault: ctx.accounts.swap_thread_a_vault.key(),
+                    swap_thread_b_vault: ctx.accounts.swap_thread_b_vault.key(),
+                    oracle: ctx.accounts.oracle.key(),
+                    system_program: ctx.accounts.system_program.key(),
+                    token_program: ctx.accounts.token_program.key(),
+                    whirlpool: whirlpool.key(),
+                    orca_whirlpool_program: whirlpool::ID,
+                    whirlpool_token_a_vault: whirlpool.token_vault_a,
+                    whirlpool_token_b_vault: whirlpool.token_vault_b,
+                }
+                .to_account_metas(Some(true)),
+                data: crate::instruction::OrcaWhirlpoolPreswap { amount, a_to_b }.data(),
             }
             .into(),
         ),
