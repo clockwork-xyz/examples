@@ -41,11 +41,7 @@ pub fn sign_send_and_confirm_tx(
 }
 
 pub fn default_client() -> Client {
-    #[cfg(not(feature = "localnet"))]
     let host = "https://api.mainnet-beta.solana.com";
-    #[cfg(feature = "localnet")]
-    let host = "http://localhost:8899";
-
     let config_file = solana_cli_config::CONFIG_FILE.as_ref().unwrap().as_str();
     let config = solana_cli_config::Config::load(config_file).unwrap();
     let payer = read_keypair_file(&config.keypair_path).unwrap();
@@ -66,6 +62,8 @@ pub fn print_explorer_link(address: Pubkey, label: String) -> ClientResult<()> {
 pub struct WhirlpoolParams {
     pub whirlpool: Pubkey,
     pub token_mint_a: Pubkey,
+    pub token_a_decimals: i8,
     pub token_mint_b: Pubkey,
+    pub token_b_decimals: i8,
     pub oracle: Pubkey,
 }

@@ -1,13 +1,8 @@
-use whirlpool::utils::get_tick_array_pubkeys;
-
 mod utils;
 
 use {
     anchor_lang::{prelude::*, system_program, InstructionData},
-    anchor_spl::{
-        associated_token::get_associated_token_address,
-        token::{self},
-    },
+    anchor_spl::{associated_token::get_associated_token_address, token},
     clockwork_client::{
         thread::{
             state::Thread,
@@ -22,6 +17,7 @@ use {
     spl_associated_token_account::instruction::create_associated_token_account,
     std::str::FromStr,
     utils::*,
+    whirlpool::{utils::get_tick_array_pubkeys, TickArray},
 };
 
 fn main() -> ClientResult<()> {
@@ -30,12 +26,20 @@ fn main() -> ClientResult<()> {
     let bonk_usdc_whirlpool = WhirlpoolParams {
         whirlpool: Pubkey::from_str("8QaXeHBrShJTdtN1rWCccBxpSVvKksQ2PCu5nufb2zbk").unwrap(),
         token_mint_a: Pubkey::from_str("DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263").unwrap(), // BONK
+        token_a_decimals: 5,
         token_mint_b: Pubkey::from_str("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v").unwrap(), // USDC
+        token_b_decimals: 6,
         oracle: Pubkey::from_str("4QqfXtmcMfHAQstgVuhDqY1UyHzyiBfwMrz7Jbgt8aQL").unwrap(),
     };
 
     #[cfg(not(feature = "delete"))]
-    dca_create(&client, &bonk_usdc_whirlpool, "BONK_USDC_WP_DCA".into())?;
+    dca_create(
+        &client,
+        &bonk_usdc_whirlpool,
+        "BONK_USDC_WP_DCA".into(),
+        1000000,
+        true,
+    )?;
 
     #[cfg(feature = "delete")]
     swap_delete(&client, "BONK_USDC_WP_DCA".into())?;
@@ -47,7 +51,11 @@ fn dca_create(
     client: &Client,
     whirlpool_params: &WhirlpoolParams,
     swap_thread_id: String,
+    amount: u64,
+    a_to_b: bool,
 ) -> ClientResult<()> {
+    let whirlpool_id = Pubkey::from_str("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc").unwrap();
+
     let swap_thread_pubkey = Thread::pubkey(client.payer_pubkey(), swap_thread_id.clone());
 
     // BONK vaults
@@ -110,18 +118,25 @@ fn dca_create(
     let whirlpool_state =
         whirlpool::state::Whirlpool::try_deserialize(&mut whirlpool_data).unwrap();
 
-    let orca_whirlpool_swap_data = swap::instruction::OrcaWhirlpoolSwap {
-        amount: 100000,
-        a_to_b: false,
-    };
-
-    let tick_array = get_tick_array_pubkeys(
+    let tick_array_pubkeys = get_tick_array_pubkeys(
         whirlpool_state.tick_current_index,
         whirlpool_state.tick_spacing,
-        orca_whirlpool_swap_data.a_to_b,
-        &whirlpool::ID,
+        a_to_b,
+        &whirlpool_id,
         &whirlpool_params.whirlpool,
     );
+
+    let mut tick_arrays: Vec<TickArray> = Vec::with_capacity(3);
+
+    for i in 0..3 {
+        match client.get_account_data(&tick_array_pubkeys[i]) {
+            Ok(data) => {
+                tick_arrays
+                    .push(whirlpool::TickArray::try_deserialize(&mut data.as_slice()).unwrap());
+            }
+            Err(_) => {}
+        }
+    }
 
     // create thread to transfer & swap
     let thread_create_swap_ix = thread_create(
@@ -129,33 +144,24 @@ fn dca_create(
         swap_thread_id,
         Instruction {
             program_id: swap::ID,
-            accounts: [
-                swap::accounts::OrcaWhirlpoolSwap {
-                    a_mint: whirlpool_state.token_mint_a,
-                    b_mint: whirlpool_state.token_mint_b,
-                    authority_a_vault: authority_a_vault_pubkey,
-                    authority_b_vault: authority_b_vault_pubkey,
-                    swap_thread: swap_thread_pubkey,
-                    swap_thread_a_vault: swap_thread_a_vault_pubkey,
-                    swap_thread_b_vault: swap_thread_b_vault_pubkey,
-                    oracle: whirlpool_params.oracle,
-                    system_program: system_program::ID,
-                    token_program: token::ID,
-                    whirlpool: whirlpool_params.whirlpool,
-                    orca_whirlpool_program: whirlpool::ID,
-                    whirlpool_token_a_vault: whirlpool_state.token_vault_a,
-                    whirlpool_token_b_vault: whirlpool_state.token_vault_b,
-                }
-                .to_account_metas(Some(true)),
-                // REMAINING ACCOUNTS
-                vec![
-                    AccountMeta::new(tick_array[0], false),
-                    AccountMeta::new(tick_array[1], false),
-                    AccountMeta::new(tick_array[2], false),
-                ],
-            ]
-            .concat(),
-            data: orca_whirlpool_swap_data.data(),
+            accounts: swap::accounts::OrcaWhirlpoolPreSwap {
+                a_mint: whirlpool_state.token_mint_a,
+                b_mint: whirlpool_state.token_mint_b,
+                authority_a_vault: authority_a_vault_pubkey,
+                authority_b_vault: authority_b_vault_pubkey,
+                swap_thread: swap_thread_pubkey,
+                swap_thread_a_vault: swap_thread_a_vault_pubkey,
+                swap_thread_b_vault: swap_thread_b_vault_pubkey,
+                oracle: whirlpool_params.oracle,
+                system_program: system_program::ID,
+                token_program: token::ID,
+                whirlpool: whirlpool_params.whirlpool,
+                orca_whirlpool_program: whirlpool_id,
+                whirlpool_token_a_vault: whirlpool_state.token_vault_a,
+                whirlpool_token_b_vault: whirlpool_state.token_vault_b,
+            }
+            .to_account_metas(Some(true)),
+            data: swap::instruction::OrcaWhirlpoolPreswap { amount, a_to_b }.data(),
         }
         .into(),
         client.payer_pubkey(),
@@ -170,7 +176,7 @@ fn dca_create(
 
     let approve_token_delegation_ix = anchor_spl::token::spl_token::instruction::approve(
         &token::ID,
-        if orca_whirlpool_swap_data.a_to_b {
+        if a_to_b {
             &authority_a_vault_pubkey
         } else {
             &authority_b_vault_pubkey
@@ -222,7 +228,7 @@ fn dca_create(
         ]
         .concat(),
         Some(vec![client.payer()]),
-        "stateless swap thread create, fund, approve, init ATAs".to_string(),
+        "stateless swap - thread create, fund thread, approve TA, init ATAs".to_string(),
     )?;
 
     Ok(())
