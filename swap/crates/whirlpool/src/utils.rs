@@ -1,4 +1,5 @@
 use anchor_lang::prelude::Pubkey;
+pub use whirlpool::math::sqrt_price_from_tick_index;
 
 pub const MAX_TICK_INDEX: i32 = 443636;
 pub const MIN_TICK_INDEX: i32 = -443636;
