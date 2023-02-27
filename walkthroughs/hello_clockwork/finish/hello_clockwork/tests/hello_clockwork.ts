@@ -1,8 +1,8 @@
-import {expect} from "chai";
-import {PublicKey, SystemProgram} from "@solana/web3.js";
+import { expect } from "chai";
+import { PublicKey, SystemProgram } from "@solana/web3.js";
 import * as anchor from "@project-serum/anchor";
-import {Program} from "@project-serum/anchor";
-import {HelloClockwork} from "../target/types/hello_clockwork";
+import { Program } from "@project-serum/anchor";
+import { HelloClockwork } from "../target/types/hello_clockwork";
 
 // 👇 The new import
 import { getThreadAddress, createThread } from "@clockwork-xyz/sdk";
@@ -39,18 +39,17 @@ describe("hello_clockwork", () => {
         const threadAddress = getThreadAddress(threadAuthority, threadLabel);
 
         // 3️⃣ Create Thread
-        const createThreadIx = createThread({
-            instruction: targetIx,
-            trigger: trigger,
-            threadName: threadLabel,
-            threadAuthority: threadAuthority
-        }, provider);
-
         try {
-            const r = await createThreadIx;
+            const r = await createThread({
+                instruction: targetIx,
+                trigger: trigger,
+                threadName: threadLabel,
+                threadAuthority: threadAuthority
+            }, provider);
+
+            console.log(r.thread);
             print_address("🤖 Program", program.programId.toString());
             print_thread_address("🧵 Thread", threadAddress);
-            print_tx("✍️ Tx", r.transaction);
         } catch (e) {
             // ❌
             // 'Program log: Instruction: ThreadCreate',

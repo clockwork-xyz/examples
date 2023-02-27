@@ -20,8 +20,7 @@ impl Distributor {
         Pubkey::find_program_address(
             &[SEED_DISTRIBUTOR, mint.as_ref(), authority.as_ref()],
             &crate::ID,
-        )
-            .0
+        ).0
     }
 }
 

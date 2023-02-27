@@ -38,18 +38,17 @@ describe("hello_clockwork", () => {
       },
     }
     // 3️⃣ Create Thread
-    const createThreadIx = createThread({
-      instruction: targetIx,
-      trigger: trigger,
-      threadName: threadLabel,
-      threadAuthority: threadAuthority
-    }, provider);
-
     try {
-      const r = await createThreadIx;
+      const r = await createThread({
+        instruction: targetIx,
+        trigger: trigger,
+        threadName: threadLabel,
+        threadAuthority: threadAuthority
+      }, provider);
+
+      console.log(r.thread);
       print_address("🤖 Program", program.programId.toString());
       print_thread_address("🧵 Thread", threadAddress);
-      print_tx("✍️ Tx", r.transaction);
     } catch (e) {
       // ❌
       // 'Program log: Instruction: ThreadCreate',
