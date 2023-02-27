@@ -74,6 +74,7 @@ pub fn handler<'info>(
         mint.key(),
         mint_amount,
     )?;
+    msg!("distributor: {:#?}", distributor);
 
     // delegate mint authority from payer (authority) to distributor account
     token::set_authority(

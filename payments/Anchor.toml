@@ -12,7 +12,7 @@ payments = "AczpjY2Lyku1YNAM1saMuPhQB4jcJZzffGf9ptstrJZM"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

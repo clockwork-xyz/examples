@@ -27,9 +27,10 @@ pub struct Distribute<'info> {
     pub distributor: Account<'info, Distributor>,
 
     #[account(
+        mut,
         signer,
         address = distributor_thread.pubkey(),
-        constraint = distributor_thread.id.eq("distributor")
+        constraint = distributor_thread.authority.eq(&distributor.authority),
      )]
     pub distributor_thread: Box<Account<'info, Thread>>,
 
@@ -57,7 +58,7 @@ pub struct Distribute<'info> {
     pub system_program: Program<'info, System>,
 
     #[account(address = anchor_spl::token::ID)]
-    pub token_program: Program<'info, anchor_spl::token::Token>,
+    pub token_program: Program<'info, token::Token>,
 }
 
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Distribute<'info>>) -> Result<ThreadResponse> {
