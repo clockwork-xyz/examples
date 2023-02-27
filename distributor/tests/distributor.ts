@@ -2,7 +2,7 @@ import * as anchor from "@project-serum/anchor";
 import {Program} from "@project-serum/anchor./";
 import {Distributor} from "../target/types/distributor";
 import {
-    Keypair,
+    Keypair, Signer,
     LAMPORTS_PER_SOL,
     SYSVAR_RENT_PUBKEY,
 } from "@solana/web3.js";
@@ -24,55 +24,69 @@ const program = anchor.workspace.Distributor as Program<Distributor>;
 
 describe("distributor", () => {
     it("It distributes tokens!", async () => {
-        const [mint, bob, bobAta, charlie, charlieAta] = await prepareAccounts();
+        const [authority, mint, bob, bobAta, charlie, charlieAta] = await prepareAccounts();
 
         const [distributor] = PublicKey.findProgramAddressSync(
             [
                 anchor.utils.bytes.utf8.encode("distributor"), // 👈 make sure it matches on the prog side
                 mint.toBuffer(),
-                provider.publicKey.toBuffer(),
+                authority.publicKey.toBuffer(),
             ],
             program.programId
         );
+
         console.log("program logs: solana logs -u devnet | grep " + program.programId.toString() + "\n\n");
         print_address("mint", mint);
         print_address("bob's token account", bobAta);
         print_address("charlie's token account", charlieAta);
 
-        // const threadName = "distributor"; // 👈 make sure it matches on the prog side
-        // For debug: use a fix thread name such as the above, when your code works!
-        const date = new Date();
-        const threadName = "distributor_" + date.toLocaleDateString() + "-" + date.getHours() + ":" + date.getMinutes();
-        // Security:
-        // Note that we are using your default Solana paper keypair as the thread authority.
-        // Feel free to use whichever authority is appropriate for your use case.
-        const threadAuthority = provider.publicKey;
-        const threadAddress = getThreadAddress(threadAuthority, threadName);
-
-        // Top up the thread account with some SOL
-        await provider.connection.requestAirdrop(threadAddress, LAMPORTS_PER_SOL);
-
         try {
+            const amount = BigInt(1_000);
+
             // Create Distributor
             await createDistributor(
+                authority,
                 distributor,
+                amount,
                 mint,
                 bob,
                 bobAta,
             )
 
             // Create Distributor Thread
-            await createDistributorThread(
+            const thread = await createDistributorThread(
+                authority,
                 distributor,
                 mint,
                 bob,
                 bobAta,
-                threadName,
-                threadAddress,
-                threadAuthority,
             );
-            print_address("🤖 Program", program.programId.toString());
-            print_thread_address("🧵 Thread", threadAddress);
+
+            // Verifying that bob has received the tokens
+            console.log(`Verifying that Thread distributed ${amount} tokens to Bob...`);
+            await sleep(15);
+            const bobAmount = await verifyAmount(bobAta, amount);
+            console.log(`Bob has received ${bobAmount} tokens`);
+
+            // Verifying that we can change the distributor information
+            const newAmount = BigInt(2_000);
+            console.log(`Asking Thread to mint to Charlie every 10s (instead of Bob) at ${newAmount} tokens`);
+            await updateDistributor(authority, distributor, thread, newAmount, mint, charlie);
+            const mintAmount = (await program.account.distributor.fetch(distributor)).mintAmount;
+            assert.equal(mintAmount.toString(), newAmount.toString());
+
+            // Verifying that Charlie has received the tokens
+            console.log(`Verifying that Thread distributed ${newAmount} tokens to Charlie instead of Bob`);
+            await sleep(15);
+
+            const charlieAmountLOL = (await getAccount(provider.connection, charlieAta)).amount;
+            console.log(`CHARLIE AMOUNT: ${charlieAmountLOL}`);
+            
+            const charlieAmount = await verifyAmount(charlieAta, newAmount);
+            console.log(`Charlie has received ${charlieAmount} tokens`);
+
+            const bobAmount2 = await verifyAmount(bobAta, bobAmount);
+            console.log(`Bob is not receiving tokens anymore and holds ${bobAmount2} `);
         } catch (e) {
             // ❌
             // 'Program log: Instruction: ThreadCreate',
@@ -96,85 +110,70 @@ describe("distributor", () => {
             console.error(e);
             expect.fail(e);
         }
-
-        // Verifying that bob has received the tokens
-        console.log("Verifying that Thread distributed payment to Bob...");
-        const bobPreAmount = (await getAccount(provider.connection, bobAta)).amount;
-        await sleep(15);
-        const bobPostAmount = (await getAccount(provider.connection, bobAta)).amount;
-        assert.isAtLeast(Number(bobPostAmount), Number(bobPreAmount + BigInt(100_000_000)), "Bob hasn't received" +
-            " the distribution");
-
-        // Verifying that we can change the distributor information
-        console.log("Asking Thread to pay Charlie every 15s at 200_000_000 tokens");
-        await updateDistributor(distributor, threadAddress, mint, charlie);
-        const distrib = await program.account.distributor.fetch(distributor);
-        assert.deepEqual(distrib.recipientTokenAccount, charlieAta, "distributor's recipient" +
-            " unchanged");
-        assert.deepEqual(distrib.mint, mint, "distributor's mint unchanged");
-
-        console.log("Verifying that Thread distributed payment to Charlie...");
-        let charliePreAmount = BigInt(0);
-        try {
-            charliePreAmount = (await getAccount(provider.connection, charlieAta)).amount;
-        } catch (e) {
-            console.log("charlie's ata not created yet, minting hasn't occured yet");
-        }
-        await sleep(20);
-        const charliePostAmount = (await getAccount(provider.connection, charlieAta)).amount;
-        assert.isAtLeast(Number(charliePostAmount), Number(charliePreAmount + BigInt(200_000_000)), "Charlie hasn't received the" +
-            " distribution");
     });
 });
 
-const prepareAccounts = async (): Promise<[PublicKey, PublicKey, PublicKey, PublicKey, PublicKey]> => {
+const prepareAccounts = async (): Promise<[Signer, PublicKey, PublicKey, PublicKey, PublicKey, PublicKey]> => {
+    const authority = provider.wallet.payer;
     const mint = await createMint(
         provider.connection,
-        provider.wallet.payer,
-        provider.publicKey,
+        authority,
+        authority.publicKey,
         null,
-        9 // decimals
+        9
     );
     const bob = Keypair.generate().publicKey;
     const bobAta = await getAssociatedTokenAddress(mint, bob);
     const charlie = Keypair.generate().publicKey;
     const charlieAta = await getAssociatedTokenAddress(mint, charlie);
-    return [mint, bob, bobAta, charlie, charlieAta];
+    return [authority, mint, bob, bobAta, charlie, charlieAta];
 }
 
-const createDistributor = async (distributor: PublicKey,
-                                 mint: PublicKey,
-                                 recipient: PublicKey,
-                                 recipientAta: PublicKey,
+const createDistributor = async (
+    authority: Signer,
+    distributor: PublicKey,
+    amount: bigint,
+    mint: PublicKey,
+    recipient: PublicKey,
+    recipientAta: PublicKey,
 ) => {
-    const createDistributorTx = await program.methods
-        .create(new anchor.BN(100_000_000))
+    await program.methods
+        .create(new anchor.BN(amount.toString()))
         .accounts({
             systemProgram: SystemProgram.programId,
             tokenProgram: TOKEN_PROGRAM_ID,
             associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
             rent: SYSVAR_RENT_PUBKEY,
             clockwork: CLOCKWORK_THREAD_PROGRAM_ID,
-            authority: provider.publicKey,
+            authority: authority.publicKey,
             mint: mint,
             distributor: distributor,
             recipient: recipient,
             recipientTokenAccount: recipientAta
         })
         .rpc();
-    print_tx("✍️ createDistributorTx", createDistributorTx);
-    return createDistributorTx;
-
 }
 
-const createDistributorThread = async (distributor: PublicKey,
-                                       mint: PublicKey,
-                                       recipient: PublicKey,
-                                       recipientAta: PublicKey,
-                                       threadName: string,
-                                       thread: PublicKey,
-                                       threadAuthority: PublicKey,
+const createDistributorThread = async (
+    authority: Signer,
+    distributor: PublicKey,
+    mint: PublicKey,
+    recipient: PublicKey,
+    recipientAta: PublicKey,
 ) => {
+    // const threadName = "distributor"; // 👈 make sure it matches on the prog side
+    // For debug: use a fix thread name such as the above, when your code works!
+    const date = new Date();
+    const threadName = "distributor_" + date.toLocaleDateString() + "-" + date.getHours() + ":" + date.getMinutes();
+    // Security:
+    // Note that we are using your default Solana paper keypair as the thread authority.
+    // Feel free to use whichever authority is appropriate for your use case.
+    const threadAuthority = authority.publicKey;
+    const threadAddress = getThreadAddress(threadAuthority, threadName);
+
+    // Top up the thread account with some SOL
+    await provider.connection.requestAirdrop(threadAddress, LAMPORTS_PER_SOL);
+
     // https://docs.rs/clockwork-utils/latest/clockwork_utils/static.PAYER_PUBKEY.html
     const PAYER_PUBKEY = new PublicKey("C1ockworkPayer11111111111111111111111111111");
 
@@ -188,7 +187,7 @@ const createDistributorThread = async (distributor: PublicKey,
             payer: PAYER_PUBKEY,
             mint: mint,
             distributor: distributor,
-            distributorThread: thread,
+            distributorThread: threadAddress,
             recipient: recipient,
             recipientTokenAccount: recipientAta,
         })
@@ -208,29 +207,40 @@ const createDistributorThread = async (distributor: PublicKey,
         threadAuthority: threadAuthority
     }, provider);
     console.log(r.thread);
-
+    print_address("🤖 Program", program.programId.toString());
+    print_thread_address("🧵 Thread", threadAddress);
+    return threadAddress;
 }
 
-const updateDistributor = async (distributor: PublicKey,
-                                 distributorThread: PublicKey,
-                                 mint: PublicKey,
-                                 charlie: PublicKey
+const updateDistributor = async (
+    authority: Signer,
+    distributor: PublicKey,
+    distributorThread: PublicKey,
+    amount: bigint,
+    mint: PublicKey,
+    charlie: PublicKey
 ) => {
-    const cronSchedule = "*/15 * * * * * *";
-    const updateDistributorTx = await program.methods
-        .update(charlie, new anchor.BN(200_000_000), cronSchedule)
+    const cronSchedule = "*/10 * * * * * *";
+    await program.methods
+        .update(charlie, new anchor.BN(amount.toString()), cronSchedule)
         .accounts({
             systemProgram: SystemProgram.programId,
             clockworkProgram: CLOCKWORK_THREAD_PROGRAM_ID,
-            authority: provider.publicKey,
+            authority: authority.publicKey,
             mint: mint,
             distributor: distributor,
             distributorThread: distributorThread,
         })
         .rpc();
-    print_tx("✍️ updateDistributorTx", updateDistributorTx);
-    return updateDistributorTx;
+}
 
+const verifyAmount = async (ata, expectedAmount) => {
+    const amount = (await getAccount(provider.connection, ata)).amount;
+    assert.isAtLeast(
+        Number(amount),
+        Number(expectedAmount)
+    );
+    return amount;
 }
 
 function sleep(seconds) {
