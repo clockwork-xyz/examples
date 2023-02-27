@@ -5,7 +5,7 @@ use {
         solana_program::{system_program, sysvar, instruction::Instruction},
     },
     anchor_spl::{
-        associated_token::{self, get_associated_token_address}, token::{self, Mint}
+        associated_token::{self, get_associated_token_address}, token::{self, Mint},
     },
     clockwork_sdk::{
         ID as thread_program_ID,
@@ -22,7 +22,7 @@ use {
 };
 
 #[derive(Accounts)]
-#[instruction(new_recipient: Option <Pubkey>, mint_amount: Option < u64 >, trigger: Option < String >)]
+#[instruction(new_recipient: Option < Pubkey >, mint_amount: Option < u64 >, trigger: Option < String >)]
 pub struct Update<'info> {
     #[account(
     mut,
@@ -45,6 +45,7 @@ pub struct Update<'info> {
     #[account(
     mut,
     address = distributor_thread.pubkey(),
+    constraint = distributor_thread.authority.eq(&distributor.authority),
     )]
     pub distributor_thread: Account<'info, Thread>,
     

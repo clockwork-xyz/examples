@@ -100,7 +100,7 @@ describe("distributor", () => {
         // Verifying that bob has received the tokens
         console.log("Verifying that Thread distributed payment to Bob...");
         const bobPreAmount = (await getAccount(provider.connection, bobAta)).amount;
-        await sleep(11);
+        await sleep(15);
         const bobPostAmount = (await getAccount(provider.connection, bobAta)).amount;
         assert.isAtLeast(Number(bobPostAmount), Number(bobPreAmount + BigInt(100_000_000)), "Bob hasn't received" +
             " the distribution");
@@ -120,7 +120,7 @@ describe("distributor", () => {
         } catch (e) {
             console.log("charlie's ata not created yet, minting hasn't occured yet");
         }
-        await sleep(16);
+        await sleep(20);
         const charliePostAmount = (await getAccount(provider.connection, charlieAta)).amount;
         assert.isAtLeast(Number(charliePostAmount), Number(charliePreAmount + BigInt(200_000_000)), "Charlie hasn't received the" +
             " distribution");

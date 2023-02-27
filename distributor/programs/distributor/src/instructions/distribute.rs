@@ -30,6 +30,7 @@ pub struct Distribute<'info> {
         mut,
         signer,
         address = distributor_thread.pubkey(),
+        constraint = distributor_thread.authority.eq(&distributor.authority),
      )]
     pub distributor_thread: Box<Account<'info, Thread>>,
 
