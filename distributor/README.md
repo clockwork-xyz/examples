@@ -1,8 +1,8 @@
 # **Distributor Program (Token Minter)**
 
-This program creates a Thread that stream token mints a recipient.
-First, we create a distributor account and transfer the token mint authority to the distributor account.
-Then, we schedule a Thread to mint tokens using the distributor account's information.
+This program creates a Thread that stream token mints to a recipient.
+- First, we create a distributor account and transfer the token mint authority to the distributor account.
+- Then, we schedule a Thread to mint tokens using the distributor account's information.
 
 ## Prerequisites
 - Make sure you have both [Solana](https://docs.solana.com/cli/install-solana-cli-tools) and [Anchor](https://www.anchor-lang.com/docs/installation) installed on your computer.

@@ -1,8 +1,8 @@
 # **Payments Program (Token Transfer)**
 
 This program creates a Thread that streams payment to a recipient.
-First, we create a payment account and delegate the token transfer authority to the payment account.
-Then, we schedule a Thread to disburse tokens using the payment account's information.
+- First, we create a payment account and delegate the token transfer authority to the payment account.
+- Then, we schedule a Thread to disburse tokens using the payment account's information.
 
 ## Prerequisites
 - Make sure you have both [Solana](https://docs.solana.com/cli/install-solana-cli-tools) and [Anchor](https://www.anchor-lang.com/docs/installation) installed on your computer.
