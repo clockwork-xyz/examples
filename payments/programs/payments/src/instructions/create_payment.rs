@@ -75,16 +75,16 @@ pub fn handler<'info>(ctx: Context<CreatePayment>, amount: u64) -> Result<()> {
         recipient.key(),
     )?;
 
-    // Approve the payment to spend from the authority's token account.
+    // Approve the payment pda to spend from the authority's token account.
     token::approve(
         CpiContext::new(
             token_program.to_account_info(), 
-            token::Approve { 
-                to: authority_token_account.to_account_info(), 
+            token::Approve {
+                authority: authority.to_account_info(),
+                to: authority_token_account.to_account_info(),
                 delegate: payment.to_account_info(), 
-                authority: authority.to_account_info() 
-            }), 
-        u64::MAX
+            }),
+       u64::MAX
     )?;
 
     Ok(())

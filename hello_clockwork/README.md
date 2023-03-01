@@ -5,7 +5,7 @@
 - If you want to test on localnet, also clone the [clockwork engine](https://github.com/clockwork-xyz/clockwork/) 
   locally to your machine.
 
-> We recommend using devnet, as the setup is easier. You don't have need a validator plugin or the clockwork engine 
+> We recommend using devnet, as the setup is easier. You don't need a validator or the clockwork engine 
 > running. However, you will get an easier time looking at the logs if you have your own validator running locally 
 > later.
 
@@ -61,20 +61,17 @@ The workflow is pretty similar with __devnet__ with the exception that you are r
 2. Install and run the Clockwork Engine _(geyser plugin)_ with the `solana-test-validator`.
 
 **0. Validator Setup - Run the validator with Clockwork**
+
 - Build and install the [Clockwork Engine](https://github.com/clockwork-xyz/clockwork#local-development)
 - Use the `clockwork localnet` to start a local validator with the Clockwork Engine.
 
 **1. Program Side - Deploying the Handler Program**
 
-We start by defining an instruction to execute, that is the __"WHAT"__:
-- We have already prepared a handler, a program that logs 'Hello world'
-- You just have to deploy it using `./deploy.sh localnet` _(nothing fancy, the usual program ids and network switch)_.
+- Same as devnet but use `./deploy.sh localnet`
 
 **2. Client Side - Creating a Thread**
 
-Time to switch perspective, we need to do some work off-chain now, we will create a Thread, that's the __"HOW"__:
-- Check the `tests` folder, we are using anchor tests as a client.
-- Run `anchor tests`, this will create a __Thread__ that continuously calls your program handler, and so continuously prints "Hello World".
+- Same as devnet
 
 ## Common Errors
 Please refer to the [FAQ](https://github.com/clockwork-xyz/docs/blob/main/FAQ.md#common-errors).

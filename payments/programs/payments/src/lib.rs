@@ -13,7 +13,7 @@ pub mod payments {
     use super::*;
 
     /*
-     * initialize relevant accounts and clockwork queue for automated payment flow
+     * Create Payment Approval
      */
     pub fn create_payment(ctx: Context<CreatePayment>, amount: u64) -> Result<()> {
         create_payment::handler(ctx, amount)
@@ -23,7 +23,7 @@ pub mod payments {
      * disburse payment from program authority's ATA to recipient's ATA
      */
     pub fn disburse_payment(ctx: Context<DisbursePayment>) ->
-                                                           Result<clockwork_sdk::state::ThreadResponse> {
+    Result<clockwork_sdk::state::ThreadResponse> {
         disburse_payment::handler(ctx)
     }
 
