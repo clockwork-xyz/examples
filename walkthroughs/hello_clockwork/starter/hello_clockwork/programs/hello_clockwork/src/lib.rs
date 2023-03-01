@@ -6,11 +6,14 @@ use id::ID;
 pub mod hello_clockwork {
     use super::*;
 
-    pub fn hello_ix(_ctx: Context<HelloClockwork>) -> Result<()> {
-        msg!("Hello! The current time is: {}", Clock::get().unwrap().unix_timestamp);
+    pub fn hello(_ctx: Context<Hello>) -> Result<()> {
+        msg!(
+            "Hello! The current time is: {}",
+            Clock::get().unwrap().unix_timestamp
+        );
         Ok(())
     }
 }
 
 #[derive(Accounts)]
-pub struct HelloClockwork {}
+pub struct Hello {}
