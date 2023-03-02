@@ -1,6 +1,6 @@
 import {assert, expect} from "chai";
 import * as anchor from "@project-serum/anchor";
-import {Program} from "@project-serum/anchor";
+import {Program, AnchorProvider} from "@project-serum/anchor";
 import {Payments} from "../target/types/payments";
 import {
     Keypair, PublicKey, Signer, SystemProgram,
