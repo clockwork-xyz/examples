@@ -1,0 +1,22 @@
+[workspace]
+members = [
+    "programs/*",
+    "crates/*",
+    "client"
+]
+
+[profile.release]
+overflow-checks = true
+lto = "fat"
+codegen-units = 1
+
+[profile.release.build-override]
+opt-level = 3
+incremental = false
+codegen-units = 1
+
+[patch.crates-io]
+anchor-lang = { git = "https://github.com/Eliascm17/anchor", branch = "macros-with-capacity" }
+anchor-spl = { git = "https://github.com/Eliascm17/anchor", branch = "macros-with-capacity" }
+anchor-gen = { path = "/Users/eliasmoreno/work/Eliascm17/anchor-gen/crates/anchor-gen", features = ["compat-program-result"] }
+clockwork-sdk = { path = "/Users/eliasmoreno/work/clockwork-xyz/clockwork/sdk" }
