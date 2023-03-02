@@ -1,8 +1,9 @@
+import {assert, expect} from "chai";
 import * as anchor from "@project-serum/anchor";
-import {Program} from "@project-serum/anchor./";
+import {Program} from "@project-serum/anchor";
 import {Payments} from "../target/types/payments";
 import {
-    Signer, Keypair,
+    Keypair, PublicKey, Signer, SystemProgram,
     LAMPORTS_PER_SOL, SYSVAR_RENT_PUBKEY,
 } from "@solana/web3.js";
 import {
@@ -14,12 +15,13 @@ import {
 } from "@solana/spl-token";
 
 // 👇 The new import
-import {getThreadAddress, CLOCKWORK_THREAD_PROGRAM_ID, createThread} from "@clockwork-xyz/sdk";
-import {PublicKey, SystemProgram} from "@solana/web3.js";
-import {assert, expect} from "chai";
+import {ClockworkProvider, PAYER_PUBKEY} from "@clockwork-xyz/sdk";
 
 const provider = anchor.AnchorProvider.env();
 anchor.setProvider(provider);
+const clockworkProvider = new ClockworkProvider(provider.wallet, provider.connection);
+// 👇 will get fixed in future version of ClockworkProvider
+clockworkProvider.threadProgram.provider.connection.opts = { preflightCommitment: 'processed', commitment: 'processed' };
 const program = anchor.workspace.Payments as Program<Payments>;
 
 
@@ -158,7 +160,7 @@ const createPayment = async (
             tokenProgram: TOKEN_PROGRAM_ID,
             associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
             rent: SYSVAR_RENT_PUBKEY,
-            clockwork: CLOCKWORK_THREAD_PROGRAM_ID,
+            clockwork: clockworkProvider.threadProgram.programId,
             payment: payment,
             mint: mint,
             authority: authority.publicKey,
@@ -176,21 +178,19 @@ const createDisbursePaymentThread = async (
     recipient: PublicKey,
     recipientAta: PublicKey,
 ) => {
+    // const threadName = "payment";
     // For debug: use a fix thread name such as the above, when your code works!
     const date = new Date();
     const threadName = "payment_" + date.toLocaleDateString() + "-" + date.getHours() + ":" + date.getMinutes();
-    // Security:
+
     // Security:
     // Note that we are using your default Solana paper keypair as the thread authority.
     // Feel free to use whichever authority is appropriate for your use case.
     const threadAuthority = authority.publicKey;
-    const threadAddress = getThreadAddress(threadAuthority, threadName);
-
-    // Top up the thread account with some SOL
-    await provider.connection.requestAirdrop(threadAddress, LAMPORTS_PER_SOL);
+    const [threadAddress] = clockworkProvider.getThreadPDA(threadAuthority, threadName);
 
     // https://docs.rs/clockwork-utils/latest/clockwork_utils/static.PAYER_PUBKEY.html
-    const PAYER_PUBKEY = new PublicKey("C1ockworkPayer11111111111111111111111111111");
+    const payer = PAYER_PUBKEY;
 
     const targetIx = await program.methods
         .disbursePayment()
@@ -199,8 +199,8 @@ const createDisbursePaymentThread = async (
             tokenProgram: TOKEN_PROGRAM_ID,
             associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
             rent: SYSVAR_RENT_PUBKEY,
-            clockwork: CLOCKWORK_THREAD_PROGRAM_ID,
-            payer: PAYER_PUBKEY,
+            clockwork: clockworkProvider.threadProgram.programId,
+            payer: payer,
             authority: threadAuthority,
             mint: mint,
             authorityTokenAccount: authorityAta,
@@ -218,13 +218,15 @@ const createDisbursePaymentThread = async (
         },
     }
 
-    const r = await createThread({
-        instruction: targetIx,
-        trigger: trigger,
-        threadName: threadName,
-        threadAuthority: threadAuthority
-    }, provider);
-    console.log(r.thread);
+    await clockworkProvider.threadCreate(
+        threadAuthority,
+        threadName,
+        [targetIx],
+        trigger,
+        LAMPORTS_PER_SOL
+    );
+    const threadAccount = await clockworkProvider.getThreadAccount(threadAddress);
+    console.log("Thread: ", threadAccount);
     print_address("🤖 Program", program.programId.toString());
     print_thread_address("🧵 Thread", threadAddress);
 }

@@ -55,7 +55,7 @@ pub struct CreatePayment<'info> {
     pub system_program: Program<'info, System>,
 
     #[account(address = anchor_spl::token::ID)]
-    pub token_program: Program<'info, anchor_spl::token::Token>,
+    pub token_program: Program<'info, token::Token>,
 }
 
 pub fn handler<'info>(ctx: Context<CreatePayment>, amount: u64) -> Result<()> {
