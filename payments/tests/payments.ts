@@ -218,13 +218,17 @@ const createDisbursePaymentThread = async (
         },
     }
 
+    // 💰 Top-up the thread with this amount of SOL to spend
+    // Each tx ran by your thread will cost 1000 LAMPORTS
+    const threadSOLBudget = LAMPORTS_PER_SOL;
     await clockworkProvider.threadCreate(
         threadAuthority,
         threadName,
         [targetIx],
         trigger,
-        LAMPORTS_PER_SOL
+        threadSOLBudget
     );
+
     const threadAccount = await clockworkProvider.getThreadAccount(threadAddress);
     console.log("Thread: ", threadAccount);
     print_address("🤖 Program", program.programId.toString());
