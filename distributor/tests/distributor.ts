@@ -1,10 +1,10 @@
+import {assert, expect} from "chai";
 import * as anchor from "@project-serum/anchor";
-import {Program} from "@project-serum/anchor./";
+import {AnchorProvider, Program} from "@project-serum/anchor";
 import {Distributor} from "../target/types/distributor";
 import {
-    Keypair, Signer,
-    LAMPORTS_PER_SOL,
-    SYSVAR_RENT_PUBKEY,
+    Keypair, PublicKey, Signer, SystemProgram,
+    LAMPORTS_PER_SOL, SYSVAR_RENT_PUBKEY,
 } from "@solana/web3.js";
 import {
     createMint,
@@ -13,14 +13,16 @@ import {
 } from "@solana/spl-token";
 
 // 👇 The new import
-import {getThreadAddress, CLOCKWORK_THREAD_PROGRAM_ID, createThread} from "@clockwork-xyz/sdk";
-import {PublicKey, SystemProgram} from "@solana/web3.js";
-import {assert, expect} from "chai";
+import {ClockworkProvider, PAYER_PUBKEY} from "@clockwork-xyz/sdk";
 
 const provider = anchor.AnchorProvider.env();
 anchor.setProvider(provider);
+const clockworkProvider = new ClockworkProvider(provider.wallet, provider.connection);
+// 👇 will get fixed in future version of ClockworkProvider
+clockworkProvider.threadProgram.provider.connection.opts = AnchorProvider.defaultOptions();
 const program = anchor.workspace.Distributor as Program<Distributor>;
 
+const THREAD_PROGRAM_ID = new PublicKey("CLoCKyJ6DXBJqqu2VWx9RLbgnwwR6BMHHuyasVmfMzBh");
 
 describe("distributor", () => {
     it("It distributes tokens!", async () => {
@@ -144,7 +146,6 @@ const createDistributor = async (
             tokenProgram: TOKEN_PROGRAM_ID,
             associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
             rent: SYSVAR_RENT_PUBKEY,
-            clockwork: CLOCKWORK_THREAD_PROGRAM_ID,
             authority: authority.publicKey,
             mint: mint,
             distributor: distributor,
@@ -169,13 +170,10 @@ const createDistributorThread = async (
     // Note that we are using your default Solana paper keypair as the thread authority.
     // Feel free to use whichever authority is appropriate for your use case.
     const threadAuthority = authority.publicKey;
-    const threadAddress = getThreadAddress(threadAuthority, threadName);
-
-    // Top up the thread account with some SOL
-    await provider.connection.requestAirdrop(threadAddress, LAMPORTS_PER_SOL);
+    const [threadAddress] = clockworkProvider.getThreadPDA(threadAuthority, threadName);
 
     // https://docs.rs/clockwork-utils/latest/clockwork_utils/static.PAYER_PUBKEY.html
-    const PAYER_PUBKEY = new PublicKey("C1ockworkPayer11111111111111111111111111111");
+    const payer = PAYER_PUBKEY;
 
     const targetIx = await program.methods
         .distribute()
@@ -184,7 +182,7 @@ const createDistributorThread = async (
             tokenProgram: TOKEN_PROGRAM_ID,
             associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
             rent: SYSVAR_RENT_PUBKEY,
-            payer: PAYER_PUBKEY,
+            payer: payer,
             mint: mint,
             distributor: distributor,
             distributorThread: threadAddress,
@@ -200,13 +198,19 @@ const createDistributorThread = async (
         },
     }
 
-    const r = await createThread({
-        instruction: targetIx,
-        trigger: trigger,
-        threadName: threadName,
-        threadAuthority: threadAuthority
-    }, provider);
-    console.log(r.thread);
+    // 💰 Top-up the thread with this amount of SOL to spend
+    // Each tx ran by your thread will cost 1000 LAMPORTS
+    const threadSOLBudget = LAMPORTS_PER_SOL;
+    await clockworkProvider.threadCreate(
+        threadAuthority,
+        threadName,
+        [targetIx],
+        trigger,
+        threadSOLBudget
+    );
+
+    const threadAccount = await clockworkProvider.getThreadAccount(threadAddress);
+    console.log("Thread: ", threadAccount);
     print_address("🤖 Program", program.programId.toString());
     print_thread_address("🧵 Thread", threadAddress);
     return threadAddress;
@@ -225,7 +229,7 @@ const updateDistributor = async (
         .update(charlie, new anchor.BN(amount.toString()), cronSchedule)
         .accounts({
             systemProgram: SystemProgram.programId,
-            clockworkProgram: CLOCKWORK_THREAD_PROGRAM_ID,
+            clockworkProgram: THREAD_PROGRAM_ID,
             authority: authority.publicKey,
             mint: mint,
             distributor: distributor,
