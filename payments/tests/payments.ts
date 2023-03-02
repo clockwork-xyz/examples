@@ -21,7 +21,7 @@ const provider = anchor.AnchorProvider.env();
 anchor.setProvider(provider);
 const clockworkProvider = new ClockworkProvider(provider.wallet, provider.connection);
 // 👇 will get fixed in future version of ClockworkProvider
-clockworkProvider.threadProgram.provider.connection.opts = { preflightCommitment: 'processed', commitment: 'processed' };
+clockworkProvider.threadProgram.provider.connection.opts = AnchorProvider.defaultOptions();
 const program = anchor.workspace.Payments as Program<Payments>;
 
 
