@@ -162,10 +162,10 @@ const createDistributorThread = async (
     recipient: PublicKey,
     recipientAta: PublicKey,
 ) => {
-    // const threadName = "distributor"; // 👈 make sure it matches on the prog side
+    // const threadId = "distributor"; // 👈 make sure it matches on the prog side
     // For debug: use a fix thread name such as the above, when your code works!
     const date = new Date();
-    const threadName = "distributor_" + date.toLocaleDateString() + "-" + date.getHours() + ":" + date.getMinutes();
+    const threadId = "distributor_" + date.toLocaleDateString() + "-" + date.getHours() + ":" + date.getMinutes();
     // Security:
     // Note that we are using your default Solana paper keypair as the thread authority.
     // Feel free to use whichever authority is appropriate for your use case.
@@ -203,7 +203,7 @@ const createDistributorThread = async (
     const threadSOLBudget = LAMPORTS_PER_SOL;
     await clockworkProvider.threadCreate(
         threadAuthority,
-        threadName,
+        threadId,
         [targetIx],
         trigger,
         threadSOLBudget
