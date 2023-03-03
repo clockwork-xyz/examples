@@ -170,7 +170,7 @@ const createDistributorThread = async (
     // Note that we are using your default Solana paper keypair as the thread authority.
     // Feel free to use whichever authority is appropriate for your use case.
     const threadAuthority = authority.publicKey;
-    const [threadAddress] = clockworkProvider.getThreadPDA(threadAuthority, threadName);
+    const [threadAddress] = clockworkProvider.getThreadPDA(threadAuthority, threadId);
 
     // https://docs.rs/clockwork-utils/latest/clockwork_utils/static.PAYER_PUBKEY.html
     const payer = PAYER_PUBKEY;
