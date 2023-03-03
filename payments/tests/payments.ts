@@ -178,16 +178,16 @@ const createDisbursePaymentThread = async (
     recipient: PublicKey,
     recipientAta: PublicKey,
 ) => {
-    // const threadName = "payment";
-    // For debug: use a fix thread name such as the above, when your code works!
+    // const threadId = "payment";
+    // For debug: use a fix thread id such as the above, when your code works!
     const date = new Date();
-    const threadName = "payment_" + date.toLocaleDateString() + "-" + date.getHours() + ":" + date.getMinutes();
+    const threadId = "payment_" + date.toLocaleDateString() + "-" + date.getHours() + ":" + date.getMinutes();
 
     // Security:
     // Note that we are using your default Solana paper keypair as the thread authority.
     // Feel free to use whichever authority is appropriate for your use case.
     const threadAuthority = authority.publicKey;
-    const [threadAddress] = clockworkProvider.getThreadPDA(threadAuthority, threadName);
+    const [threadAddress] = clockworkProvider.getThreadPDA(threadAuthority, threadId);
 
     // https://docs.rs/clockwork-utils/latest/clockwork_utils/static.PAYER_PUBKEY.html
     const payer = PAYER_PUBKEY;
@@ -223,7 +223,7 @@ const createDisbursePaymentThread = async (
     const threadSOLBudget = LAMPORTS_PER_SOL;
     await clockworkProvider.threadCreate(
         threadAuthority,
-        threadName,
+        threadId,
         [targetIx],
         trigger,
         threadSOLBudget
