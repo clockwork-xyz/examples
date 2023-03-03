@@ -1,20 +1,22 @@
-pub mod id;
-
-mod instructions;
-
-pub use id::ID;
-
 use anchor_lang::prelude::*;
-use instructions::*;
+
+declare_id!("V8B9ZekPAHbGP9ijjv4WHtvmYM3irrrDeZeBwWfdgqa");
 
 #[program]
 pub mod hello_clockwork {
     use super::*;
 
-    pub fn hello_world(
-        ctx: Context<HelloWorld>,
-        name: String,
-    ) -> Result<clockwork_sdk::state::ThreadResponse> {
-        hello_world::handler(ctx, name)
+    pub fn hello(_ctx: Context<Hello>, name: String) -> Result<()> {
+        msg!(
+            "Hello, {}! The current time is: {}",
+            name,
+            Clock::get().unwrap().unix_timestamp
+        );
+
+        Ok(())
     }
 }
+
+#[derive(Accounts)]
+#[instruction(name: String)]
+pub struct Hello {}

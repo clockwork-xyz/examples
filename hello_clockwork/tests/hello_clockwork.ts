@@ -4,65 +4,8 @@ import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
 import { HelloClockwork } from "../target/types/hello_clockwork";
 
-// 👇 The new import
-import { getThreadAddress, createThread } from "@clockwork-xyz/sdk";
-
-const provider = anchor.AnchorProvider.env();
-anchor.setProvider(provider);
-const program = anchor.workspace.HelloClockwork as Program<HelloClockwork>;
-
-
-const buildHelloInstruction = async (name: string, thread: PublicKey) => {
-  return await program.methods
-    .helloWorld(name)
-    .accounts({ helloThread: thread })
-    .instruction();
-}
-
-describe("hello_clockwork", () => {
-  it("It creates a Thread!", async () => {
-    // Accounts
-    const threadLabel = "hello_clockwork_feb_16_24:07";
-    const threadAuthority = provider.publicKey;
-    const payer = provider.publicKey;
-    const threadAddress = getThreadAddress(threadAuthority, threadLabel);
-
-    // 1️⃣ Prepare an instruction to feed to the Thread
-    const targetIx = await buildHelloInstruction("Chronos", threadAddress)
-
-    // 2️⃣ Define a trigger for the Thread to execute
-    const trigger = {
-      cron: {
-        schedule: "*/10 * * * * * *",
-        skippable: true,
-      },
-    }
-    // 3️⃣ Create Thread
-    try {
-      const r = await createThread({
-        instruction: targetIx,
-        trigger: trigger,
-        threadName: threadLabel,
-        threadAuthority: threadAuthority
-      }, provider);
-
-      console.log(r.thread);
-      print_address("🤖 Program", program.programId.toString());
-      print_thread_address("🧵 Thread", threadAddress);
-    } catch (e) {
-      // ❌
-      // 'Program log: Instruction: ThreadCreate',
-      //     'Program 11111111111111111111111111111111 invoke [2]',
-      //     'Allocate: account Address { address: ..., base: None } already in use'
-      //
-      // -> If you encounter this error, the thread address you are trying to assign is already in use,
-      //    you can just change the threadLabel, to generate a new address.
-      // -> OR update the thread with a ThreadUpdate instruction (more on this in another guide)
-      console.error(e);
-      expect.fail(e);
-    }
-  });
-});
+// 0️⃣  Import the Clockwork SDK.
+import { ClockworkProvider } from "@clockwork-xyz/sdk";
 
 const print_address = (label, address) => {
   console.log(`${label}: https://explorer.solana.com/address/${address}?cluster=devnet`);
@@ -72,6 +15,58 @@ const print_tx = (label, address) => {
   console.log(`${label}: https://explorer.solana.com/tx/${address}?cluster=devnet`);
 }
 
-const print_thread_address = (label, address) => {
-  console.log(`${label}: https://explorer.clockwork.xyz/address/${address}?network=devnet`);
-}
+describe("hello_clockwork", () => {
+  const provider = anchor.AnchorProvider.env();
+  anchor.setProvider(provider);
+  const wallet = provider.wallet;
+  const program = anchor.workspace.HelloClockwork as Program<HelloClockwork>;
+  const clockworkProvider = new ClockworkProvider(wallet, provider.connection);
+
+  print_address("🔗 HelloClockwork program", program.programId.toString());
+
+  it("It says hello", async () => {
+    const tx = await program.methods.hello("world").rpc();
+    print_tx("🖊️  Hello", tx);
+  });
+
+  it("It runs every 10 seconds", async () => {
+    // 1️⃣  Prepare an instruction to be automated.
+    const targetIx = await program.methods.hello("world").accounts({}).instruction();
+
+    // 2️⃣  Define a trigger condition for the thread.
+    const trigger = {
+      cron: {
+        schedule: "*/10 * * * * * *",
+        skippable: true,
+      },
+    }
+
+    // 3️⃣  Create the thread.
+    try {
+      const threadId = "test-" + new Date().getTime() / 1000;
+      const tx = await clockworkProvider.threadCreate(
+        wallet.publicKey, // authority
+        threadId,               // id
+        [targetIx],             // instructions to execute
+        trigger,                // trigger condition
+        anchor.web3.LAMPORTS_PER_SOL, // pre-fund amount
+      );
+      const [threadAddress, threadBump] = clockworkProvider.getThreadPDA(wallet.publicKey, threadId)
+      print_address("🧵 Thread", threadAddress);
+      print_tx("🖊️  ThreadCreate", tx);
+    } catch (e) {
+      // ❌
+      // 'Program log: Instruction: ThreadCreate',
+      // 'Program 11111111111111111111111111111111 invoke [2]',
+      // 'Allocate: account Address { address: ..., base: None } already in use'
+      //
+      // -> If you encounter this error, the thread address you are trying to use is already in use.
+      //    You can change the threadId, to generate a new account address.
+      // -> OR update the thread with a ThreadUpdate instruction (more on this in future guide)
+      console.error(e);
+      expect.fail(e);
+    }
+  });
+
+});
+
