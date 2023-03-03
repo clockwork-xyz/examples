@@ -1,5 +1,4 @@
 import { expect } from "chai";
-import { PublicKey, SystemProgram } from "@solana/web3.js";
 import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
 import { HelloClockwork } from "../target/types/hello_clockwork";
