@@ -1,7 +1,6 @@
 [workspace]
 members = [
     "programs/*",
-    "client"
 ]
 
 [profile.release]
@@ -12,3 +11,6 @@ codegen-units = 1
 opt-level = 3
 incremental = false
 codegen-units = 1
+
+[patch.crates-io]
+clockwork-sdk = { git = "https://github.com/clockwork-xyz/clockwork", tag = "v2.0.1" }
