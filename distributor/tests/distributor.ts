@@ -1,26 +1,29 @@
+import {assert, expect} from "chai";
 import * as anchor from "@project-serum/anchor";
-import {Program} from "@project-serum/anchor./";
+import {AnchorProvider, Program} from "@project-serum/anchor";
 import {Distributor} from "../target/types/distributor";
 import {
-    Keypair, Signer,
-    LAMPORTS_PER_SOL,
-    SYSVAR_RENT_PUBKEY,
+    Keypair, PublicKey, Signer, SystemProgram,
+    LAMPORTS_PER_SOL, SYSVAR_RENT_PUBKEY,
 } from "@solana/web3.js";
 import {
     createMint,
     getAssociatedTokenAddress,
     TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getMint, getAccount,
 } from "@solana/spl-token";
+const { spawn } = require("child_process");
 
 // 👇 The new import
-import {getThreadAddress, CLOCKWORK_THREAD_PROGRAM_ID, createThread} from "@clockwork-xyz/sdk";
-import {PublicKey, SystemProgram} from "@solana/web3.js";
-import {assert, expect} from "chai";
+import {ClockworkProvider, PAYER_PUBKEY} from "@clockwork-xyz/sdk";
 
 const provider = anchor.AnchorProvider.env();
 anchor.setProvider(provider);
+const clockworkProvider = new ClockworkProvider(provider.wallet, provider.connection);
+// 👇 will get fixed in future version of ClockworkProvider
+clockworkProvider.threadProgram.provider.connection.opts = AnchorProvider.defaultOptions();
 const program = anchor.workspace.Distributor as Program<Distributor>;
 
+const THREAD_PROGRAM_ID = new PublicKey("CLoCKyJ6DXBJqqu2VWx9RLbgnwwR6BMHHuyasVmfMzBh");
 
 describe("distributor", () => {
     it("It distributes tokens!", async () => {
@@ -35,7 +38,13 @@ describe("distributor", () => {
             program.programId
         );
 
-        console.log("program logs: solana logs -u devnet | grep " + program.programId.toString() + "\n\n");
+        console.log("Read program logs with `solana logs -u devnet " + program.programId.toString() + "`\n\n");
+        // 👇 Uncomment to get Program Logs
+        // const cmd = spawn("solana", ["logs", "-u", "devnet", program.programId.toString()]);
+        // cmd.stdout.on("data", data => {
+        //     console.log(`Program Logs: ${data}`);
+        // });
+
         print_address("mint", mint);
         print_address("bob's token account", bobAta);
         print_address("charlie's token account", charlieAta);
@@ -64,7 +73,7 @@ describe("distributor", () => {
 
             // Verifying that bob has received the tokens
             console.log(`Verifying that Thread distributed ${amount} tokens to Bob...`);
-            await sleep(15);
+            await waitForThreadExec(thread);
             const bobAmount = await verifyAmount(bobAta, amount);
             console.log(`Bob has received ${bobAmount} tokens`);
 
@@ -77,7 +86,7 @@ describe("distributor", () => {
 
             // Verifying that Charlie has received the tokens
             console.log(`Verifying that Thread distributed ${newAmount} tokens to Charlie instead of Bob`);
-            await sleep(15);
+            await waitForThreadExec(thread);
 
             const charlieAmountLOL = (await getAccount(provider.connection, charlieAta)).amount;
             console.log(`CHARLIE AMOUNT: ${charlieAmountLOL}`);
@@ -144,7 +153,6 @@ const createDistributor = async (
             tokenProgram: TOKEN_PROGRAM_ID,
             associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
             rent: SYSVAR_RENT_PUBKEY,
-            clockwork: CLOCKWORK_THREAD_PROGRAM_ID,
             authority: authority.publicKey,
             mint: mint,
             distributor: distributor,
@@ -161,21 +169,18 @@ const createDistributorThread = async (
     recipient: PublicKey,
     recipientAta: PublicKey,
 ) => {
-    // const threadName = "distributor"; // 👈 make sure it matches on the prog side
+    // const threadId = "distributor"; // 👈 make sure it matches on the prog side
     // For debug: use a fix thread name such as the above, when your code works!
     const date = new Date();
-    const threadName = "distributor_" + date.toLocaleDateString() + "-" + date.getHours() + ":" + date.getMinutes();
+    const threadId = "distributor_" + date.toLocaleDateString() + "-" + date.getHours() + ":" + date.getMinutes();
     // Security:
     // Note that we are using your default Solana paper keypair as the thread authority.
     // Feel free to use whichever authority is appropriate for your use case.
     const threadAuthority = authority.publicKey;
-    const threadAddress = getThreadAddress(threadAuthority, threadName);
-
-    // Top up the thread account with some SOL
-    await provider.connection.requestAirdrop(threadAddress, LAMPORTS_PER_SOL);
+    const [threadAddress] = clockworkProvider.getThreadPDA(threadAuthority, threadId);
 
     // https://docs.rs/clockwork-utils/latest/clockwork_utils/static.PAYER_PUBKEY.html
-    const PAYER_PUBKEY = new PublicKey("C1ockworkPayer11111111111111111111111111111");
+    const payer = PAYER_PUBKEY;
 
     const targetIx = await program.methods
         .distribute()
@@ -184,7 +189,7 @@ const createDistributorThread = async (
             tokenProgram: TOKEN_PROGRAM_ID,
             associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
             rent: SYSVAR_RENT_PUBKEY,
-            payer: PAYER_PUBKEY,
+            payer: payer,
             mint: mint,
             distributor: distributor,
             distributorThread: threadAddress,
@@ -200,13 +205,19 @@ const createDistributorThread = async (
         },
     }
 
-    const r = await createThread({
-        instruction: targetIx,
-        trigger: trigger,
-        threadName: threadName,
-        threadAuthority: threadAuthority
-    }, provider);
-    console.log(r.thread);
+    // 💰 Top-up the thread with this amount of SOL to spend
+    // Each tx ran by your thread will cost 1000 LAMPORTS
+    const threadSOLBudget = LAMPORTS_PER_SOL;
+    await clockworkProvider.threadCreate(
+        threadAuthority,
+        threadId,
+        [targetIx],
+        trigger,
+        threadSOLBudget
+    );
+
+    const threadAccount = await clockworkProvider.getThreadAccount(threadAddress);
+    console.log("Thread: ", threadAccount);
     print_address("🤖 Program", program.programId.toString());
     print_thread_address("🧵 Thread", threadAddress);
     return threadAddress;
@@ -225,7 +236,7 @@ const updateDistributor = async (
         .update(charlie, new anchor.BN(amount.toString()), cronSchedule)
         .accounts({
             systemProgram: SystemProgram.programId,
-            clockworkProgram: CLOCKWORK_THREAD_PROGRAM_ID,
+            clockworkProgram: THREAD_PROGRAM_ID,
             authority: authority.publicKey,
             mint: mint,
             distributor: distributor,
@@ -243,10 +254,21 @@ const verifyAmount = async (ata, expectedAmount) => {
     return amount;
 }
 
-function sleep(seconds) {
-    return new Promise((resolve) => {
-        setTimeout(resolve, 1000 * seconds);
-    });
+let lastThreadExec = new anchor.BN(0);
+const waitForThreadExec = async (thread: PublicKey, maxWait: number = 60) => {
+    let i = 1;
+    while (true) {
+            const execContext = (await clockworkProvider.getThreadAccount(thread)).execContext;
+            if (execContext) {
+                if (lastThreadExec.toString() == "0" || execContext.lastExecAt > lastThreadExec) {
+                    lastThreadExec = execContext.lastExecAt;
+                    break;
+                }
+            }
+            if (i == maxWait) throw Error("Timeout");
+            i += 1;
+            await new Promise((r) => setTimeout(r, i * 1000));
+    }
 }
 
 const print_address = (label, address) => {

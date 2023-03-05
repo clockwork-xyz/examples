@@ -90,8 +90,5 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, Distribute<'info>>) -> Res
         distributor.mint_amount,
     )?;
 
-    Ok(ThreadResponse {
-        next_instruction: None,
-        kickoff_instruction: None,
-    })
+    Ok(ThreadResponse::default())
 }

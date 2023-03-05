@@ -2,6 +2,7 @@ use {
     crate::state::*,
     anchor_lang::{
         prelude::*,
+        InstructionData,
         solana_program::{system_program, sysvar, instruction::Instruction},
     },
     anchor_spl::{
@@ -83,23 +84,22 @@ pub fn handler<'info>(
         distributor.recipient_token_account = get_associated_token_address(&new_recipient, &distributor.mint);
     }
 
-    // new ix data
     let mint_token_ix = Instruction {
         program_id: crate::ID,
-        accounts: vec![
-            AccountMeta::new_readonly(associated_token::ID, false),
-            AccountMeta::new_readonly(distributor.key(), false),
-            AccountMeta::new(distributor_thread.key(), true),
-            AccountMeta::new(mint.key(), false),
-            AccountMeta::new(PAYER_PUBKEY, true),
-            AccountMeta::new_readonly(distributor.recipient, false),
-            AccountMeta::new(distributor.recipient_token_account, false),
-            AccountMeta::new_readonly(sysvar::rent::ID, false),
-            AccountMeta::new_readonly(system_program::ID, false),
-            AccountMeta::new_readonly(token::ID, false),
-        ],
-        data: clockwork_sdk::utils::anchor_sighash("distribute").to_vec(),
-    };
+        accounts: crate::accounts::Distribute {
+            associated_token_program: associated_token::ID,
+            distributor: distributor.key(),
+            distributor_thread: distributor_thread.key(),
+            mint: mint.key(),
+            payer: PAYER_PUBKEY,
+            recipient: distributor.recipient.key(),
+            recipient_token_account: distributor.recipient_token_account.key(),
+            rent: sysvar::rent::ID,
+            system_program: system_program::ID,
+            token_program: token::ID,
+        }.to_account_metas(Some(true)),
+        data: crate::instruction::Distribute{}.data()
+    }.into();
 
     let mut trigger: Option<Trigger> = None;
     if let Some(schedule) = schedule {
@@ -121,8 +121,9 @@ pub fn handler<'info>(
             &[&[SEED_DISTRIBUTOR, distributor.mint.as_ref(), distributor.authority.as_ref(), &[bump]]],
         ),
         ThreadSettings {
-            kickoff_instruction: Some(mint_token_ix.into()),
+            instructions: Some(vec![mint_token_ix]),
             fee: None,
+            name: None,
             rate_limit: None,
             trigger,
         },
