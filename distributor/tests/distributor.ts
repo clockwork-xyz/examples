@@ -11,6 +11,7 @@ import {
     getAssociatedTokenAddress,
     TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getMint, getAccount,
 } from "@solana/spl-token";
+const { spawn } = require("child_process");
 
 // 👇 The new import
 import {ClockworkProvider, PAYER_PUBKEY} from "@clockwork-xyz/sdk";
@@ -37,7 +38,13 @@ describe("distributor", () => {
             program.programId
         );
 
-        console.log("program logs: solana logs -u devnet | grep " + program.programId.toString() + "\n\n");
+        console.log("Read program logs with `solana logs -u devnet " + program.programId.toString() + "`\n\n");
+        // 👇 Uncomment to get Program Logs
+        // const cmd = spawn("solana", ["logs", "-u", "devnet", program.programId.toString()]);
+        // cmd.stdout.on("data", data => {
+        //     console.log(`Program Logs: ${data}`);
+        // });
+
         print_address("mint", mint);
         print_address("bob's token account", bobAta);
         print_address("charlie's token account", charlieAta);
@@ -66,7 +73,7 @@ describe("distributor", () => {
 
             // Verifying that bob has received the tokens
             console.log(`Verifying that Thread distributed ${amount} tokens to Bob...`);
-            await sleep(15);
+            await waitForThreadExec(thread);
             const bobAmount = await verifyAmount(bobAta, amount);
             console.log(`Bob has received ${bobAmount} tokens`);
 
@@ -79,7 +86,7 @@ describe("distributor", () => {
 
             // Verifying that Charlie has received the tokens
             console.log(`Verifying that Thread distributed ${newAmount} tokens to Charlie instead of Bob`);
-            await sleep(15);
+            await waitForThreadExec(thread);
 
             const charlieAmountLOL = (await getAccount(provider.connection, charlieAta)).amount;
             console.log(`CHARLIE AMOUNT: ${charlieAmountLOL}`);
@@ -247,10 +254,21 @@ const verifyAmount = async (ata, expectedAmount) => {
     return amount;
 }
 
-function sleep(seconds) {
-    return new Promise((resolve) => {
-        setTimeout(resolve, 1000 * seconds);
-    });
+let lastThreadExec = new anchor.BN(0);
+const waitForThreadExec = async (thread: PublicKey, maxWait: number = 60) => {
+    let i = 1;
+    while (true) {
+            const execContext = (await clockworkProvider.getThreadAccount(thread)).execContext;
+            if (execContext) {
+                if (lastThreadExec.toString() == "0" || execContext.lastExecAt > lastThreadExec) {
+                    lastThreadExec = execContext.lastExecAt;
+                    break;
+                }
+            }
+            if (i == maxWait) throw Error("Timeout");
+            i += 1;
+            await new Promise((r) => setTimeout(r, i * 1000));
+    }
 }
 
 const print_address = (label, address) => {
