@@ -39,7 +39,13 @@ describe("payment", () => {
             program.programId
         );
 
-        console.log("program logs: solana logs -u devnet | grep " + program.programId.toString() + "\n\n");
+        console.log("Read program logs with `solana logs -u devnet " + program.programId.toString() + "`\n\n");
+        // 👇 Uncomment to get Program Logs
+        // const cmd = spawn("solana", ["logs", "-u", "devnet", program.programId.toString()]);
+        // cmd.stdout.on("data", data => {
+        //     console.log(`Program Logs: ${data}`);
+        // });
+
         print_address("mint", mint);
         print_address("authorityAta", authorityAta);
         print_address("bob's token account", bobAta);
@@ -57,7 +63,7 @@ describe("payment", () => {
             )
 
             // Create Disburse Thread: Ask Thread to disburse payment every 10s at ${amount} tokens.
-            await createDisbursePaymentThread(
+            const thread = await createDisbursePaymentThread(
                 authority,
                 authorityAta,
                 payment,
@@ -68,7 +74,7 @@ describe("payment", () => {
 
             // Verifying that bob has received the tokens
             console.log(`Verifying that Thread distributed ${amount} tokens to Bob...`);
-            await sleep(12);
+            await waitForThreadExec(thread);
             const bobAmount = await verifyAmount(bobAta, amount);
             console.log(`Bob has received ${bobAmount} tokens`);
 
@@ -80,7 +86,7 @@ describe("payment", () => {
 
             // Verifying that bob has received the tokens
             console.log(`Verifying that Thread distributed ${newAmount} tokens to Bob...`);
-            await sleep(12);
+            await waitForThreadExec(thread);
             const expectedAmount = (bobAmount + newAmount)
             const bobAmount2 = await verifyAmount(bobAta, expectedAmount);
             console.log(`Bob has received ${bobAmount2} tokens`);
@@ -233,6 +239,7 @@ const createDisbursePaymentThread = async (
     console.log("Thread: ", threadAccount);
     print_address("🤖 Program", program.programId.toString());
     print_thread_address("🧵 Thread", threadAddress);
+    return threadAddress;
 }
 
 const updatePayment = async (
@@ -256,10 +263,21 @@ const verifyAmount = async (ata, expectedAmount) => {
     return amount;
 }
 
-function sleep(seconds) {
-    return new Promise((resolve) => {
-        setTimeout(resolve, 1000 * seconds);
-    });
+let lastThreadExec = new anchor.BN(0);
+const waitForThreadExec = async (thread: PublicKey, maxWait: number = 60) => {
+    let i = 1;
+    while (true) {
+        const execContext = (await clockworkProvider.getThreadAccount(thread)).execContext;
+        if (execContext) {
+            if (lastThreadExec.toString() == "0" || execContext.lastExecAt > lastThreadExec) {
+                lastThreadExec = execContext.lastExecAt;
+                break;
+            }
+        }
+        if (i == maxWait) throw Error("Timeout");
+        i += 1;
+        await new Promise((r) => setTimeout(r, i * 1000));
+    }
 }
 
 const print_address = (label, address) => {
