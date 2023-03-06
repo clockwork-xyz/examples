@@ -3,15 +3,15 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-counter = "2K1UqcMtt4pnkudtMrDz4uFDMvDTf7reJsznyvn7hT6S"
+counter = "Csf7WudL2YPVCS7Q6eRto7BBjwsfaXC6WDs7k4CU531B"
 [programs.devnet]
-counter = "2K1UqcMtt4pnkudtMrDz4uFDMvDTf7reJsznyvn7hT6S"
+counter = "Csf7WudL2YPVCS7Q6eRto7BBjwsfaXC6WDs7k4CU531B"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
