@@ -1,6 +1,10 @@
 [features]
 seeds = false
+
 [programs.localnet]
+distributor = "ARdMXW5cuNAoNmtCDfrJRYStNXsHgc6yeapTkz9YAYSq"
+
+[programs.devnet]
 distributor = "ARdMXW5cuNAoNmtCDfrJRYStNXsHgc6yeapTkz9YAYSq"
 
 [registry]
