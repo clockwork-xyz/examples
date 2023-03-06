@@ -54,9 +54,10 @@ describe("hello_clockwork", () => {
       const [threadAddress, threadBump] = clockworkProvider.getThreadPDA(wallet.publicKey, threadId)
       const threadAccount = await clockworkProvider.getThreadAccount(threadAddress);
 
-      console.log("ThreadAccount: ", threadAccount);
+      console.log("\nThread: ", threadAccount, "\n");
       print_address("🧵 Thread", threadAddress);
-      print_tx("🖊️  ThreadCreate", tx);
+      print_tx("🖊️ ThreadCreate", tx);
+      console.log("\n");
 
       const cmd = spawn("solana", ["logs", "-u", "devnet", program.programId.toString()]);
       cmd.stdout.on("data", data => {

@@ -217,9 +217,10 @@ const createDistributorThread = async (
     );
 
     const threadAccount = await clockworkProvider.getThreadAccount(threadAddress);
-    console.log("Thread: ", threadAccount);
+    console.log("\nThread: ", threadAccount, "\n");
     print_address("🤖 Program", program.programId.toString());
-    print_thread_address("🧵 Thread", threadAddress);
+    print_address("🧵 Thread", threadAddress);
+    console.log("\n");
     return threadAddress;
 }
 
@@ -277,8 +278,4 @@ const print_address = (label, address) => {
 
 const print_tx = (label, address) => {
     console.log(`${label}: https://explorer.solana.com/tx/${address}?cluster=devnet`);
-}
-
-const print_thread_address = (label, address) => {
-    console.log(`${label}: https://explorer.clockwork.xyz/address/${address}?network=devnet`);
 }

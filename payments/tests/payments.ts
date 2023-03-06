@@ -40,6 +40,7 @@ describe("payment", () => {
             program.programId
         );
 
+        print_address("🤖 Program", program.programId.toString());
         console.log("Read program logs with `solana logs -u devnet " + program.programId.toString() + "`\n\n");
         // 👇 Uncomment to get Program Logs
         // const cmd = spawn("solana", ["logs", "-u", "devnet", program.programId.toString()]);
@@ -228,7 +229,7 @@ const createDisbursePaymentThread = async (
     // 💰 Top-up the thread with this amount of SOL to spend
     // Each tx ran by your thread will cost 1000 LAMPORTS
     const threadSOLBudget = LAMPORTS_PER_SOL;
-    await clockworkProvider.threadCreate(
+    const tx = await clockworkProvider.threadCreate(
         threadAuthority,
         threadId,
         [targetIx],
@@ -237,9 +238,7 @@ const createDisbursePaymentThread = async (
     );
 
     const threadAccount = await clockworkProvider.getThreadAccount(threadAddress);
-    console.log("Thread: ", threadAccount);
-    print_address("🤖 Program", program.programId.toString());
-    print_thread_address("🧵 Thread", threadAddress);
+    console.log("\nThread: ", threadAccount, "\n");
     return threadAddress;
 }
 
@@ -287,8 +286,4 @@ const print_address = (label, address) => {
 
 const print_tx = (label, address) => {
     console.log(`${label}: https://explorer.solana.com/tx/${address}?cluster=devnet`);
-}
-
-const print_thread_address = (label, address) => {
-    console.log(`${label}: https://explorer.clockwork.xyz/address/${address}?network=devnet`);
 }
