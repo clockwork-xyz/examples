@@ -1,8 +1,6 @@
-import { spawn } from "child_process";
-import {assert, expect} from "chai";
+import { assert, expect } from "chai";
 import * as anchor from "@project-serum/anchor";
-import {Program, AnchorProvider} from "@project-serum/anchor";
-import {Payments} from "../target/types/payments";
+import { Program, AnchorProvider } from "@project-serum/anchor";
 import {
     Keypair, PublicKey, Signer, SystemProgram,
     LAMPORTS_PER_SOL, SYSVAR_RENT_PUBKEY,
@@ -14,9 +12,11 @@ import {
     mintToChecked,
     TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAccount,
 } from "@solana/spl-token";
+import { Payments } from "../target/types/payments";
+import { print_address, print_thread, verifyAmount, waitForThreadExec } from "../../utils/helpers";
 
 // 👇 The new import
-import {ClockworkProvider, PAYER_PUBKEY} from "@clockwork-xyz/sdk";
+import { ClockworkProvider, PAYER_PUBKEY } from "@clockwork-xyz/sdk";
 
 const provider = anchor.AnchorProvider.env();
 anchor.setProvider(provider);
@@ -27,6 +27,8 @@ const program = anchor.workspace.Payments as Program<Payments>;
 
 
 describe("payment", () => {
+    print_address("🤖 Program", program.programId.toString());
+
     it("It disburses payment from a Thread!", async () => {
         const [authority, authorityAta, mint, bob, bobAta] = await prepareMints();
 
@@ -39,14 +41,6 @@ describe("payment", () => {
             ],
             program.programId
         );
-
-        print_address("🤖 Program", program.programId.toString());
-        console.log("Read program logs with `solana logs -u devnet " + program.programId.toString() + "`\n\n");
-        // 👇 Uncomment to get Program Logs
-        // const cmd = spawn("solana", ["logs", "-u", "devnet", program.programId.toString()]);
-        // cmd.stdout.on("data", data => {
-        //     console.log(`Program Logs: ${data}`);
-        // });
 
         print_address("mint", mint);
         print_address("authorityAta", authorityAta);
@@ -76,8 +70,8 @@ describe("payment", () => {
 
             // Verifying that bob has received the tokens
             console.log(`Verifying that Thread distributed ${amount} tokens to Bob...`);
-            await waitForThreadExec(thread);
-            const bobAmount = await verifyAmount(bobAta, amount);
+            await waitForThreadExec(clockworkProvider, thread);
+            const bobAmount = await verifyAmount(provider.connection, bobAta, amount);
             console.log(`Bob has received ${bobAmount} tokens`);
 
             const newAmount = amount + BigInt(5_000);
@@ -88,9 +82,8 @@ describe("payment", () => {
 
             // Verifying that bob has received the tokens
             console.log(`Verifying that Thread distributed ${newAmount} tokens to Bob...`);
-            await waitForThreadExec(thread);
-            const expectedAmount = (bobAmount + newAmount)
-            const bobAmount2 = await verifyAmount(bobAta, expectedAmount);
+            await waitForThreadExec(clockworkProvider, thread);
+            const bobAmount2 = await verifyAmount(provider.connection, bobAta, (bobAmount + newAmount));
             console.log(`Bob has received ${bobAmount2} tokens`);
         } catch (e) {
             // ❌
@@ -229,7 +222,7 @@ const createDisbursePaymentThread = async (
     // 💰 Top-up the thread with this amount of SOL to spend
     // Each tx ran by your thread will cost 1000 LAMPORTS
     const threadSOLBudget = LAMPORTS_PER_SOL;
-    const tx = await clockworkProvider.threadCreate(
+    await clockworkProvider.threadCreate(
         threadAuthority,
         threadId,
         [targetIx],
@@ -237,8 +230,7 @@ const createDisbursePaymentThread = async (
         threadSOLBudget
     );
 
-    const threadAccount = await clockworkProvider.getThreadAccount(threadAddress);
-    console.log("\nThread: ", threadAccount, "\n");
+    await print_thread(clockworkProvider, threadAddress);
     return threadAddress;
 }
 
@@ -252,38 +244,4 @@ const updatePayment = async (
             payment: payment
         })
         .rpc();
-}
-
-const verifyAmount = async (ata, expectedAmount) => {
-    const amount = (await getAccount(provider.connection, ata)).amount;
-    assert.equal(
-        amount.toString(),
-        expectedAmount.toString()
-    );
-    return amount;
-}
-
-let lastThreadExec = new anchor.BN(0);
-const waitForThreadExec = async (thread: PublicKey, maxWait: number = 60) => {
-    let i = 1;
-    while (true) {
-        const execContext = (await clockworkProvider.getThreadAccount(thread)).execContext;
-        if (execContext) {
-            if (lastThreadExec.toString() == "0" || execContext.lastExecAt > lastThreadExec) {
-                lastThreadExec = execContext.lastExecAt;
-                break;
-            }
-        }
-        if (i == maxWait) throw Error("Timeout");
-        i += 1;
-        await new Promise((r) => setTimeout(r, i * 1000));
-    }
-}
-
-const print_address = (label, address) => {
-    console.log(`${label}: https://explorer.solana.com/address/${address}?cluster=devnet`);
-}
-
-const print_tx = (label, address) => {
-    console.log(`${label}: https://explorer.solana.com/tx/${address}?cluster=devnet`);
 }

@@ -1,8 +1,7 @@
 {
     "scripts": {
         "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
-        "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
-        "programid:new": "rm target/deploy/distributor-keypair.json && ./deploy.sh devnet"
+        "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
     },
     "dependencies": {
         "@clockwork-xyz/sdk": "^0.2.3",

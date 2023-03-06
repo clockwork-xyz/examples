@@ -3,6 +3,8 @@ import { PublicKey, SystemProgram, } from "@solana/web3.js";
 import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
 import { Counter } from "../target/types/counter";
+import { print_address, print_thread, print_tx, waitForThreadExec } from "../../utils/helpers";
+
 // 0️⃣  Import the Clockwork SDK.
 import { ClockworkProvider, PAYER_PUBKEY } from "@clockwork-xyz/sdk";
 
@@ -28,36 +30,10 @@ const fetchCounter = async (counter) => {
     return counterAcc;
 }
 
-const print_tx = (label, address) => {
-    console.log(`${label}: https://explorer.solana.com/tx/${address}?cluster=devnet`);
-}
-
-const print_address = (label, address) => {
-    console.log(`${label}: https://explorer.solana.com/address/${address}?cluster=devnet`);
-}
-
-let lastThreadExec = new anchor.BN(0);
-const waitForThreadExec = async (thread: PublicKey, maxWait: number = 60) => {
-    let i = 1;
-    while (true) {
-        const execContext = (await clockworkProvider.getThreadAccount(thread)).execContext;
-        if (execContext) {
-            if (lastThreadExec.toString() == "0" || execContext.lastExecAt > lastThreadExec) {
-                lastThreadExec = execContext.lastExecAt;
-                break;
-            }
-        }
-        if (i == maxWait) throw Error("Timeout");
-        i += 1;
-        await new Promise((r) => setTimeout(r, i * 1000));
-    }
-}
-
 
 // Tests
 describe("counter", () => {
     const counter = getCounterAddress();
-
     print_address("🤖 Counter program", program.programId.toString());
 
     beforeEach(async () => {
@@ -113,7 +89,7 @@ describe("counter", () => {
         );
         const [threadAddress, threadBump] = clockworkProvider.getThreadPDA(threadAuthority, threadId)
         try {
-            const tx = await program.methods
+            await program.methods
                 .createThread(Buffer.from(threadId))
                 .accounts({
                     systemProgram: SystemProgram.programId,
@@ -125,14 +101,11 @@ describe("counter", () => {
                 })
                 .rpc();
 
-            const threadAccount = await clockworkProvider.getThreadAccount(threadAddress);
-            console.log("\nThreadAccount: ", threadAccount, "\n");
-            print_address("🧵 Thread", threadAddress);
-            print_tx("🖊️ CreateThread", tx);
+            await print_thread(clockworkProvider, threadAddress);
 
-            console.log("\n Verifying that Thread increments the counter every 10s")
+            console.log("Verifying that Thread increments the counter every 10s")
             for (let i = 1; i < 4; i++) {
-                await waitForThreadExec(threadAddress);
+                await waitForThreadExec(clockworkProvider, threadAddress);
                 const counterAcc = await fetchCounter(counter);
                 expect(counterAcc.currentValue.toString()).to.eq(i.toString());
             }
