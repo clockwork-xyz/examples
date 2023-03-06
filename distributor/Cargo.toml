@@ -2,6 +2,3 @@
 members = [
     "programs/*"
 ]
-
-[patch.crates-io]
-clockwork-sdk = { git = "https://github.com/clockwork-xyz/clockwork", tag = "v2.0.1" }

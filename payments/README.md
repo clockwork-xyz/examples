@@ -5,13 +5,6 @@ This program creates a Thread that streams payment to a recipient.
 - Then, we schedule a Thread to disburse tokens using the payment account's information.
 
 ---
-## ⚠️ V2
-Note the cargo patch in `Cargo.toml`
-```toml
-[patch.crates-io]
-clockwork-sdk = { git = "https://github.com/clockwork-xyz/clockwork", tag = "v2.0.1" }
-```
----
 
 ## Prerequisites
 - Make sure you have both [Solana](https://docs.solana.com/cli/install-solana-cli-tools) and [Anchor](https://www.anchor-lang.com/docs/installation) installed on your computer.
