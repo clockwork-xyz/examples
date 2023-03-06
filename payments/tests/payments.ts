@@ -1,3 +1,4 @@
+import { spawn } from "child_process";
 import {assert, expect} from "chai";
 import * as anchor from "@project-serum/anchor";
 import {Program, AnchorProvider} from "@project-serum/anchor";

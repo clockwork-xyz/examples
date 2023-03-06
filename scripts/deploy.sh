@@ -10,6 +10,14 @@ fi
 crate_name=$(basename "$PWD")
 network=$1
 
+replace_in_file() {
+  if [ "$(uname)" == "Darwin" ]; then
+    sed -i '' -e "$1" "$2"
+  else
+    sed -i'' -e "$1" "$2"
+  fi
+}
+
 # Get pubkey addresses
 anchor build
 
@@ -18,22 +26,22 @@ echo "project_name: $crate_name"
 echo "program_id: $program_id"
 
 # Update program IDs
-sed -i '' -e 's/^declare_id!(".*");/declare_id!("'${program_id}'");/g' "programs/$crate_name/src/id.rs"
-sed -i '' -e 's/^'${crate_name}' = ".*"/'${crate_name}' = "'${program_id}'"/g' Anchor.toml
+replace_in_file 's/^declare_id!(".*");/declare_id!("'${program_id}'");/g' "programs/$crate_name/src/id.rs"
+replace_in_file 's/^'${crate_name}' = ".*"/'${crate_name}' = "'${program_id}'"/g' Anchor.toml
 
 # Rebuild with new program ID
 anchor build
 
 deploy_devnet() {
   solana config set --url devnet
-  solana airdrop 2
-  sed -i '' -e 's/^cluster = ".*"/cluster = "'${network}'"/g' Anchor.toml
+  replace_in_file 's/^cluster = ".*"/cluster = "'${network}'"/g' Anchor.toml
+  solana airdrop 1
   anchor deploy
 }
 
 deploy_localnet() {
   solana config set --url "http://localhost:8899"
-  sed -i '' -e 's/^cluster = ".*"/cluster = "'${network}'"/g' Anchor.toml
+  replace_in_file 's/^cluster = ".*"/cluster = "'${network}'"/g' Anchor.toml
   anchor deploy
 }
 

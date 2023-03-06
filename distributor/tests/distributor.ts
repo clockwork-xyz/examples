@@ -1,3 +1,4 @@
+import { spawn } from "child_process";
 import {assert, expect} from "chai";
 import * as anchor from "@project-serum/anchor";
 import {AnchorProvider, Program} from "@project-serum/anchor";
@@ -11,7 +12,6 @@ import {
     getAssociatedTokenAddress,
     TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getMint, getAccount,
 } from "@solana/spl-token";
-const { spawn } = require("child_process");
 
 // 👇 The new import
 import {ClockworkProvider, PAYER_PUBKEY} from "@clockwork-xyz/sdk";

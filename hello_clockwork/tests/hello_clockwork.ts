@@ -1,5 +1,5 @@
+import { spawn } from "child_process";
 import { expect } from "chai";
-import { PublicKey, SystemProgram } from "@solana/web3.js";
 import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
 import { HelloClockwork } from "../target/types/hello_clockwork";
@@ -52,8 +52,16 @@ describe("hello_clockwork", () => {
         anchor.web3.LAMPORTS_PER_SOL, // pre-fund amount
       );
       const [threadAddress, threadBump] = clockworkProvider.getThreadPDA(wallet.publicKey, threadId)
+      const threadAccount = await clockworkProvider.getThreadAccount(threadAddress);
+
+      console.log("ThreadAccount: ", threadAccount);
       print_address("🧵 Thread", threadAddress);
       print_tx("🖊️  ThreadCreate", tx);
+
+      const cmd = spawn("solana", ["logs", "-u", "devnet", program.programId.toString()]);
+      cmd.stdout.on("data", data => {
+          console.log(`Program Logs: ${data}`);
+      });
     } catch (e) {
       // ❌
       // 'Program log: Instruction: ThreadCreate',
@@ -67,6 +75,5 @@ describe("hello_clockwork", () => {
       expect.fail(e);
     }
   });
-
 });
 

@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
-
-declare_id!("V8B9ZekPAHbGP9ijjv4WHtvmYM3irrrDeZeBwWfdgqa");
+pub mod id;
+pub use id::ID;
 
 #[program]
 pub mod hello_clockwork {
@@ -20,3 +20,9 @@ pub mod hello_clockwork {
 #[derive(Accounts)]
 #[instruction(name: String)]
 pub struct Hello {}
+// Replace the above by this to enforce that the ix can only be run from a given thread
+// #[derive(Accounts)]
+// pub struct Hello<'info> {
+//     #[account(address = thread.pubkey(), signer)]
+//     pub thread: Account<'info, Thread>,
+// }
