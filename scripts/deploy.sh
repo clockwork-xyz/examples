@@ -19,6 +19,11 @@ replace_in_file() {
 }
 
 # Get pubkey addresses
+# Delete old program ID if -f is passed
+if [ $# -eq 2 ] && [ "$2" == "-f" ]; then
+  echo "Deleting old program id"
+  rm -rf "target/deploy/$crate_name-keypair.json"
+fi
 anchor build
 
 program_id=$(solana address -k "target/deploy/$crate_name-keypair.json")

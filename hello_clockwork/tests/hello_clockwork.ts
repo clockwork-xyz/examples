@@ -1,19 +1,11 @@
-import { spawn } from "child_process";
 import { expect } from "chai";
 import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
 import { HelloClockwork } from "../target/types/hello_clockwork";
+import { print_address, print_thread, print_tx, stream_program_logs } from "../../utils/helpers";
 
 // 0️⃣  Import the Clockwork SDK.
 import { ClockworkProvider } from "@clockwork-xyz/sdk";
-
-const print_address = (label, address) => {
-  console.log(`${label}: https://explorer.solana.com/address/${address}?cluster=devnet`);
-}
-
-const print_tx = (label, address) => {
-  console.log(`${label}: https://explorer.solana.com/tx/${address}?cluster=devnet`);
-}
 
 describe("hello_clockwork", () => {
   const provider = anchor.AnchorProvider.env();
@@ -43,25 +35,18 @@ describe("hello_clockwork", () => {
 
     // 3️⃣  Create the thread.
     try {
-      const threadId = "test-" + new Date().getTime() / 1000;
-      const tx = await clockworkProvider.threadCreate(
+      const threadId = "hello_" + new Date().getTime() / 1000;
+      await clockworkProvider.threadCreate(
         wallet.publicKey, // authority
         threadId,               // id
         [targetIx],             // instructions to execute
         trigger,                // trigger condition
         anchor.web3.LAMPORTS_PER_SOL, // pre-fund amount
       );
+
       const [threadAddress, threadBump] = clockworkProvider.getThreadPDA(wallet.publicKey, threadId)
-      const threadAccount = await clockworkProvider.getThreadAccount(threadAddress);
-
-      console.log("ThreadAccount: ", threadAccount);
-      print_address("🧵 Thread", threadAddress);
-      print_tx("🖊️  ThreadCreate", tx);
-
-      const cmd = spawn("solana", ["logs", "-u", "devnet", program.programId.toString()]);
-      cmd.stdout.on("data", data => {
-          console.log(`Program Logs: ${data}`);
-      });
+      await print_thread(clockworkProvider, threadAddress);
+      stream_program_logs(program.programId);
     } catch (e) {
       // ❌
       // 'Program log: Instruction: ThreadCreate',
