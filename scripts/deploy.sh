@@ -8,6 +8,7 @@ if [ $# -eq 0 ] || [ "$1" != "localnet" ] && [ "$1" != "devnet" ]; then
 fi
 
 crate_name=$(basename "$PWD")
+crate_name=$(sed -E "s/^([0-9]+)-//g" <<< "$crate_name")
 network=$1
 
 replace_in_file() {
@@ -40,7 +41,6 @@ anchor build
 deploy_devnet() {
   solana config set --url devnet
   replace_in_file 's/^cluster = ".*"/cluster = "'${network}'"/g' Anchor.toml
-  solana airdrop 1
   anchor deploy
 }
 
