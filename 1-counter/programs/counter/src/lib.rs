@@ -27,29 +27,24 @@ pub mod counter {
         Ok(())
     }
 
-    pub fn create_thread(ctx: Context<CreateThread>, thread_id: Vec<u8>) -> Result<()> {
+    pub fn initialize(ctx: Context<Initialize>, thread_id: Vec<u8>) -> Result<()> {
         // Get accounts
         let system_program = &ctx.accounts.system_program;
         let clockwork_program = &ctx.accounts.clockwork_program;
         let payer = &ctx.accounts.payer;
         let thread = &ctx.accounts.thread;
-        let thread_authority = &ctx.accounts.thread_authority;
-        let bump = *ctx.bumps.get("thread_authority").unwrap();
+        let thread_authority_pda = &ctx.accounts.thread_authority_pda;
+        let bump = *ctx.bumps.get("thread_authority_pda").unwrap();
         let counter = &mut ctx.accounts.counter;
-
-        // ⚠️ Set the authority for the counter
-        if counter.updated_at == 0 {
-            counter.authority = thread_authority.key();
-        }
 
         // 1️⃣ Prepare an instruction to feed to the Thread
         let target_ix = Instruction {
             program_id: ID,
             accounts: crate::accounts::Increment {
                 system_program: system_program.key(),
-                payer: clockwork_sdk::utils::PAYER_PUBKEY,
                 counter: counter.key(),
                 thread: thread.key(),
+                thread_authority_pda: thread_authority_pda.key(),
             }.to_account_metas(Some(true)),
             data: crate::instruction::Increment {}.data(),
         };
@@ -65,10 +60,10 @@ pub mod counter {
             CpiContext::new_with_signer(
                 clockwork_program.to_account_info(),
                 clockwork_sdk::cpi::ThreadCreate {
-                    authority: thread_authority.to_account_info(),
                     payer: payer.to_account_info(),
                     system_program: system_program.to_account_info(),
                     thread: thread.to_account_info(),
+                    authority: thread_authority_pda.to_account_info(),
                 },
                 &[&[THREAD_AUTHORITY_SEED, &[bump]]],
             ),
@@ -86,14 +81,14 @@ pub mod counter {
         let clockwork_program = &ctx.accounts.clockwork_program;
         let payer = &ctx.accounts.payer;
         let thread = &ctx.accounts.thread;
-        let thread_authority = &ctx.accounts.thread_authority;
-        let bump = *ctx.bumps.get("thread_authority").unwrap();
+        let thread_authority_pda = &ctx.accounts.thread_authority_pda;
+        let bump = *ctx.bumps.get("thread_authority_pda").unwrap();
 
         // The actual CPI
         clockwork_sdk::cpi::thread_delete(CpiContext::new_with_signer(
             clockwork_program.to_account_info(),
             clockwork_sdk::cpi::ThreadDelete {
-                authority: thread_authority.to_account_info(),
+                authority: thread_authority_pda.to_account_info(),
                 close_to: payer.to_account_info(),
                 thread: thread.to_account_info(),
             },
@@ -109,7 +104,6 @@ pub mod counter {
 #[account]
 #[derive(Debug)]
 pub struct Counter {
-    pub authority: Pubkey,
     pub current_value: u64,
     pub updated_at: i64,
 }
@@ -119,17 +113,20 @@ pub struct Counter {
  */
 
 /// Seed for `Counter` account Program Derived Address
-/// ⚠️make sure it matches whatever you are using on the client-side
+/// ⚠️ Make sure it matches whatever you are using on the client-side
 pub const SEED_COUNTER: &[u8] = b"counter";
+
+/// Seed for thread_authority pda
+/// ⚠️ Make sure it matches whatever you are using on the client-side
+pub const THREAD_AUTHORITY_SEED: &[u8] = b"authority";
 
 #[derive(Accounts)]
 pub struct Increment<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-
+    /// The system program.
     #[account(address = system_program::ID)]
     pub system_program: Program<'info, System>,
 
+    /// The counter account.
     #[account(
     mut,
     seeds = [SEED_COUNTER],
@@ -140,10 +137,18 @@ pub struct Increment<'info> {
     /// Verify that only this thread can execute the Increment Instruction
     #[account(
     signer,
-    address = thread.pubkey(),
-    constraint = thread.authority == counter.authority
+    constraint = thread.authority.eq(& thread_authority_pda.key())
     )]
     pub thread: Account<'info, clockwork_sdk::state::Thread>,
+
+    /// The Thread Admin
+    /// The authority that was used as a seed to derive the thread address
+    /// `thread_authority_pda` should equal `thread.thread_authority`
+    #[account(
+    seeds = [THREAD_AUTHORITY_SEED],
+    bump,
+    )]
+    pub thread_authority_pda: SystemAccount<'info>,
 }
 
 #[derive(Accounts)]
@@ -160,14 +165,11 @@ pub struct Delete<'info> {
     pub counter: Account<'info, Counter>,
 }
 
-/// Seed for thread_authority pda
-/// ⚠️ Make sure it matches whatever you are using on the client-side
-pub const THREAD_AUTHORITY_SEED: &[u8] = b"authority";
-
 #[derive(Accounts)]
 #[instruction(thread_id: Vec < u8 >)]
-pub struct CreateThread<'info> {
-    /// Who's paying
+pub struct Initialize<'info> {
+    /// Who's paying for this Initialize Transaction
+    /// (not to be confused with the thread executions)
     #[account(mut)]
     pub payer: Signer<'info>,
 
@@ -181,19 +183,22 @@ pub struct CreateThread<'info> {
     /// Address to assign to the newly created Thread
     #[account(
     mut,
-    address = clockwork_sdk::state::Thread::pubkey(thread_authority.key(), thread_id)
+    address = clockwork_sdk::state::Thread::pubkey(thread_authority_pda.key(), thread_id)
     )]
     pub thread: SystemAccount<'info>,
 
-    /// Thread Admin
+    /// The Thread Admin
+    /// The address that was used as a seed to derive the thread address with
+    /// `clockworkProvider.getThreadPDA(threadAuthority, threadId)`
+    /// `thread_authority_pda` should equal `thread.authority`
     #[account(
     seeds = [THREAD_AUTHORITY_SEED],
     bump,
     )]
-    pub thread_authority: SystemAccount<'info>,
+    pub thread_authority_pda: SystemAccount<'info>,
 
     #[account(
-    init_if_needed,
+    init,
     payer = payer,
     seeds = [SEED_COUNTER],
     bump,
@@ -216,13 +221,16 @@ pub struct DeleteThread<'info> {
     #[account(
     mut,
     address = thread.pubkey(),
+    constraint = thread.authority.eq(& thread_authority_pda.key())
     )]
     pub thread: Account<'info, clockwork_sdk::state::Thread>,
 
-    /// Thread Admin
+    /// The Thread Admin
+    /// The address that was used as a seed to derive the thread address
+    /// `thread_authority_pda` should equal `thread.authority`
     #[account(
     seeds = [THREAD_AUTHORITY_SEED],
     bump,
     )]
-    pub thread_authority: SystemAccount<'info>,
+    pub thread_authority_pda: SystemAccount<'info>,
 }

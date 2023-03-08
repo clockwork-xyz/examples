@@ -19,13 +19,6 @@ const clockworkProvider = new ClockworkProvider(wallet, provider.connection);
 /*
 ** Helpers
 */
-const getCounterAddress = () => {
-    return PublicKey.findProgramAddressSync(
-        [anchor.utils.bytes.utf8.encode("counter")], // 👈 make sure it matches on the prog side
-        program.programId
-    )[0];
-}
-
 const fetchCounter = async (counter) => {
     const counterAcc = await program.account.counter.fetch(counter);
     console.log("currentValue: " + counterAcc.currentValue + ", updatedAt: " + counterAcc.updatedAt);
@@ -38,6 +31,10 @@ const fetchCounter = async (counter) => {
 */
 describe("counter", () => {
     print_address("🤖 Counter program", program.programId.toString());
+    const [counter] = PublicKey.findProgramAddressSync(
+        [anchor.utils.bytes.utf8.encode("counter")], // 👈 make sure it matches on the prog side
+        program.programId
+    );
 
     // 1️⃣ Prepare thread address
     const threadId = "counter-" + new Date().getTime() / 1000;
@@ -46,24 +43,19 @@ describe("counter", () => {
         program.programId
     );
     const [threadAddress, threadBump] = clockworkProvider.getThreadPDA(threadAuthority, threadId)
-    const counter = getCounterAddress();
 
     it("It increments every 10 seconds", async () => {
         try {
-            console.log(threadAddress);
-            console.log(threadAuthority);
-            console.log(counter);
-
             // 2️⃣ Ask our program to create a thread via CPI
             // and thus become the admin of that thread
             await program.methods
-                .createThread(Buffer.from(threadId))
+                .initialize(Buffer.from(threadId))
                 .accounts({
+                    payer: wallet.publicKey,
                     systemProgram: SystemProgram.programId,
                     clockworkProgram: clockworkProvider.threadProgram.programId,
-                    payer: wallet.publicKey,
                     thread: threadAddress,
-                    threadAuthority: threadAuthority,
+                    threadAuthorityPda: threadAuthority,
                     counter: counter,
                 })
                 .rpc();
@@ -95,10 +87,10 @@ describe("counter", () => {
         await program.methods
             .deleteThread()
             .accounts({
-                clockworkProgram: clockworkProvider.threadProgram.programId,
                 payer: wallet.publicKey,
+                clockworkProgram: clockworkProvider.threadProgram.programId,
                 thread: threadAddress,
-                threadAuthority: threadAuthority,
+                threadAuthorityPda: threadAuthority,
             })
             .rpc();
         await program.methods
