@@ -32,7 +32,7 @@ echo "project_name: $crate_name"
 echo "program_id: $program_id"
 
 # Update program IDs
-replace_in_file 's/^declare_id!(".*");/declare_id!("'${program_id}'");/g' "programs/$crate_name/src/id.rs"
+replace_in_file 's/^declare_id!(".*");/declare_id!("'${program_id}'");/g' "programs/$crate_name/src/lib.rs"
 replace_in_file 's/^'${crate_name}' = ".*"/'${crate_name}' = "'${program_id}'"/g' Anchor.toml
 
 # Rebuild with new program ID
