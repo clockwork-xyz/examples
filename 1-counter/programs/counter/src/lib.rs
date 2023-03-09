@@ -177,4 +177,13 @@ pub struct Reset<'info> {
     /// The pda that owns and manages the thread.
     #[account(seeds = [THREAD_AUTHORITY_SEED], bump)]
     pub thread_authority: SystemAccount<'info>,
+
+    /// Close the counter account
+    #[account(
+        mut,
+        seeds = [SEED_COUNTER],
+        bump,
+        close = payer
+    )]
+    pub counter: Account<'info, Counter>,
 }
