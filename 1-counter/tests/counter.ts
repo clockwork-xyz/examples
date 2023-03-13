@@ -6,7 +6,7 @@ import { Counter } from "../target/types/counter";
 import { print_address, print_thread, waitForThreadExec } from "../../utils/helpers";
 
 // 0️⃣  Import the Clockwork SDK.
-import { ClockworkProvider, PAYER_PUBKEY } from "@clockwork-xyz/sdk";
+import { ClockworkProvider } from "@clockwork-xyz/sdk";
 
 
 const provider = anchor.AnchorProvider.env();
@@ -55,7 +55,7 @@ describe("counter", () => {
                     systemProgram: SystemProgram.programId,
                     clockworkProgram: clockworkProvider.threadProgram.programId,
                     thread: threadAddress,
-                    threadAuthorityPda: threadAuthority,
+                    threadAuthority: threadAuthority,
                     counter: counter,
                 })
                 .rpc();
@@ -84,22 +84,16 @@ describe("counter", () => {
     // Just some cleanup to reset the test to a clean state
     afterEach(async () => {
         try {
-        await program.methods
-            .deleteThread()
-            .accounts({
-                payer: wallet.publicKey,
-                clockworkProgram: clockworkProvider.threadProgram.programId,
-                thread: threadAddress,
-                threadAuthorityPda: threadAuthority,
-            })
-            .rpc();
-        await program.methods
-            .delete()
-            .accounts({
-                payer: wallet.publicKey,
-                counter: counter,
-            })
-            .rpc();
-        } catch (e) {}
+            await program.methods
+                .reset()
+                .accounts({
+                    payer: wallet.publicKey,
+                    clockworkProgram: clockworkProvider.threadProgram.programId,
+                    counter: counter,
+                    thread: threadAddress,
+                    threadAuthority: threadAuthority,
+                })
+                .rpc();
+        } catch (e) { }
     })
 });
