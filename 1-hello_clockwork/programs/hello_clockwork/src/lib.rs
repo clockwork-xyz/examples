@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
-pub mod id;
-pub use id::ID;
+
+declare_id!("BRKkBxcCM85r1frqSKLFmmRXetqiCyqnrXG4iWt4VBP1");
 
 #[program]
 pub mod hello_clockwork {
