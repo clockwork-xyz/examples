@@ -5,7 +5,7 @@ use anchor_lang::solana_program::{
 use anchor_lang::InstructionData;
 use clockwork_sdk::state::{Thread, ThreadAccount};
 
-declare_id!("HsjAAC3PvCVujGdUwoaLpjbPPGbFgimpFZBHrSooGX2V");
+declare_id!("5uEViA2t53qXNmXq4pTkaA8MZuDzxNKsRRDnZj7nPqNg");
 
 #[program]
 pub mod counter {

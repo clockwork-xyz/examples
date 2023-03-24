@@ -13,7 +13,7 @@ const provider = anchor.AnchorProvider.env();
 anchor.setProvider(provider);
 const wallet = provider.wallet;
 const program = anchor.workspace.Counter as Program<Counter>;
-const clockworkProvider = new ClockworkProvider(wallet, provider.connection);
+const clockworkProvider = ClockworkProvider.fromAnchorProvider(provider);
 
 
 /*

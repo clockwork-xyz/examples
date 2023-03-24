@@ -12,7 +12,7 @@ describe("hello_clockwork", () => {
   anchor.setProvider(provider);
   const wallet = provider.wallet;
   const program = anchor.workspace.HelloClockwork as Program<HelloClockwork>;
-  const clockworkProvider = new ClockworkProvider(wallet, provider.connection);
+  const clockworkProvider = ClockworkProvider.fromAnchorProvider(provider);
 
   print_address("🔗 HelloClockwork program", program.programId.toString());
 
@@ -36,13 +36,15 @@ describe("hello_clockwork", () => {
     // 3️⃣  Create the thread.
     try {
       const threadId = "hello_" + new Date().getTime() / 1000;
-      await clockworkProvider.threadCreate(
+      const ix = await clockworkProvider.threadCreate(
         wallet.publicKey, // authority
         threadId,               // id
         [targetIx],             // instructions to execute
         trigger,                // trigger condition
         anchor.web3.LAMPORTS_PER_SOL, // pre-fund amount
       );
+      const tx = new anchor.web3.Transaction().add(ix);
+      const signature = await clockworkProvider.anchorProvider.sendAndConfirm(tx);
 
       const [threadAddress, threadBump] = clockworkProvider.getThreadPDA(wallet.publicKey, threadId)
       await print_thread(clockworkProvider, threadAddress);
