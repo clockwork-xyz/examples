@@ -3,7 +3,7 @@ import { PublicKey, SystemProgram, } from "@solana/web3.js";
 import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
 import { Counter } from "../target/types/counter";
-import { print_address, print_thread, waitForThreadExec } from "../../utils/helpers";
+import { print_address, print_thread, waitForThreadExec } from "@utils";
 
 // 0️⃣  Import the Clockwork SDK.
 import { ClockworkProvider } from "@clockwork-xyz/sdk";
