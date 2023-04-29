@@ -1,0 +1,21 @@
+[package]
+name = "pyth-trigger-test"
+version = "0.1.0"
+description = "Created with Anchor"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "pyth_trigger_test"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+[dependencies]
+anchor-lang = "0.27.0"
+clockwork-sdk = { git = "https://github.com/clockwork-xyz/clockwork", branch = "nick/pyth-trigger" }
+pyth-sdk-solana = "0.7.1"

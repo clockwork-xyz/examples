@@ -1,0 +1,19 @@
+[features]
+seeds = false
+skip-lint = false
+
+[programs.localnet]
+pyth_trigger_test = "3D9Z2VywLehXGJxMDBdt7gVhowTWHc2LNqtfRNcp2g5P"
+
+[programs.devnet]
+pyth_trigger_test = "3D9Z2VywLehXGJxMDBdt7gVhowTWHc2LNqtfRNcp2g5P"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "devnet"
+wallet = "/home/ubuntu/.config/solana/id.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
