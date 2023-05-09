@@ -26,20 +26,6 @@ Time to switch perspective, we need to do some work off-chain now, we will creat
 
 ## How do I know if it works?
 Let's see how we can observe our newly created Thread:
-- The prepared client, will also print the Solana Explorer url
-```bash
-initialize tx: ✅ https://explorer.solana.com/tx/...
-ping tx: ✅ https://explorer.solana.com/tx/...
-...
-```
-- If you have the Clockwork Cli installed, you can use the `clockwork` command
-```bash
-clockwork thread get --address <your_thread_address> 
-clockwork thread get <your_thread_label>
-```
-
-## How do I know if it works?
-Let's see how we can observe our newly created Thread:
 - Run the tests!
 ```bash
 anchor test
