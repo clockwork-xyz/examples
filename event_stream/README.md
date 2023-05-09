@@ -8,11 +8,13 @@ clockwork localnet
 ```
 
 **1. Program Side - Deploying the Handler Program**
+
 We start by defining an instruction to execute, that is the __"WHAT"__:
 - We have already prepared a handler.
 - You just have to deploy it using `./deploy.sh localnet` _(nothing fancy, the usual program ids and network switch)_.
 
 **2. Client Side - Creating a Thread**
+
 Time to switch perspective, we need to do some work off-chain now, we will create a Thread, that's the __"HOW"__:
 - Check the `tests` folder, we are using anchor tests as a client.
 - Run `anchor tests`, this will create a __Thread__ that listens for a certain account and print logs whenever the
