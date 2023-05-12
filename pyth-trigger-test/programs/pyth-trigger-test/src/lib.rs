@@ -32,7 +32,7 @@ pub mod pyth_trigger_test {
             data: crate::instruction::Memo {}.data(),
         };
 
-        // 2️⃣ Define a trigger for the thread (every 10 secs).
+        // 2️⃣ Define a trigger for the thread (Pyth feeds update multiple times per slot).
         // example price 2316687750
         let trigger = clockwork_sdk::state::Trigger::Pyth {
             price_feed: price_pubkey,
