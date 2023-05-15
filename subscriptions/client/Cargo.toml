@@ -9,6 +9,7 @@ clap = { version = "4.0.28", features = ["derive"] }
 clockwork-sdk = { version = "2.0.17" }
 anchor-spl = "=0.27.0"
 anchor-lang = "=0.27.0"
+anyhow = "1.0.70"
 solana-sdk = "=1.14.16"
 solana-client = "=1.14.16"
 dotenv = "0.15.0"

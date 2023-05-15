@@ -1,10 +1,10 @@
 use {
     anchor_lang::prelude::Pubkey,
+    anyhow::Error,
     clap::Parser,
-    clockwork_sdk::client::{thread_program::objects::Thread, ClientResult, SplToken},
+    clockwork_sdk::state::Thread,
     dotenv::dotenv,
     rand::Rng,
-    solana_sdk::signer::Signer,
 };
 
 pub mod commands;
@@ -23,7 +23,14 @@ struct Args {
     recurrent_amount: u64,
 }
 
-fn main() -> ClientResult<()> {
+fn main() {
+    if let Err(err) = process() {
+        println!("{:?}", err);
+        std::process::exit(1);
+    };
+}
+
+fn process() -> Result<(), Error> {
     let args = Args::parse();
     dotenv().ok();
 
@@ -73,7 +80,7 @@ fn main() -> ClientResult<()> {
                 subscription.unwrap(),
             );
 
-            let subscription_thread = Thread::pubkey(subscriber, "subscriber_thread".to_string());
+            let subscription_thread = Thread::pubkey(subscriber, "subscriber_thread".into());
 
             create_subscriber(
                 &client,

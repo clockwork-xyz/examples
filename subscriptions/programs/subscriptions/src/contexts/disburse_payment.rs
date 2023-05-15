@@ -3,12 +3,12 @@ use {
     anchor_lang::prelude::*,
     anchor_spl::token::{self, Token, TokenAccount, Transfer},
     clockwork_sdk::{
-        thread_program::{
-            self,
-            accounts::{Thread, ThreadAccount},
-            ThreadProgram,
+        state::{
+            Thread,
+            ThreadAccount,
+            ThreadResponse,
         },
-        ThreadResponse,
+        ThreadProgram,
     },
 };
 
@@ -31,7 +31,7 @@ pub struct DisbursePayment<'info> {
         signer,
         address = subscription_thread.pubkey(),
         constraint = subscription_thread.authority.eq(&subscriber.key()),
-        constraint = subscription_thread.id.eq("subscriber_thread"),
+        constraint = subscription_thread.id.eq("subscriber_thread".as_bytes()),
     )]
     pub subscription_thread: Box<Account<'info, Thread>>,
     #[account(
@@ -42,7 +42,7 @@ pub struct DisbursePayment<'info> {
     )]
     pub subscription_bank: Account<'info, TokenAccount>,
 
-    #[account(address = thread_program::ID)]
+    #[account(address = clockwork_sdk::ID)]
     pub thread_program: Program<'info, ThreadProgram>,
     pub token_program: Program<'info, Token>,
 }
@@ -61,9 +61,9 @@ impl<'info> DisbursePayment<'_> {
         } = self;
 
         if !subscriber.is_active || !subscription.is_active {
-            clockwork_sdk::thread_program::cpi::thread_stop(CpiContext::new_with_signer(
+            clockwork_sdk::cpi::thread_pause(CpiContext::new_with_signer(
                 thread_program.to_account_info(),
-                clockwork_sdk::thread_program::cpi::accounts::ThreadStop {
+                clockwork_sdk::cpi::ThreadPause {
                     authority: subscription.to_account_info(),
                     thread: subscription_thread.to_account_info(),
                 },
@@ -102,9 +102,9 @@ impl<'info> DisbursePayment<'_> {
                 }
                 None => {
                     subscriber.is_active = false;
-                    clockwork_sdk::thread_program::cpi::thread_stop(CpiContext::new_with_signer(
+                    clockwork_sdk::cpi::thread_pause(CpiContext::new_with_signer(
                         thread_program.to_account_info(),
-                        clockwork_sdk::thread_program::cpi::accounts::ThreadStop {
+                        clockwork_sdk::cpi::ThreadPause {
                             authority: subscriber.to_account_info(),
                             thread: subscription_thread.to_account_info(),
                         },

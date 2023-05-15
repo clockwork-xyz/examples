@@ -1,6 +1,5 @@
 use {
     anchor_lang::prelude::Pubkey,
-    clockwork_sdk::client::{Client, ClientResult},
     serde_json::Value,
     solana_sdk::signature::Keypair,
     solana_sdk::{instruction::Instruction, transaction::Transaction},

@@ -2,7 +2,10 @@ use {
     crate::{error::ErrorCode, state::*},
     anchor_lang::prelude::*,
     anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer},
-    clockwork_sdk::thread_program::{self, accounts::Thread, ThreadProgram},
+    clockwork_sdk::{
+        state::Thread,
+        ThreadProgram,
+    },
 };
 
 #[derive(Accounts)]
@@ -30,14 +33,14 @@ pub struct Subscribe<'info> {
         address = Subscription::bank_pda(subscription.key(),subscription.owner.key()).0
     )]
     pub subscription_bank: Account<'info, TokenAccount>,
-    #[account(address = Thread::pubkey(subscriber.key(),"subscriber_thread".to_string()))]
+    #[account(address = Thread::pubkey(subscriber.key(),"subscriber_thread".to_string().into()))]
     pub subscription_thread: Box<Account<'info, Thread>>,
 
     #[account(address=subscription.mint)]
     pub mint: Account<'info, Mint>,
 
     pub token_program: Program<'info, Token>,
-    #[account(address = thread_program::ID)]
+    #[account(address = clockwork_sdk::ID)]
     pub thread_program: Program<'info, ThreadProgram>,
 }
 
@@ -73,9 +76,9 @@ impl<'info> Subscribe<'_> {
             subscription.recurrent_amount,
         )?;
 
-        clockwork_sdk::thread_program::cpi::thread_resume(CpiContext::new_with_signer(
+        clockwork_sdk::cpi::thread_resume(CpiContext::new_with_signer(
             thread_program.to_account_info(),
-            clockwork_sdk::thread_program::cpi::accounts::ThreadResume {
+            clockwork_sdk::cpi::ThreadResume {
                 authority: subscriber.to_account_info(),
                 thread: subscription_thread.to_account_info(),
             },
