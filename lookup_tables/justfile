@@ -1,0 +1,5 @@
+cw:
+    cargo watch -c -x "run"
+
+slg:
+    solana logs -u localhost $(solana address -k target/deploy/lutrs-keypair.json)
