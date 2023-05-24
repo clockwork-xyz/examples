@@ -94,14 +94,21 @@ fn main() -> Result<()> {
         .unwrap();
 
     // Our Target ixs
-    let mut ixs = Vec::new();
     let mut keys: Vec<Pubkey> = Vec::new();
-    for i in 0..50 {
+    for _ in 0..30 {
         let kp = Keypair::new();
-        let target_ix = system_instruction::transfer(&PAYER_PUBKEY, &kp.pubkey(), LAMPORTS_PER_SOL);
-        keys.push(kp.pubkey());
-        ixs.push(target_ix);
+        keys.push(kp.pubkey()); 
     }
+
+
+    let target_ix = Instruction {
+        program_id: lookup_tables::ID,
+        accounts: vec![],
+        data: lookup_tables::instruction::Dump{}.data()
+    };
+
+
+    //println!("thread {:#?}", thread);
 
     println!("Loop to extend the address lookup table");
     let mut signature = Signature::default();
@@ -156,7 +163,7 @@ fn main() -> Result<()> {
         data: clockwork_thread_program::instruction::ThreadCreate {
             amount: LAMPORTS_PER_SOL,
             id: thread_id.into(),
-            instructions: ixs.iter().map(|e| e.clone().into()).collect(),
+            instructions: vec![target_ix.into()],
             trigger: Trigger::Cron {
                 schedule: "*/10 * * * * * *".into(),
                 skippable: true,
@@ -185,84 +192,85 @@ fn main() -> Result<()> {
     };
 
     let ixs = [thread_create_ix, create_thread_lut_ix];
-    //let sig = client.send_and_confirm(&ixs, &[&client.payer])?;
+    let sig = client.send_and_confirm(&ixs, &[&client.payer])?;
+    Ok(())
     //println!("✍️s: https://explorer.solana.com/tx/{}?cluster=custom&customUrl=http%3A%2F%2Flocalhost%3A8899", sig);
 
-    println!("Create signed legacy tx");
-    let mut signers = vec![&client.payer];
-    let tx = Transaction::new_signed_with_payer(
-        &ixs,
-        Some(&client.payer_pubkey()),
-        &signers,
-        latest_blockhash,
-    );
-    let serialized_tx = serialize(&tx).unwrap();
-    println!("This legacy serialized tx is {} bytes", serialized_tx.len());
+    //println!("Create signed legacy tx");
+    //let mut signers = vec![&client.payer];
+    //let tx = Transaction::new_signed_with_payer(
+    //    &ixs,
+    //    Some(&client.payer_pubkey()),
+    //    &signers,
+    //    latest_blockhash,
+    //);
+    //let serialized_tx = serialize(&tx).unwrap();
+    //println!("This legacy serialized tx is {} bytes", serialized_tx.len());
 
-    println!("Wait some arbitrary amount of time to please the address lookup table");
-    thread::sleep(time::Duration::from_secs(3));
+    //println!("Wait some arbitrary amount of time to please the address lookup table");
+    //thread::sleep(time::Duration::from_secs(3));
 
-    println!("Create versioned tx");
-    let versioned_tx = create_tx_with_address_table_lookup(&client, &ixs, lut, &signers).unwrap();
-    let serialized_versioned_tx = serialize(&versioned_tx).unwrap();
-    println!(
-        "The serialized versioned tx is {} bytes",
-        serialized_versioned_tx.len()
-    );
-    let serialized_encoded = base64::encode(serialized_versioned_tx);
-    let config = RpcSendTransactionConfig {
-        skip_preflight: false,
-        preflight_commitment: Some(CommitmentLevel::Processed),
-        encoding: Some(UiTransactionEncoding::Base64),
-        ..RpcSendTransactionConfig::default()
-    };
+    //println!("Create versioned tx");
+    //let versioned_tx = create_tx_with_address_table_lookup(&client, &ixs, lut, &signers).unwrap();
+    //let serialized_versioned_tx = serialize(&versioned_tx).unwrap();
+    //println!(
+    //    "The serialized versioned tx is {} bytes",
+    //    serialized_versioned_tx.len()
+    //);
+    //let serialized_encoded = base64::encode(serialized_versioned_tx);
+    //let config = RpcSendTransactionConfig {
+    //    skip_preflight: false,
+    //    preflight_commitment: Some(CommitmentLevel::Processed),
+    //    encoding: Some(UiTransactionEncoding::Base64),
+    //    ..RpcSendTransactionConfig::default()
+    //};
 
-    let signature = client
-        .send::<String>(
-            RpcRequest::SendTransaction,
-            json!([serialized_encoded, config]),
-        )
-        .unwrap();
-    println!("✍️s: https://explorer.solana.com/tx/{}?cluster=custom&customUrl=http%3A%2F%2Flocalhost%3A8899", signature);
-    client
-        .confirm_transaction_with_commitment(
-            &Signature::from_str(&signature).unwrap(),
-            CommitmentConfig::finalized(),
-        )
-        .unwrap();
+    //let signature = client
+    //    .send::<String>(
+    //        RpcRequest::SendTransaction,
+    //        json!([serialized_encoded, config]),
+    //    )
+    //    .unwrap();
+    //println!("✍️s: https://explorer.solana.com/tx/{}?cluster=custom&customUrl=http%3A%2F%2Flocalhost%3A8899", signature);
+    //client
+    //    .confirm_transaction_with_commitment(
+    //        &Signature::from_str(&signature).unwrap(),
+    //        CommitmentConfig::finalized(),
+    //    )
+    //    .unwrap();
 
-    thread::sleep(time::Duration::from_secs(2)); // Not sure why this is required while commitments are compatible
+    //thread::sleep(time::Duration::from_secs(2)); // Not sure why this is required while commitments are compatible
 
-    // We craft our own getTransaction as RpcClient doesn't support v0
-    let rqclient = reqwest::blocking::Client::new();
-    let res = rqclient
-        .post("http://localhost:8899/")
-        .json(&json!({
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "getTransaction",
-            "params": [
-                signature,
-                {"encoding": "json", "commitment": "confirmed", "maxSupportedTransactionVersion": 0}
-            ]
-        }))
-        .send()
-        .unwrap();
-    println!("{:?}", res.text().unwrap());
+    //// We craft our own getTransaction as RpcClient doesn't support v0
+    //let rqclient = reqwest::blocking::Client::new();
+    //let res = rqclient
+    //    .post("http://localhost:8899/")
+    //    .json(&json!({
+    //        "jsonrpc": "2.0",
+    //        "id": 1,
+    //        "method": "getTransaction",
+    //        "params": [
+    //            signature,
+    //            {"encoding": "json", "commitment": "confirmed", "maxSupportedTransactionVersion": 0}
+    //        ]
+    //    }))
+    //    .send()
+    //    .unwrap();
+    //println!("{:?}", res.text().unwrap());
 
-    let raw_account = client.get_account(&lut)?;
-    let address_lookup_table = AddressLookupTable::deserialize(&raw_account.data)?;
-    let addresses = address_lookup_table.addresses;
-    println!("keys: {:#?}", keys);
-    println!("lut: {}", lut);
-    println!("{:#?}", addresses);
-    let latest_blockhash = client.get_latest_blockhash().unwrap();
-    for k in addresses.as_ref().iter() {
-        let bal = client.get_balance(k)?;
-        println!("{}: {}", k, bal);
-    }
+    //let raw_account = client.get_account(&lut)?;
+    //let address_lookup_table = AddressLookupTable::deserialize(&raw_account.data)?;
+    //let addresses = address_lookup_table.addresses;
+    //println!("keys: {:#?}", keys);
+    //println!("lut: {}", lut);
+    //println!("{:#?}", addresses);
+    //let latest_blockhash = client.get_latest_blockhash().unwrap();
+    //for k in addresses.as_ref().iter() {
+    //    let bal = client.get_balance(k)?;
+    //    println!("{}: {}", k, bal);
+    //}
 
-    Ok(())
+    //Ok(())
 }
 
 fn create_tx_with_address_table_lookup<T: Signers>(

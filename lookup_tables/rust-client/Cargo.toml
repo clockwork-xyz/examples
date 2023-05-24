@@ -12,6 +12,7 @@ base64 = "0.13.0"
 chrono = "0.4.24"
 clockwork-thread-program = { path = "../../../clockwork/programs/thread" }
 clockwork-utils = "=2.0.17"
+lookup-tables = { path = "../programs/lookup_tables", features = ["no-entrypoint"] }
 reqwest = "0.11.11"
 serde_json = "1.0.82"
 solana-address-lookup-table-program = "=1.14.16"
@@ -23,3 +24,4 @@ thiserror = "1.0.40"
 
 [features]
 localnet = []
+
