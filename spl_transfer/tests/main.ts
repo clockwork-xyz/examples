@@ -22,12 +22,12 @@ import { keypairFromFile, waitForThreadExec } from "./utils";
 
 
 describe("spl-transfer", async () => {
-	it("It transfers tokens every 10s", async () => {
+  it("It transfers tokens every 10s", async () => {
     const connection = new Connection("http://localhost:8899", "processed");
     const payer = keypairFromFile(
       require("os").homedir() + "/.config/solana/id.json"
     );
-  
+
     // Prepare clockworkProvider
     const provider = new AnchorProvider(
       connection,
@@ -35,7 +35,7 @@ describe("spl-transfer", async () => {
       AnchorProvider.defaultOptions()
     );
     const clockworkProvider = ClockworkProvider.fromAnchorProvider(provider);
-  
+
     // Prepare source and dest
     const threadId = "spljs_" + new Date().getTime();
     const [thread] = clockworkProvider.getThreadPDA(
@@ -43,12 +43,12 @@ describe("spl-transfer", async () => {
       threadId
     );
     console.log(`Thread id: ${threadId}, address: ${thread}`);
-  
+
     // We will use the thread pda as the source and fund it with some tokens
     const source = thread;
     const [mint, sourceAta] = await fundSource(connection, payer, source);
     console.log(`source: ${source}, sourceAta: ${sourceAta}`);
-  
+
     // Prepare dest
     const dest = Keypair.generate().publicKey;
     const destAta = (
@@ -61,7 +61,7 @@ describe("spl-transfer", async () => {
       )
     ).address;
     console.log(`dest: ${dest}, destAta: ${destAta}`);
-  
+
     // const destAta = await getAssociatedTokenAddress(mint, dest);
     // const targetIx0 = createAssociatedTokenAccountIdempotentInstruction(
     //  provider.wallet.publicKey,
@@ -70,11 +70,11 @@ describe("spl-transfer", async () => {
     //  mint,
     // );
     // console.log(`dest: ${dest}, destAta: ${destAta}`)
-  
+
     // 1️⃣  Create a transfer instruction.
     const amount = 1e8;
     const targetIx = createTransferInstruction(sourceAta, destAta, source, amount);
-  
+
     // 2️⃣  Define a trigger condition for the thread.
     const trigger = {
       cron: {
@@ -82,7 +82,7 @@ describe("spl-transfer", async () => {
         skippable: true,
       },
     };
-  
+
     // 3️⃣  Create the thread.
     try {
       const ix = await clockworkProvider.threadCreate(
@@ -106,7 +106,7 @@ describe("spl-transfer", async () => {
       // -> OR update the thread with a ThreadUpdate instruction (more on this in future guide)
       console.error(e);
     }
-  
+
     // Check balance for the next 3 executions
     let checkAmount = 1e8;
     for (let i = 1; i < 4; i++) {
@@ -116,7 +116,7 @@ describe("spl-transfer", async () => {
       console.log(`destAta balance: ${destAtaAcc.amount}`);
       checkAmount += amount;
     }
-	});
+  });
 });
 
 
