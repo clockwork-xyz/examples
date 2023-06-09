@@ -5,6 +5,7 @@ import {
     LAMPORTS_PER_SOL,
     SystemProgram,
     Transaction,
+    PublicKey,
 } from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
 import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
@@ -13,7 +14,7 @@ import { ClockworkProvider, PAYER_PUBKEY } from "@clockwork-xyz/sdk";
 const connection = new Connection("http://localhost:8899", "processed");
 const payer = Keypair.fromSecretKey(
     Buffer.from(JSON.parse(require("fs").readFileSync(
-        require("os").homedir() + "/.config/solana/id.json",
+        require("os").homedir() + "/.config/solana/id.json", // double check this path on your machine
         "utf-8"
     )))
 );
@@ -35,7 +36,12 @@ describe("transfer", async () => {
           threadId
        )
   
+      // comment out the line below which generates a random address
       const recipient = Keypair.generate().publicKey;
+
+      // replace it with this, and add your pubkey:
+      // const recipient = new PublicKey('YOUR_PUBKEY')
+
       console.log(`🫴  recipient: ${recipient.toString()}\n`);
 
       // 1️⃣  Prepare an instruction to be automated.
