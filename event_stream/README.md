@@ -17,7 +17,7 @@ We start by defining an instruction to execute, that is the __"WHAT"__:
 
 Time to switch perspective, we need to do some work off-chain now, we will create a Thread, that's the __"HOW"__:
 - Check the `tests` folder, we are using anchor tests as a client.
-- Run `anchor test`, this will create a __Thread__ that listens for a certain account and print logs whenever the
+- Run `anchor test --skip-local-validator`, this will create a __Thread__ that listens for a certain account and print logs whenever the
   account is updated.
 
 ## How do I know if it works?

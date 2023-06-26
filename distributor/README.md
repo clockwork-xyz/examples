@@ -21,14 +21,14 @@ We start by defining an instruction to execute, that is the __"WHAT"__:
 **2. Client Side - Creating a Thread**
 Time to switch perspective, we need to do some work off-chain now, we will create a Thread, that's the __"HOW"__:
 - Check the `tests` folder, we are using anchor tests as a client.
-- Run `anchor tests`, this will create a __Thread__ that listens for a certain account and print logs whenever the
+- Run `anchor test --skip-local-validator`, this will create a __Thread__ that listens for a certain account and print logs whenever the
   account is updated.
 
 ## How do I know if it works?
 Let's see how we can observe our newly created Thread:
 - Run the tests!
 ```bash
-anchor test
+anchor test --skip-local-validator
 ```
 - If you have the Clockwork Cli installed, you can use the `clockwork` command
 ```bash

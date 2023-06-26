@@ -17,5 +17,5 @@ Get a new program id:
 
 Run the tests and observe the logs:
 ```bash
-anchor test
+anchor test --skip-local-validator
 ```
