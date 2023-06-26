@@ -12,8 +12,12 @@ pub use id::ID;
 pub mod event_stream {
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>, thread_label: String) -> Result<()> {
-        initialize::handler(ctx, thread_label)
+    pub fn initialize(ctx: Context<Initialize>, thread_id: Vec<u8>) -> Result<()> {
+        initialize::handler(ctx, thread_id)
+    }
+
+    pub fn reset(ctx: Context<Reset>) -> Result<()> {
+        initialize::reset(ctx)
     }
 
     pub fn ping(ctx: Context<Ping>) -> Result<()> {

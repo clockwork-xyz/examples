@@ -1,54 +1,74 @@
+import {expect} from "chai";
 import * as anchor from "@project-serum/anchor";
 import {Program} from "@project-serum/anchor";
 import {EventStream} from "../target/types/event_stream";
 // 👇 The new import
-import {getThreadAddress, CLOCKWORK_THREAD_PROGRAM_ID} from "@clockwork-xyz/sdk";
+import { ClockworkProvider } from "@clockwork-xyz/sdk";
 import {PublicKey, SystemProgram} from "@solana/web3.js";
-import {expect} from "chai";
 
 const provider = anchor.AnchorProvider.env();
 anchor.setProvider(provider);
+const wallet = provider.wallet;
 const program = anchor.workspace.EventStream as Program<EventStream>;
+const clockworkProvider = ClockworkProvider.fromAnchorProvider(provider);
+
+
+// 0️⃣  Accounts
+const threadId = "event_stream-" + new Date().getTime() / 1000;
+const [threadAuthority] = PublicKey.findProgramAddressSync(
+    [anchor.utils.bytes.utf8.encode("authority")], // 👈 make sure it matches on the prog side
+    program.programId
+);
+const [threadAddress] = clockworkProvider.getThreadPDA(threadAuthority, threadId)  
+
+const [event] = PublicKey.findProgramAddressSync(
+    [anchor.utils.bytes.utf8.encode("event")], // 👈 make sure it matches on the prog side
+    program.programId
+);
+console.log("event: " + event.toString());
+console.log("threadId: " + threadId.toString());
+console.log("threadAuthority: " + threadAuthority.toString());
+console.log("threadAddress: " + threadAddress.toString());
 
 
 describe("event_stream", () => {
     it("It creates a Thread!", async () => {
-        const [event] = PublicKey.findProgramAddressSync(
-            [anchor.utils.bytes.utf8.encode("event")], // 👈 make sure it matches on the prog side
-            program.programId
-        );
-
         await initializeThread(event);
 
         // Ping an account change every 10s
         // Ask program to update the account with address `event`
-        for (let i = 0; i < 9; i++) {
+        for (let i = 0; i < 3; i++) {
             await sleep(10);
             await ping(event);
         }
     });
+
+        // Just some cleanup to reset the test to a clean state
+    afterEach(async () => {
+        try {
+            await program.methods
+                .reset()
+                .accounts({
+                    payer: wallet.publicKey,
+                    clockworkProgram: clockworkProvider.threadProgram.programId,
+                    event: event,
+                    thread: threadAddress,
+                    authority: threadAuthority,
+                })
+                .rpc();
+        } catch (e) { }
+    })
 });
 
+
 const initializeThread = async (event: PublicKey) => {
-    // 0️⃣ Accounts
-    const threadLabel = "eventstream_21-0151";
-    const [threadAuthority] = PublicKey.findProgramAddressSync(
-        [anchor.utils.bytes.utf8.encode("authority")], // 👈 make sure it matches on the prog side
-        program.programId
-    );
-    const threadAddress = getThreadAddress(threadAuthority, threadLabel);
 
-    console.log("event:" + event.toString());
-    console.log("threadLabel:" + threadLabel.toString());
-    console.log("threadAuthority:" + threadAuthority.toString());
-    console.log("threadAddress:" + threadAddress.toString());
-
-    // 1️⃣ Ask your Program to do a CPI to create a Thread
+    // 1️⃣  Ask your Program to do a CPI to create a Thread
     try {
-        const tx = await program.methods.initialize(threadLabel)
+        const tx = await program.methods.initialize(Buffer.from(threadId))
             .accounts({
                 systemProgram: SystemProgram.programId,
-                clockwork: CLOCKWORK_THREAD_PROGRAM_ID,
+                clockwork: clockworkProvider.threadProgram.programId,
                 signer: provider.publicKey,
                 authority: threadAuthority,
                 eventThread: threadAddress,
@@ -57,7 +77,7 @@ const initializeThread = async (event: PublicKey) => {
             .rpc();
         print_address("🤖 Program", program.programId.toString());
         print_thread_address("🧵 Thread", threadAddress);
-        print_tx("✍️ Tx", tx);
+        print_tx("✍️  Tx", tx);
     } catch (e) {
         // ❌
         // 'Program log: Instruction: ThreadCreate',
@@ -88,7 +108,7 @@ const ping = async (event: PublicKey) => {
         const tx = await program.methods.ping()
             .accounts({event: event})
             .rpc()
-        print_tx("✍️ Ping Tx", tx);
+        print_tx("✍️  Ping Tx", tx);
     } catch (e) {
         console.error(e);
         expect.fail(e);
@@ -110,5 +130,5 @@ const print_tx = (label, address) => {
 }
 
 const print_thread_address = (label, address) => {
-    console.log(`${label}: https://explorer.clockwork.xyz/address/${address}?network=devnet`);
+    console.log(`${label}: https://app.clockwork.xyz/threads/${address}?cluster=devnet`);
 }

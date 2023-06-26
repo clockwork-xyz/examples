@@ -3,13 +3,13 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-event_stream = "9rYwiPDRFpaPYYJweMoxz4pzuUx3Ja2LZJ6uMWTWuVKU"
+event_stream = "Mz49SjsVjXwxdwouKeEjvC3DUsDa8oZtVu7TtR4yGj5"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "devnet"
+cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

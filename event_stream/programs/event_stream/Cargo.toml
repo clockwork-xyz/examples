@@ -16,5 +16,8 @@ cpi = ["no-entrypoint"]
 default = []
 
 [dependencies]
-anchor-lang = { version = "0.26.0", features = ["init-if-needed"] }
-clockwork-sdk = { version = "1.4.2" }
+anchor-lang = { version = "0.27.0", features = ["init-if-needed"]}
+clockwork-sdk = { version = "2.0.18" }
+
+# needed to fix the could not compile spl-token-2022 issue
+solana-program = "=1.14.16"
